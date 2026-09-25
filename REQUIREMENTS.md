@@ -6,6 +6,7 @@ English / [简体中文](docs/requirements/REQUIREMENTS_CN.md)
 > Document version: **SRS v0.1** (draft)
 > Last updated: 2026-09-26
 > Scope: COMP3500SEF group project · Election Management and Voting System · first MVP
+> Future work and undecided items: see [Future Work](FUTURE.md)
 
 > Database schema, SQL, API endpoints, page layouts, class design and test code are out of scope for this document; they belong to the later Design / API / Implementation documents.
 
@@ -18,6 +19,8 @@ English / [简体中文](docs/requirements/REQUIREMENTS_CN.md)
 This document formalizes the conclusions reached at the Kickoff meeting (Meeting 01, 2026-09-25) into a structured requirements specification, serving as the common basis for subsequent interface design, task allocation and test verification.
 
 Following the course's Requirement Engineering guidance, a good requirements document should be **complete** and **consistent**: every needed function is stated clearly, and the document does not contradict itself.
+
+v0.1 is a baseline that contains **only decided content**: any rule or metric not yet settled by the meeting is not a requirement for this version and is deferred to [Future Work](FUTURE.md), so that developers never mistake a "to be confirmed" item for a "must build" one.
 
 ### 1.2 Project Overview
 
@@ -37,9 +40,9 @@ This MVP locks in one **clear, ordinary and easy-to-verify** scenario as the del
 
 > **Class President Election** — the class president has taken sick leave, so the class needs to elect a new one; single choice, one person one vote, the candidate with the most votes wins.
 
-In the MVP, **one election fills exactly one position (class president)**. Electing multiple positions in a single election (e.g. president, vice-president and secretary together) is Future Work (Section 9).
+In the MVP, **one election fills exactly one position (class president)**. Electing multiple positions in a single election (e.g. president, vice-president and secretary together) is Future Work (FW-02).
 
-The purpose of choosing a single scenario is to keep the requirement boundary clear and testable; other electoral systems are extensions after the MVP (see Section 9).
+The purpose of choosing a single scenario is to keep the requirement boundary clear and testable; other electoral systems are extensions after the MVP (see [Future Work](FUTURE.md)).
 
 ### 1.4 Version Scope (MVP)
 
@@ -57,7 +60,7 @@ This version is the project's minimal runnable Demo, intended for prototype impl
 - Vote counting (M6)
 - Result publishing (M7)
 
-Note that the MVP scope **does not include** the following:
+Note that the MVP scope **does not include** the following (full list in [Future Work](FUTURE.md)):
 
 - Blockchain notarization
 - Native mobile app
@@ -67,7 +70,7 @@ Note that the MVP scope **does not include** the following:
 - Complex tie-breaking and advancement mechanisms
 - A generic workflow supporting every electoral system
 
-> **Scope discipline**: whenever someone later proposes "should we also add XXX", check this section first. Anything not in the MVP scope is recorded as "not in v0.1" and goes to the backlog (Section 9); do not expand scope ad hoc. Any business change must be reported to the group leader first, who decides and records it in the change log.
+> **Scope discipline**: whenever someone later proposes "should we also add XXX", check this section first. Anything not in the MVP scope is recorded as "not in v0.1" and goes to the backlog ([Future Work](FUTURE.md)); do not expand scope ad hoc. Any business change must be reported to the group leader first, who decides and records it in the change log.
 
 ### 1.5 Terminology
 
@@ -107,7 +110,7 @@ The class president has taken sick leave, and a new class president must be elec
 - A user is logged in but not on this election's roll → the system refuses entry to voting and reports "not eligible".
 - A voter who has already voted tries to vote again → the system refuses, and the original ballot is not modified.
 - An attempt to vote before the start or after the end of voting → the system refuses.
-- A tie occurs → the MVP does not resolve it automatically (see BR-08).
+- A tie occurs → v0.1 does not handle it (see BR-08 and FW-10).
 
 **Concurrent activities**
 Multiple voters may vote online at the same time without seeing each other's ballot content; the administrator must not view or modify any ballot that has been cast.
@@ -167,13 +170,13 @@ The meeting slides once listed six system roles (voter, candidate, election admi
 - **Auditor / Election committee**: their duties (reviewing the count, accepting the result) are carried by the administrator in the MVP; no separate accounts or permissions are created.
 - **System administrator**: account and runtime environment maintenance is handled by the development/deployment process in the MVP, not modeled as a business Actor.
 
-Making these roles independent is listed in the backlog (Section 9).
+Making these roles independent is listed in the backlog (FW-06).
 
 ---
 
 ## 4. Functional Requirements
 
-Each requirement describes one thing and is testable. Items marked `[TBD]` have not been finalized by the meeting.
+Each requirement describes one thing and is testable. v0.1 states only decided requirements; anything undecided is not written here and is moved to [Future Work](FUTURE.md).
 
 ### FR-01 Create Election (M3)
 
@@ -188,7 +191,7 @@ When creating it, the administrator shall provide at least:
 The system shall store the election information and allow it to be queried again.
 ```
 
-> Other end conditions such as "close once a target vote count is reached" are not yet confirmed and are not requirements for now; see Section 8.
+> The MVP uses only the "voting end time" as the end condition; other end conditions (e.g. closing automatically once a target vote count is reached) are in FW-12.
 
 ### FR-02 Configure Election (M3)
 
@@ -295,11 +298,13 @@ The result shall display at least:
 - The final winner
 ```
 
+> In the MVP, published results are visible to authorized users (administrator and voters); a finer per-role visibility policy is in FW-13.
+
 ---
 
 ## 5. Non-Functional Requirements
 
-Classified per the course: **product requirements** (how the product must behave), **organizational requirements** (from team/course process), and **external requirements** (legal, interoperability, etc.). Non-functional requirements should be quantifiable where possible.
+Classified per the course: **product requirements** (how the product must behave), **organizational requirements** (from team/course process), and **external requirements** (legal, interoperability, etc.). Non-functional requirements should be quantifiable where possible; anything that cannot yet be quantified in v0.1 is explicitly deferred to Future Work rather than written as a vague promise.
 
 ### NFR-1 Security (product)
 
@@ -324,11 +329,10 @@ Must not store: Alice -> voted for Bob        ❌
 - No lost ballots, double counting or miscounting; the tally must be consistent with the valid ballots.
 - Side-effecting operations such as vote submission must account for concurrency and idempotency, so the same voter cannot produce more than one valid ballot.
 
-### NFR-4 Performance and Scale (product): metrics TBD
+### NFR-4 Performance and Scale (product)
 
 - The MVP targets class-level / small campus-organization elections.
-- The specific concurrent-user and response-time metrics will be determined after technical validation; **until then they are not a mandatory acceptance condition for v0.1**.
-- `[TBD: to be decided by the group leader and technical lead after technical validation, and added in v0.2]`
+- **v0.1 sets no quantitative performance acceptance gate**; quantitative metrics such as concurrent users and response time for vote submission and counting will be defined in a future version after technical validation (see FW-11).
 
 ### NFR-5 Usability (product)
 
@@ -368,9 +372,7 @@ BR-04  No new ballot may be submitted after the election is closed.
 BR-05  Only the administrator may create or modify elections, candidates and rolls.
 BR-06  Only the administrator may open/close voting and publish the final result.
 BR-07  In the class president election, each voter selects at most one candidate (single choice).
-BR-08  The candidate with the most votes wins. [TBD] If a tie occurs, the MVP does not resolve it
-       automatically; the administrator handles it in a pre-announced way (e.g. a re-vote). Automatic
-       tie-breaking / advancement mechanisms go to the backlog.
+BR-08  The candidate with the most votes wins; v0.1 does not handle ties (tie handling is in FW-10).
 BR-09  Once cast, a ballot cannot be modified, withdrawn, or deleted by anyone.
 BR-10  No role may link a ballot to a voter's identity or trace it back; the system may record
        "whether a voter has voted" to enforce one-person-one-vote, but that state must not be linked
@@ -382,7 +384,7 @@ BR-12  The administrator controls the election state (open/close) but must not b
        the administrator may close the election early.
 ```
 
-> Note: rules such as multi-choice, weighting, complex tie thresholds and multi-round advancement all belong after the MVP (Section 9). For now only the minimal rule "single choice + one person one vote + highest vote count wins" is fixed; the rest keep room for configuration but are not implemented.
+> Note: rules such as multi-choice, weighting, tie handling and multi-round advancement all belong after the MVP (see [Future Work](FUTURE.md)). For now only the minimal rule "single choice + one person one vote + highest vote count wins" is fixed; the rest keep room for configuration but are not implemented.
 
 ---
 
@@ -456,40 +458,9 @@ Then  the system rejects the operation; a ballot is accepted only when the state
 
 ---
 
-## 8. Open Questions
+## 8. Traceability
 
-The following items were not finalized at the Kickoff meeting and must be decided by the group leader before being merged into the formal version (v0.2):
-
-1. **Tie handling** (BR-08): should the MVP only allow "manual handling by the administrator", or does it need minimal re-vote support?
-2. **Performance metrics** (NFR-4): target concurrent voters, and response-time limits for vote submission and counting.
-3. **End condition** (FR-01): besides "end time", should "close once a target vote count is reached" be supported?
-4. **Turnout and result visibility** (FR-14): should turnout be visible to voters in real time during voting? To which roles are results public?
-5. **Candidate photo** (FR-03): is it mandatory, and how is a missing photo handled?
-
-> Change discipline: once any item above is decided, update this document's version number, record the reason for the change, and re-check the consistency of the related FR / BR / AC.
-
----
-
-## 9. After the MVP / Future Work (Backlog)
-
-The following capabilities are **not done in this version**; they wait until the base version is stable, then go on a separate branch or a later iteration:
-
-- Multi-choice / scoring systems / judge scoring
-- Multi-position elections (electing president, vice-president, secretary, etc. in one election)
-- Complex vote weighting (e.g. by shareholding ratio or group weighting)
-- Automatic tie-breaking and automatic advancement mechanisms
-- Multi-round / large competition-style selection flows (zones, groups, multiple stages)
-- A generic election workflow engine and a "generic template + personalized template" abstraction
-- Independent auditor / system administrator / election committee roles and permissions
-- Real-time turnout display during voting
-- Vote receipts, audit log query, result export, email notification, back-office account management
-- Blockchain notarization, native mobile app, integration with a real voter database
-
----
-
-## 10. Traceability
-
-Used to ensure "function ↔ module ↔ acceptance" line up, making allocation and verification easier.
+Used to ensure "function ↔ module ↔ acceptance" line up, making allocation and verification easier. Undecided items and capabilities not built in this version are all in [Future Work](FUTURE.md) (FW-xx).
 
 | Module | Related functional requirements | Related business rules | Related acceptance criteria |
 | --- | --- | --- | --- |
@@ -503,4 +474,4 @@ Used to ensure "function ↔ module ↔ acceptance" line up, making allocation a
 
 ---
 
-*This document is the SRS v0.1 draft. It is the English counterpart of [`docs/requirements/REQUIREMENTS_CN.md`](docs/requirements/REQUIREMENTS_CN.md); the two versions are kept in sync.*
+*This document is the SRS v0.1 draft, kept in sync with the Chinese version [`docs/requirements/REQUIREMENTS_CN.md`](docs/requirements/REQUIREMENTS_CN.md); future work is in [`FUTURE.md`](FUTURE.md). If the two differ, the version that passed the latest change review prevails.*
