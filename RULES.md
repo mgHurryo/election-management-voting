@@ -1,6 +1,6 @@
 ## Git Branching Guidelines
 
-English / [简体中文](docs/README_CN.md)
+English / [简体中文](docs/RULES_CN.md)
 
 ### `master`
 
