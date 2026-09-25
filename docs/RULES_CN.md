@@ -21,7 +21,6 @@
 ```text
 <type>/<ticket-id>-<short-description>
 ```
-
 常用类型：
 
 ```text
