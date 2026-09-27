@@ -70,6 +70,8 @@ Note that the MVP scope **does not include** the following (full list in [Future
 - Complex tie-breaking and advancement mechanisms
 - A generic workflow supporting every electoral system
 
+> Among these, **blockchain notarization, native mobile app, and integration with a real voter database** are **permanently excluded** (FW-09, will not be done in any future version); the rest are **future candidates** that may be adopted in a future version (see [Future Work](FUTURE.md)).
+
 > **Scope discipline**: whenever someone later proposes "should we also add XXX", check this section first. Anything not in the MVP scope is recorded as "not in v0.1" and goes to the backlog ([Future Work](FUTURE.md)); do not expand scope ad hoc. Any business change must be reported to the group leader first, who decides and records it in the change log.
 
 ### 1.5 Terminology
