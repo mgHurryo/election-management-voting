@@ -2292,9 +2292,11 @@ sequenceDiagram
 
 受保护请求必须携带有效 Access Token。后端验证 Token 后取得当前用户身份，不使用前端提交的用户 ID 作为身份依据。
 
-JWT Secret、Token 有效期等配置必须通过环境变量提供，不写死在源代码中。
+Access Token 默认有效期 60 分钟（3600 秒，可通过环境变量覆盖）；JWT Secret、Token 有效期必须通过环境变量提供，不写死在源代码中。MVP 不使用 Refresh Token：Access Token 过期后由客户端重新登录（ADR-009）。
 
-密码只保存安全 Hash，不保存明文密码。具体密码 Hash 算法在实现前确定，并记录到 ADR 或 Open Issues 的最终决策中。
+前端将 Access Token 保存于 `localStorage`，通过统一的 HTTP 拦截器以 `Authorization: Bearer <token>` 附加到请求；登出或收到 401 时移除（ADR-009）。
+
+密码只保存安全 Hash，不保存明文密码。密码 Hash 算法为 bcrypt，cost 因子取 12。密码长度至少 8 字符、至多 72 字节（bcrypt 输入上限），且须同时包含字母与数字；密码不做 trim 或其他改写（ADR-009）。
 
 ### 10.2 权限控制
 
@@ -3068,17 +3070,50 @@ SRS（FR-02 / FR-10 / FR-11 / NFR-2）将 MVP 限定为单选、一人一票、�
 
 ---
 
+### ADR-009：M1 身份认证安全基线（哈希、Token 有效期、Token 保存、密码规则）
+
+**Context**
+
+Authentication 实现前有四个 Open Issues 必须完成决策：密码 Hash 算法、JWT Access Token 有效期、前端 Token 保存方式、密码复杂度规则，四者共享同一个决策点。MVP 为单机、同源部署的课程项目，无长期登录需求，且 Refresh Token 已确定不在 MVP 范围内（见 15）。
+
+**Options Considered**
+
+1. 密码哈希：bcrypt（cost 12）、argon2id、SHA-256 / PBKDF2；
+2. Access Token 有效期：15 分钟 + Refresh Token、60 分钟无 Refresh Token、全天有效；
+3. 前端 Token 保存：`localStorage`、仅内存、HttpOnly Cookie；
+4. 密码规则：仅限长度、长度 + 轻量字符组合、严格组合策略（大小写、符号等）。
+
+**Decision**
+
+1. 密码哈希：bcrypt，cost 因子取 12；每用户盐值由 bcrypt 自行生成；
+2. Access Token：默认有效期 60 分钟（3600 秒，经环境变量提供），不使用 Refresh Token；过期后由客户端重新登录；
+3. 前端 Token 保存：Access Token 保存于 `localStorage`，由统一 HTTP 拦截器以 `Authorization: Bearer <token>` 附加到请求；登出或收到 401 时移除；
+4. 密码规则：至少 8 字符、至多 72 字节（bcrypt 输入上限），须同时包含字母与数字；不做 trim 或其他改写。
+
+**Consequences**
+
+优点：
+
+- bcrypt 成熟，FastAPI 技术栈下以自带二进制 wheel 安装、无额外系统依赖；cost 12 下单次校验约几十至几百毫秒，可抑制离线爆破且不影响登录体验；
+- 60 分钟无 Refresh Token 保持认证流程最简，并与 API 契约中的 `expires_in=3600` 一致；Token 泄露的暴露窗口不超过 1 小时；
+- `localStorage` + Bearer 适配同源部署，无需处理 CSRF 或 Cookie；
+- 轻量组合规则可拦截明显弱密码，又避免严格组合策略带来的可用性成本。
+
+代价：
+
+- bcrypt 输入上限 72 字节，校验层必须强制密码最大长度；
+- XSS 可读取 `localStorage`；通过短有效期、无 Refresh Token、Token 仅含身份与角色声明缓解。若威胁模型变化，迁移到内存保存 + Refresh Token Cookie；
+- 无服务端吊销机制，泄露的 Token 在过期前持续有效；MVP 规模下可接受，需要长期登录时与 Refresh Token 决策一并重新评估。
+
+---
+
 ## 15. 待决问题（Open Issues）
 
 以下问题暂时不在架构阶段强行拍死，但必须在对应功能实现前完成决策。
 
 | Issue | 当前状态 | 最迟决策点 |
 |---|---|---|
-| 密码 Hash 算法 | TBD | Authentication 实现前 |
-| JWT Access Token 有效期 | TBD | Authentication 实现前 |
 | Refresh Token | MVP 暂不要求 | 如果需要长期登录时重新评估 |
-| 前端 Token 保存方式 | TBD | Authentication 前后端联调前 |
-| 密码复杂度规则 | TBD | User Management 实现前 |
 | 严格投票请求幂等机制 | TBD；事务/额度检查/并发锁可防超额投票，但一人多票下超时重发可能合法多消耗额度，且去重记录受匿名模型约束（见 11.5） | Vote API 定稿前 |
 | Exact Performance Target | TBD | Performance Test 前 |
 | Rate Limiting | MVP 暂不要求 | 对公网部署前 |
