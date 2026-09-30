@@ -102,6 +102,7 @@ class Election(Base):
         autoincrement=True,
     )
     title: Mapped[str] = mapped_column(String(200), nullable=False)
+    position_title: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by: Mapped[int] = mapped_column(
         BIGINT(unsigned=True),
