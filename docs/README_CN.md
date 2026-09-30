@@ -22,6 +22,13 @@
 - 根据个人习惯配置 IDE、开发工具和 Coding Agent。
 - 如果使用 AI 编程工具或 Agent，应在提交前人工检查其生成的所有修改。
 
+## 项目文档
+
+- [需求规格](requirements/REQUIREMENTS_CN.md)
+- [架构设计](architecture/ARCHITECTURE_CN.md)
+- [API 接口规范（v0.1 草案，尚未实现）](api/API_CN.md)
+- [未来工作与排除项](future/FUTURE_CN.md)
+
 ## 开发流程
 
 基本开发流程如下：

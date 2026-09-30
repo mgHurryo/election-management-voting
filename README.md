@@ -22,6 +22,13 @@ This is a group project developed for the **COMP 3500SEF** course.
 - Configure your preferred IDE, development tools, and coding agents locally.
 - If you use AI coding tools or agents, review all generated changes before committing them.
 
+## Project Documentation
+
+- [Requirements](REQUIREMENTS.md)
+- [Architecture](ARCHITECTURE.md)
+- [API specification (v0.1 draft, not implemented)](API.md)
+- [Future work and exclusions](FUTURE.md)
+
 ## Development Workflow
 
 The general development workflow is:
