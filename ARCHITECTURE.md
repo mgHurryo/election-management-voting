@@ -410,7 +410,8 @@ Stores the core configuration of each election.
 | Field | Type | Nullable | Constraint | Description |
 |---|---|---:|---|---|
 | `id` | `BIGINT UNSIGNED` | No | PK, AUTO_INCREMENT | Election ID |
-| `title` | `VARCHAR(200)` | No |  | Election title |
+| `title` | `VARCHAR(200)` | No |  | Election name / theme (e.g. "2026 Class Election") |
+| `position_title` | `VARCHAR(100)` | No |  | The position being elected (e.g. "Class President"); distinct from the election name `title`, corresponds to SRS FR-01 |
 | `description` | `TEXT` | Yes |  | Election description |
 | `created_by` | `BIGINT UNSIGNED` | No | FK | The administrator who created this election |
 | `status` | `VARCHAR(20)` | No | CHECK | `DRAFT` / `OPEN` / `CLOSED` |
@@ -460,6 +461,10 @@ Specific rules:
 - `IDENTIFIED`: `ballots.voter_id` must store the current user ID.
 
 This rule requires reading both `elections.privacy_mode` and the submission content, so it is enforced by the Service Layer.
+
+> [!IMPORTANT]
+>
+> **v1 enables `FORCED_ANONYMOUS` only.** `OPTIONAL_ANONYMOUS` and `IDENTIFIED` are reserved in the database but are not opened in the first version's business implementation; among them, `IDENTIFIED` stores `ballots.voter_id`, which conflicts with the anonymous-storage requirement of SRS FR-11 / NFR-2. Opening them requires updating the SRS and the corresponding acceptance criteria first. See 4.21 and ADR-008.
 
 ---
 
@@ -1546,6 +1551,19 @@ Test data is generated using independent Seed scripts, and test data must not be
 ---
 
 ### 4.21 Current Database Design Boundaries
+
+> [!IMPORTANT]
+>
+> **Database structure ≠ v1 enabled scope.** The list below describes capabilities the database *reserves*; the first version (MVP) business implementation enables only part of them, and the rest are "designed and reserved but not opened in v1." Developers must not implement all modes based on this architecture alone.
+>
+> Actually enabled in v1:
+>
+> - Single-choice ballots (one ballot corresponds to one `ballot_choice`);
+> - One person, one vote (all `election_voters.vote_quota = 1`);
+> - Forced anonymity (`privacy_mode` fixed to `FORCED_ANONYMOUS`);
+> - The candidate with the most votes wins.
+>
+> Designed and reserved but not opened in v1: `vote_quota > 1` (multiple votes per person), `OPTIONAL_ANONYMOUS`, `IDENTIFIED`. Opening them requires updating the SRS and the corresponding acceptance criteria first. Basis: SRS FR-02 / FR-10 / FR-11 / NFR-2 and the BR note "keep configurable space for the rest but do not implement it"; decision record: ADR-008.
 
 The current structure supports:
 
@@ -3008,6 +3026,34 @@ Costs:
 - The lock ordering must be unified, otherwise deadlocks are possible;
 - Closing must wait for in-flight vote transactions to finish, which under extremely high concurrency may cause a brief wait (acceptable at the current scale);
 - The precise "cutoff instant" is subject to the business definition; this decision adopts "the moment the close commits"; the time-window close at `ends_at` is likewise re-confirmed inside the vote transaction using the server clock.
+
+### ADR-008: v1 Enables Only "Single-Choice + One-Person-One-Vote + Forced Anonymous"; the Schema Stays Extensible
+
+**Context**
+
+The SRS (FR-02 / FR-10 / FR-11 / NFR-2) limits the MVP to single-choice, one-person-one-vote, and anonymous storage, and the BR note explicitly states "keep configurable space for the rest but do not implement it." The database schema already reserves multiple votes per person (`vote_quota`) and three anonymity modes (`privacy_mode`). If developers implement all capabilities directly from the architecture, the actual scope would exceed the SRS, and the `IDENTIFIED` mode stores `voter_id`, conflicting with the anonymous-storage requirement.
+
+**Options Considered**
+
+1. Narrow the schema and remove the `vote_quota` / `privacy_mode` extensibility: contradicts the SRS "keep configurable space," and future extension would require table changes;
+2. Keep the extensible schema, but the v1 business implementation enables only one-person-one-vote + forced anonymity, leaving the other modes closed: conforms to the SRS, and opening them later needs no table change;
+3. Formally include the three anonymity modes and multiple votes in v1: requires changing the SRS and acceptance criteria first, exceeding the current MVP.
+
+**Decision**
+
+Adopt option 2. The schema keeps the `vote_quota` and `privacy_mode` extensibility; the v1 Service Layer enforces `vote_quota = 1`, `privacy_mode = FORCED_ANONYMOUS`, single-choice, and highest-votes-wins. `OPTIONAL_ANONYMOUS`, `IDENTIFIED`, and `vote_quota > 1` are designed-and-reserved and not opened in v1; opening them requires updating the SRS and the corresponding acceptance criteria (AC) first.
+
+**Consequences**
+
+Advantages:
+
+- The actual delivered scope matches the SRS, avoiding scope creep;
+- The database does not need to redesign the core voting tables for future extension.
+
+Costs:
+
+- There are "modeled but not enabled" field values, which must be clearly marked in the docs and code to avoid misuse;
+- Opening a new mode requires going through the SRS / AC change process first.
 
 ---
 
