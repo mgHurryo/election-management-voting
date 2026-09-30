@@ -413,7 +413,8 @@ User 123 -> Ballot 5001
 | 字段 | 类型 | 允许为空 | 约束 | 说明 |
 |---|---|---:|---|---|
 | `id` | `BIGINT UNSIGNED` | 否 | PK, AUTO_INCREMENT | 选举 ID |
-| `title` | `VARCHAR(200)` | 否 |  | 选举标题 |
+| `title` | `VARCHAR(200)` | 否 |  | 选举名称 / 主题（如「2026 班长选举」） |
+| `position_title` | `VARCHAR(100)` | 否 |  | 要选出的职位（如「班长」）；与选举名称 `title` 区分，对应 SRS FR-01 |
 | `description` | `TEXT` | 是 |  | 选举说明 |
 | `created_by` | `BIGINT UNSIGNED` | 否 | FK | 创建该选举的管理员 |
 | `status` | `VARCHAR(20)` | 否 | CHECK | `DRAFT` / `OPEN` / `CLOSED` |
@@ -465,6 +466,10 @@ results_published_at
 - `IDENTIFIED`：`ballots.voter_id` 必须保存当前用户 ID。
 
 该规则需要同时读取 `elections.privacy_mode` 与提交内容，因此由 Service Layer 强制执行。
+
+> [!IMPORTANT]
+>
+> **v1 仅启用 `FORCED_ANONYMOUS`。** `OPTIONAL_ANONYMOUS` 与 `IDENTIFIED` 是数据库已预留、但首版业务实现不开放的模式；其中 `IDENTIFIED` 会保存 `ballots.voter_id`，与 SRS FR-11 / NFR-2 的匿名存储要求冲突。若要开放，必须先更新 SRS 与对应验收标准。详见 4.21 与 ADR-008。
 
 ---
 
@@ -1557,6 +1562,19 @@ CI / Demo 环境无法复现
 ---
 
 ### 4.21 当前数据库设计边界
+
+> [!IMPORTANT]
+>
+> **数据库结构 ≠ v1 启用范围。** 下面列出的是数据库*预留*的能力；首版（MVP）业务实现只启用其中一部分，其余为“设计预留但 v1 不开放”，开发人员不得仅依据本架构就实现全部模式。
+>
+> v1 实际启用：
+>
+> - 单选 ballot（一张选票对应一个 `ballot_choice`）；
+> - 一人一票（所有 `election_voters.vote_quota = 1`）；
+> - 强制匿名（`privacy_mode` 固定为 `FORCED_ANONYMOUS`）；
+> - 得票最高者当选。
+>
+> v1 设计预留但不开放：`vote_quota > 1`（一人多票）、`OPTIONAL_ANONYMOUS`、`IDENTIFIED`。开放前必须先更新 SRS 与对应验收标准。依据见 SRS FR-02 / FR-10 / FR-11 / NFR-2 与 BR 说明「其余保持可配置空间但不实现」；决策记录见 ADR-008。
 
 当前结构支持：
 
@@ -3019,6 +3037,34 @@ IDENTIFIED
 - 必须统一加锁顺序，否则可能死锁；
 - 关闭需等待在途投票事务结束，极端高并发下可能短暂等待（当前规模可接受）；
 - 精确“截止时点”以业务定义为准，本决策采用“关闭提交瞬间”；到达 `ends_at` 的时间窗关闭同样在投票事务内以服务器时钟重新确认。
+
+### ADR-008：v1 仅启用「单选 + 一人一票 + 强制匿名」，Schema 保持可扩展
+
+**Context**
+
+SRS（FR-02 / FR-10 / FR-11 / NFR-2）将 MVP 限定为单选、一人一票、匿名存储，并在 BR 说明中明确「其余保持可配置空间但不实现」。数据库 Schema 已预留一人多票（`vote_quota`）与三种匿名模式（`privacy_mode`）。若开发人员直接按架构实现全部能力，实际范围会超出 SRS，且 `IDENTIFIED` 模式保存 `voter_id`，与匿名存储要求冲突。
+
+**Options Considered**
+
+1. 收窄 Schema，删除 `vote_quota` / `privacy_mode` 的扩展能力：与 SRS「保持可配置空间」相悖，未来扩展需改表；
+2. 保留可扩展 Schema，但 v1 业务实现仅启用一人一票 + 强制匿名，其余模式不开放：符合 SRS，未来开放无需改表；
+3. 正式将三种匿名模式与一人多票纳入 v1：需先改 SRS 与验收标准，超出当前 MVP。
+
+**Decision**
+
+采用方案 2。Schema 保留 `vote_quota` 与 `privacy_mode` 的扩展能力；v1 Service Layer 强制 `vote_quota = 1`、`privacy_mode = FORCED_ANONYMOUS`、单选、得票最高者当选。`OPTIONAL_ANONYMOUS`、`IDENTIFIED` 与 `vote_quota > 1` 为设计预留、v1 不开放；开放前必须先更新 SRS 与对应验收标准（AC）。
+
+**Consequences**
+
+优点：
+
+- 实际交付范围与 SRS 一致，避免范围蔓延；
+- 数据库无需为未来扩展重新设计核心投票表。
+
+代价：
+
+- 存在“已建模但未启用”的字段取值，需在文档与代码中明确标注，避免误用；
+- 开放新模式前必须先走 SRS / AC 变更流程。
 
 ---
 
