@@ -27,6 +27,7 @@ class Base(DeclarativeBase):
 
 class User(Base):
     __tablename__ = "users"
+
     __table_args__ = (
         UniqueConstraint("username", name="uq_users_username"),
         CheckConstraint(
@@ -74,14 +75,16 @@ class User(Base):
 
 class Election(Base):
     __tablename__ = "elections"
+
     __table_args__ = (
         CheckConstraint(
             "status IN ('DRAFT', 'OPEN', 'CLOSED')",
             name="chk_elections_status",
         ),
         CheckConstraint(
-            "privacy_mode IN "
-            "('FORCED_ANONYMOUS', 'OPTIONAL_ANONYMOUS', 'IDENTIFIED')",
+            "privacy_mode IN ("
+            "'FORCED_ANONYMOUS', 'OPTIONAL_ANONYMOUS', 'IDENTIFIED'"
+            ")",
             name="chk_elections_privacy_mode",
         ),
         CheckConstraint(
@@ -143,6 +146,7 @@ class Election(Base):
 
 class ElectionCandidate(Base):
     __tablename__ = "election_candidates"
+
     __table_args__ = (
         UniqueConstraint(
             "election_id",
@@ -196,6 +200,7 @@ class ElectionCandidate(Base):
 
 class ElectionVoter(Base):
     __tablename__ = "election_voters"
+
     __table_args__ = (
         CheckConstraint(
             "vote_quota > 0",
@@ -249,6 +254,7 @@ class ElectionVoter(Base):
 
 class VoteParticipation(Base):
     __tablename__ = "vote_participation"
+
     __table_args__ = (
         ForeignKeyConstraint(
             ["election_id", "user_id"],
@@ -308,6 +314,7 @@ class VoteParticipation(Base):
 
 class Ballot(Base):
     __tablename__ = "ballots"
+
     __table_args__ = (
         ForeignKeyConstraint(
             ["election_id", "voter_id"],
@@ -325,11 +332,9 @@ class Ballot(Base):
             name="uq_ballots_election_id_id",
         ),
         CheckConstraint(
-            "("
-            "is_anonymous = TRUE AND voter_id IS NULL"
-            ") OR ("
-            "is_anonymous = FALSE AND voter_id IS NOT NULL"
-            ")",
+            "(is_anonymous = TRUE AND voter_id IS NULL) "
+            "OR "
+            "(is_anonymous = FALSE AND voter_id IS NOT NULL)",
             name="chk_ballots_anonymous",
         ),
         Index(
@@ -373,6 +378,7 @@ class Ballot(Base):
 
 class BallotChoice(Base):
     __tablename__ = "ballot_choices"
+
     __table_args__ = (
         UniqueConstraint(
             "ballot_id",
@@ -431,6 +437,7 @@ class BallotChoice(Base):
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
+
     __table_args__ = (
         Index(
             "idx_audit_logs_actor_time",
@@ -473,9 +480,6 @@ class AuditLog(Base):
         server_default=func.current_timestamp(),
     )
 
-# ============================================================
-# Schema initialization
-# ============================================================
 
 def main() -> None:
     from sqlalchemy import create_engine

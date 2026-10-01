@@ -43,7 +43,7 @@ def main() -> None:
 
     print(f"Database ready: {settings.db_name}")
     print(
-        "Application database user ready: "
+        f"Application database user ready: "
         f"{settings.db_user}@{settings.db_user_host}"
     )
 
