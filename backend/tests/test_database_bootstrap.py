@@ -7,14 +7,13 @@ import importlib
 import importlib.machinery
 import io
 import os
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from sqlalchemy import create_mock_engine
-
 
 BACKEND = Path(__file__).resolve().parents[1]
 INIT_DIR = BACKEND / "database" / "init"
@@ -199,8 +198,7 @@ class BootstrapTests(unittest.TestCase):
         engine.dispose.assert_called_once_with()
         self.assertEqual(
             output.getvalue(),
-            "Database ready: test_election\n"
-            "Application database user ready: test_app@localhost\n",
+            "Database ready: test_election\nApplication database user ready: test_app@localhost\n",
         )
 
     def test_schema_bootstrap_uses_same_loader_and_disposes_engine(self):
@@ -235,13 +233,35 @@ class BootstrapTests(unittest.TestCase):
                 schema.main()
             create_engine.assert_not_called()
 
+    def test_schema_reuses_application_metadata(self):
+        from app.models import Base
+
+        self.assertIs(schema.Base, Base)
+
+    def test_schema_failure_disposes_engine(self):
+        engine = MagicMock()
+        with (
+            patch.object(env_config, "load_settings", return_value=self.settings),
+            patch("sqlalchemy.create_engine", return_value=engine),
+            patch.object(schema.Base.metadata, "create_all", side_effect=RuntimeError("test DDL")),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "test DDL"):
+                schema.main()
+        engine.dispose.assert_called_once_with()
+
     def test_schema_compiles_for_mysql_without_connection(self):
         tables = schema.Base.metadata.tables
         self.assertEqual(
             set(tables),
             {
-                "users", "elections", "election_candidates", "election_voters",
-                "vote_participation", "ballots", "ballot_choices", "audit_logs",
+                "users",
+                "elections",
+                "election_candidates",
+                "election_voters",
+                "vote_participation",
+                "ballots",
+                "ballot_choices",
+                "audit_logs",
             },
         )
         statements = []
@@ -254,12 +274,16 @@ class BootstrapTests(unittest.TestCase):
         schema.Base.metadata.create_all(engine)
         table_statements = [sql for sql in statements if sql.lstrip().startswith("CREATE TABLE")]
         self.assertEqual(len(table_statements), len(tables))
-        self.assertEqual(len(statements), len(tables) + sum(len(t.indexes) for t in tables.values()))
+        self.assertEqual(
+            len(statements), len(tables) + sum(len(t.indexes) for t in tables.values())
+        )
         ddl = "\n".join(table_statements)
         self.assertIn("chk_ballots_anonymous", ddl)
         self.assertIn("(is_anonymous = TRUE AND voter_id IS NULL)", ddl)
         self.assertIn("(is_anonymous = FALSE AND voter_id IS NOT NULL)", ddl)
-        self.assertIn("privacy_mode IN ('FORCED_ANONYMOUS', 'OPTIONAL_ANONYMOUS', 'IDENTIFIED')", ddl)
+        self.assertIn(
+            "privacy_mode IN ('FORCED_ANONYMOUS', 'OPTIONAL_ANONYMOUS', 'IDENTIFIED')", ddl
+        )
 
 
 if __name__ == "__main__":

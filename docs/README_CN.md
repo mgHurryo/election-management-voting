@@ -26,8 +26,12 @@
 
 - [需求规格](requirements/REQUIREMENTS_CN.md)
 - [架构设计](architecture/ARCHITECTURE_CN.md)
-- [API 接口规范（v0.1 草案，尚未实现）](api/API_CN.md)
+- [API 接口规范（v0.1 草案，身份接口已实现）](api/API_CN.md)
 - [未来工作与排除项](future/FUTURE_CN.md)
+
+## 后端开发
+
+参阅 [后端启动、测试与实现范围](../backend/README_CN.md)。
 
 ## 开发流程
 
