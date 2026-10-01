@@ -29,6 +29,16 @@ This is a group project developed for the **COMP 3500SEF** course.
 - [API specification (v0.1 draft, identity implemented)](API.md)
 - [Future work and exclusions](FUTURE.md)
 
+## Frontend Framework
+
+The infrastructure-only React + TypeScript scaffold is available under [`frontend/`](frontend/README.md). Business routes are placeholders; no voting workflow or backend integration is implemented.
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
 ## Backend Development
 
 See [Backend setup, tests and implementation status](backend/README.md).
@@ -51,3 +61,4 @@ release
 Tag
     ↓
 GitHub Release
+```

@@ -51,3 +51,14 @@ release
 Tag
    ↓
 GitHub Release
+```
+
+## 前端框架
+
+React + TypeScript 工程骨架位于 [`frontend/`](../frontend/README.md)。当前仅包含框架基础设施与占位路由，不包含业务页面、投票流程或真实后端联调。
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
