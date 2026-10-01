@@ -2,7 +2,7 @@
 
 React + TypeScript + Vite frontend scaffold for the election management and voting system.
 
-**Scope:** infrastructure only. All business routes are placeholders. There is no login form, election CRUD UI, ballot workflow, result UI, fake account, or demo data. The backend is not implemented in this repository yet; API wrappers target the **draft** contract in `../API.md` and are not evidence of an operational service.
+**Scope:** infrastructure only. All business routes are placeholders. There is no login form, election CRUD UI, ballot workflow, result UI, fake account, or demo data. The backend foundation implements identity and health only; API wrappers target the **draft** contract in `../API.md` and do not imply that the remaining business endpoints or a complete system exist.
 
 ## Quick start
 
@@ -67,10 +67,10 @@ The result route is only a placeholder; the backend must enforce CLOSED state fo
 - Domain statuses are DRAFT / OPEN / CLOSED. Publication is `results_published_at`, not another election status.
 - JSON envelopes, pagination metadata, nullable fields and error codes follow the draft API.
 - Access token is stored in localStorage per ADR-009. Passwords and voting choices are never stored or logged. Treat XSS prevention as mandatory when implementing future pages.
-- Startup identity comes from `/auth/me`, not client JWT claims. Protected 401 responses clear the matching session; stale requests do not clear a newer session. Network restoration failures can be retried.
+- Startup identity comes from `/auth/me`, not client JWT claims. Relevant cross-tab token changes invalidate stale identity and restore the current session. Protected 401 responses clear the matching session; stale requests do not clear a newer session. Network restoration and login failures settle loading and can be retried.
 - Requests have a 15-second timeout, support AbortSignal, use `cache: no-store`, and have **no automatic retries**. State operations send no body; DELETE 204 is supported.
 - Future voting UI must query `/participation` after an uncertain submission; it must not automatically repeat `/votes`.
-- TypeScript types are compile-time contracts, not a full runtime response validator. The client validates the outer envelope only. Confirm DTOs against the backend when it exists.
+- TypeScript types are compile-time contracts, not a full runtime response validator. The client validates the outer envelope only. Confirm DTOs as each planned backend endpoint is implemented; complete live integration is not verified.
 - Permission, eligibility, quota, time window and anonymity enforcement remain backend responsibilities.
 - Production should use HTTPS and a same-origin `/api/v1` reverse proxy. Configure the static host to return `index.html` for non-API client routes. `vite preview` is only for local build checks, not a production server.
 

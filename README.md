@@ -26,7 +26,7 @@ This is a group project developed for the **COMP 3500SEF** course.
 
 - [Requirements](REQUIREMENTS.md)
 - [Architecture](ARCHITECTURE.md)
-- [API specification (v0.1 draft, not implemented)](API.md)
+- [API specification (v0.1 draft, identity implemented)](API.md)
 - [Future work and exclusions](FUTURE.md)
 
 ## Frontend Framework
@@ -38,6 +38,10 @@ cd frontend
 npm ci
 npm run dev
 ```
+
+## Backend Development
+
+See [Backend setup, tests and implementation status](backend/README.md).
 
 ## Development Workflow
 
@@ -57,3 +61,4 @@ release
 Tag
     ↓
 GitHub Release
+```

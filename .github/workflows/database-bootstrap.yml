@@ -1,0 +1,35 @@
+name: Database bootstrap
+
+on:
+  pull_request:
+    branches: [master, release]
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap-tests:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.14"]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install existing bootstrap dependencies
+        run: >-
+          python -m pip install --disable-pip-version-check --timeout 30 --retries 2
+          -r backend/database/init/requirements-db.txt
+      - name: Compile bootstrap and test modules
+        run: python -m compileall -q backend/database/init backend/tests
+      - name: Run offline regression tests
+        run: python -B -m unittest discover -s backend/tests -p "test_*.py" -v

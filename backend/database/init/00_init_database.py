@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from sqlalchemy import create_engine
-
 from env_config import load_settings
+from sqlalchemy import create_engine
 
 
 def main() -> None:
@@ -42,10 +41,7 @@ def main() -> None:
     engine.dispose()
 
     print(f"Database ready: {settings.db_name}")
-    print(
-        "Application database user ready: "
-        f"{settings.db_user}@{settings.db_user_host}"
-    )
+    print(f"Application database user ready: {settings.db_user}@{settings.db_user_host}")
 
 
 if __name__ == "__main__":

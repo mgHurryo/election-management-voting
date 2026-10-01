@@ -4,7 +4,9 @@ English / [简体中文](docs/api/API_CN.md)
 
 > Document version: **API v0.1 draft** · Updated: **2026-10-01 (Asia/Hong_Kong)**
 > Baseline: SRS v0.1, Architecture v0.2, Git `b74cd1647a3e85796f3b1c9ae5c1cdac677c62bf`.
-> **A design contract awaiting review and implementation, not verified documentation of a running service.** The baseline contains database bootstrap code but no FastAPI routes, request/response models, application entry point or API tests. Every operation below is planned.
+> **A design contract awaiting review and implementation, not verified documentation of a running service.** The baseline contains database bootstrap code but no FastAPI routes, request/response models, application entry point or API tests. At that historical baseline, every operation below was planned.
+
+> **Implementation update (2026-10-01):** The backend foundation now implements login and current-user (sections 4.1–4.2), plus operational health probes. The remaining 18 operations are planned. See [backend setup and verification scope](backend/README.md). Generated development OpenAPI describes only registered operations. ADR-009 governs bcrypt, the default 60-minute token lifetime and password policy; the older D-08 wording below is superseded for those decisions.
 
 > **How to read this reference:** go to the operation index, then read one endpoint from top to bottom. Each endpoint repeats its authentication, parameters, complete request/response examples, field tables, errors and rules. Shared conventions are summarized once and repeated where needed, so no schema-dictionary lookup is required. This revision reorganizes the existing contract; it does not change API behavior.
 

@@ -26,8 +26,12 @@
 
 - [需求规格](requirements/REQUIREMENTS_CN.md)
 - [架构设计](architecture/ARCHITECTURE_CN.md)
-- [API 接口规范（v0.1 草案，尚未实现）](api/API_CN.md)
+- [API 接口规范（v0.1 草案，身份接口已实现）](api/API_CN.md)
 - [未来工作与排除项](future/FUTURE_CN.md)
+
+## 后端开发
+
+参阅 [后端启动、测试与实现范围](../backend/README_CN.md)。
 
 ## 开发流程
 
@@ -47,6 +51,8 @@ release
 Tag
    ↓
 GitHub Release
+```
+
 ## 前端框架
 
 React + TypeScript 工程骨架位于 [`frontend/`](../frontend/README.md)。当前仅包含框架基础设施与占位路由，不包含业务页面、投票流程或真实后端联调。
