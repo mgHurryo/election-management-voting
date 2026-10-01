@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { api } from '../api'
 import { ApiError } from '../api/client'
 import type { User } from '../api/types'
-import { SESSION_EXPIRED, tokenStore } from './token'
+import { SESSION_EXPIRED, TOKEN_STORAGE_KEY, tokenStore } from './token'
 import { AuthContext } from './auth-context'
 
 /** Server identity is authoritative; never derive privileges from a decoded JWT. */
@@ -45,7 +45,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
   useEffect(() => {
     let active = true
+    const syncSession = (event: StorageEvent) => {
+      if (
+        event.storageArea === localStorage &&
+        (event.key === TOKEN_STORAGE_KEY || event.key === null)
+      ) {
+        // Reuse restoration to invalidate stale work without clearing another tab's token.
+        void restore()
+      }
+    }
     window.addEventListener(SESSION_EXPIRED, signOut)
+    window.addEventListener('storage', syncSession)
     void Promise.resolve().then(() => {
       if (active) return restore()
     })
@@ -53,17 +63,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       active = false
       invalidate()
       window.removeEventListener(SESSION_EXPIRED, signOut)
+      window.removeEventListener('storage', syncSession)
     }
   }, [restore, signOut, invalidate])
   async function signIn(username: string, password: string) {
     const current = ++generation.current
-    const { data } = await api.login(username, password)
-    if (current !== generation.current) return
-    if (data.user.status !== 'ACTIVE') throw new ApiError('AUTHENTICATION_REQUIRED', 401)
-    tokenStore.set(data.access_token)
-    setUser(data.user)
-    setLoading(false)
+    setLoading(true)
+    setUser(null)
     setError(null)
+    try {
+      const { data } = await api.login(username, password)
+      if (current !== generation.current) return
+      if (data.user.status !== 'ACTIVE') throw new ApiError('AUTHENTICATION_REQUIRED', 401)
+      tokenStore.set(data.access_token)
+      setUser(data.user)
+    } catch (reason) {
+      if (current === generation.current) setError(reason)
+      throw reason
+    } finally {
+      if (current === generation.current) setLoading(false)
+    }
   }
   return (
     <AuthContext.Provider value={{ user, loading, error, restore, signIn, signOut }}>
