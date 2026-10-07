@@ -7,6 +7,7 @@ from app.core.errors import authentication_required
 from app.models.identity import UserIdentity
 from app.services.health import HealthService
 from app.services.identity import IdentityService
+from app.services.roster import RosterService
 
 bearer = HTTPBearer(auto_error=False)
 
@@ -19,8 +20,13 @@ def health_service(request: Request) -> HealthService:
     return request.app.state.container.health
 
 
+def roster_service(request: Request) -> RosterService:
+    return request.app.state.container.roster
+
+
 IdentityServiceDep = Annotated[IdentityService, Depends(identity_service)]
 HealthServiceDep = Annotated[HealthService, Depends(health_service)]
+RosterServiceDep = Annotated[RosterService, Depends(roster_service)]
 
 
 def current_user(
