@@ -4,6 +4,7 @@ import { AppLayout } from '../components/AppLayout'
 import { LoadingState } from '../components/AsyncState'
 import { RequireAuth, RequireRole } from './guards'
 const FoundationPage = lazy(() => import('../pages/FoundationPage'))
+const LoginPage = lazy(() => import('../pages/LoginPage'))
 const PlaceholderPage = lazy(() => import('../pages/PlaceholderPage'))
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage'))
 const placeholder = (title: string, description: string) => (
@@ -15,10 +16,7 @@ export function AppRoutes() {
       <Routes>
         <Route element={<AppLayout />}>
           <Route index element={<FoundationPage />} />
-          <Route
-            path="login"
-            element={placeholder('登录', 'M1 · 后续接入 useAuth().signIn，不提供注册或账户管理。')}
-          />
+          <Route path="login" element={<LoginPage />} />
           <Route
             path="forbidden"
             element={placeholder('无权访问', '当前账户不具备访问此模块的角色权限。')}
