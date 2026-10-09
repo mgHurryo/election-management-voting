@@ -1676,12 +1676,13 @@ project-root/
 ├── backend/
 │   ├── app/
 │   │   ├── api/              # Route / HTTP Layer
-│   │   ├── services/         # Business Logic
-│   │   ├── repositories/     # Database Access
+│   │   ├── application/      # Services, repository/UoW/token ports, application errors
+│   │   │   └── services/     # Business Logic / transaction ownership
 │   │   ├── schemas/          # Pydantic Request / Response
-│   │   ├── models/           # Persistence / Domain Models
-│   │   ├── core/             # Config, auth, errors, shared infrastructure
-│   │   └── db/               # Connection / session / transaction helpers
+│   │   ├── domain/           # Plain domain values, no ORM / HTTP dependencies
+│   │   ├── infrastructure/   # SQLAlchemy persistence, JWT / bcrypt implementations
+│   │   │   └── persistence/  # ORM / repositories / session / unit_of_work
+│   │   └── bootstrap/        # Config and dependency composition
 │   └── tests/
 │       ├── unit/
 │       ├── integration/
@@ -1719,14 +1720,18 @@ Typical call relationship:
 ```text
 api/votes.py
     ↓
-services/vote_service.py
+application/services/vote_service.py
     ↓
-repositories/vote_repository.py
+infrastructure/persistence/repositories/vote_repository.py
     ↓
 MySQL
 ```
 
-`schemas/` is responsible for the HTTP data contract, while `models/` is responsible for persistence / domain data structures. The two must not be merged into a single layer merely because their fields are similar.
+`schemas/` defines the HTTP data contract, `domain/` contains plain domain values, and
+`infrastructure/persistence/orm/` defines persistence models. These responsibilities must
+remain separate even when their fields are similar. Runtime code and initialization
+scripts share the same ORM metadata. Application services depend on
+`application/ports.py`; adapters implement those protocols, and bootstrap composes them.
 
 ### 6.2 Organization by Business Module
 
@@ -1779,7 +1784,14 @@ Repository -> API
 Database-specific logic -> API
 ```
 
-`core/` provides foundational capabilities such as authentication, configuration, exceptions and logging, but it should not depend back on specific business modules.
+The diagram above shows runtime calls. Source dependencies are inverted through
+`application/ports.py`: services do not import repository implementations, and
+infrastructure may import application protocols but must not depend on concrete
+application services or the API. The domain has no framework dependencies; application
+does not depend on infrastructure; bootstrap is the sole composition point for concrete
+implementations. HTTP error mapping stays in the API, JWT/bcrypt implementations stay
+in infrastructure, and business role rules stay in application. Repositories must not
+raise HTTP or application response errors directly.
 
 ### 7.2 Frontend Dependency Direction
 
