@@ -19,7 +19,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.mysql import BIGINT, INTEGER
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import Base
+from app.infrastructure.persistence.base import Base
 
 
 class User(Base):

@@ -3,9 +3,9 @@ from typing import Self
 
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.repositories.health import SqlAlchemyHealthRepository
-from app.repositories.identity import SqlAlchemyIdentityRepository
-from app.repositories.roster import SqlAlchemyRosterRepository
+from app.infrastructure.persistence.repositories.health import SqlAlchemyHealthRepository
+from app.infrastructure.persistence.repositories.identity import SqlAlchemyIdentityRepository
+from app.infrastructure.persistence.repositories.roster import SqlAlchemyRosterRepository
 
 
 class SqlAlchemyUnitOfWork:

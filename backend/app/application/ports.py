@@ -1,8 +1,23 @@
 from types import TracebackType
 from typing import Protocol, Self
 
-from app.models.identity import UserAccount
-from app.models.roster import ElectionSnapshot, VoterMembership
+from app.domain.identity import UserAccount
+from app.domain.roster import ElectionSnapshot, VoterMembership
+
+
+class DuplicateMembership(Exception):
+    """The membership key already exists; no HTTP or database details escape."""
+
+
+class MembershipReferenced(Exception):
+    """An immutable record prevents removing this membership."""
+
+
+class TokenService(Protocol):
+    expires_in: int
+
+    def issue(self, user_id: int) -> str: ...
+    def subject(self, token: str) -> int: ...
 
 
 class IdentityRepository(Protocol):

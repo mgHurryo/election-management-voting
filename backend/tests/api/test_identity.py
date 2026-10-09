@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy import update
 
-from app.models import User
+from app.infrastructure.persistence.orm import User
 
 
 def login(client, username="voter", password="Password123"):

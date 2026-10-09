@@ -11,13 +11,13 @@ from sqlalchemy import create_engine, delete, event, insert, inspect, select, te
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import IntegrityError, OperationalError
 
-from app.core.errors import AppError
-from app.db.session import create_session_factory
-from app.db.unit_of_work import SqlAlchemyUnitOfWork
+from app.application.errors import AppError
+from app.application.services.roster import RosterService
+from app.infrastructure.persistence.orm import Base, Election, ElectionVoter, User
+from app.infrastructure.persistence.repositories.roster import SqlAlchemyRosterRepository
+from app.infrastructure.persistence.session import create_session_factory
+from app.infrastructure.persistence.unit_of_work import SqlAlchemyUnitOfWork
 from app.main import create_app
-from app.models import Base, Election, ElectionVoter, User
-from app.repositories.roster import SqlAlchemyRosterRepository
-from app.services.roster import RosterService
 
 pytestmark = pytest.mark.mysql
 

@@ -8,7 +8,7 @@ ROUTE_NOT_FOUND; that is the expected red state of test-first development.
 import pytest
 from sqlalchemy import insert, select
 
-from app.models import ElectionVoter, VoteParticipation
+from app.infrastructure.persistence.orm import ElectionVoter, VoteParticipation
 from tests.api.voting.conftest import (
     CLOSED_ELECTION,
     DRAFT_ELECTION,

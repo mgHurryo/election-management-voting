@@ -12,6 +12,8 @@ endpoint returns a placeholder success. Those operations remain unregistered.
 - FastAPI application factory, `/api/v1` routing, generated development OpenAPI.
 - API → service → repository; a composition root wires dependencies. Services
   own unit-of-work transactions; repositories never commit or access HTTP types.
+- Application services depend on ports and plain domain values. SQLAlchemy,
+  JWT and bcrypt implementations live in infrastructure; HTTP error mapping lives in API.
 - Validated environment configuration, least-privilege MySQL runtime account,
   connection pooling, UTC MySQL sessions, deterministic connection disposal.
 - All eight existing ORM tables in one shared metadata definition, imported by
@@ -69,7 +71,7 @@ uv run python database/init/01_init_schema.py
 These scripts retain their previous command paths. `create_all` initializes a
 baseline; it does not migrate an existing database. Prepare accounts through an
 authorized deployment/seed workflow. No accounts are created by startup. That
-workflow should call `app.core.security.hash_password`: ADR-009 requires 8+
+workflow should call `app.infrastructure.security.hash_password`: ADR-009 requires 8+
 characters, at most 72 UTF-8 bytes, at least one letter and one digit. Passwords
 are never trimmed. Login verifies existing hashes without reapplying a new-user
 complexity policy; over-72-byte input is rejected as invalid credentials.
@@ -123,12 +125,32 @@ app/
   main.py                  application factory/lifecycle
   api/                     routing, HTTP dependencies, serializers/errors
   schemas/                 Pydantic HTTP contracts and shared ID/UTC types
-  services/                business operations and repository/UoW protocols
-  repositories/            parameterized ORM queries and domain snapshots
-  models/                  shared eight-table schema + identity domain values
-  db/                      engine, sessions and explicit unit of work
-  core/                    settings, JWT/password helpers and composition root
+  application/
+    services/              business operations and transaction ownership
+    ports.py               repository/UoW/token contracts and persistence conflicts
+    errors.py              application error codes without HTTP status or headers
+  domain/                  plain identity and roster values; no ORM dependencies
+  infrastructure/
+    persistence/
+      orm/                 shared eight-table schema, also used by bootstrap
+      repositories/        parameterized queries and domain snapshot mapping
+      mapping.py           UTC conversion shared by persistence adapters
+      session.py           engine and session factory
+      unit_of_work.py      SQLAlchemy transaction and repository implementation
+    security.py            JWT and bcrypt adapters
+  bootstrap/               validated settings and dependency composition
 ```
+
+Dependencies point inward: API → application → domain; infrastructure implements
+application ports, and bootstrap assembles concrete adapters. Services can import
+without SQLAlchemy, JWT, bcrypt or FastAPI. Internal Python import paths changed;
+HTTP routes, environment names and bootstrap script commands remain compatible.
+
+Roster mutations lock the election row before checking DRAFT and hold that lock
+until commit. Future opening workflows must lock the same row before readiness
+validation and state writes. MySQL regressions cover both ordering scenarios for
+add/remove; SQLite checks cannot prove InnoDB locking. Reverting the refactor commit
+restores internal import paths without a database migration.
 
 | Next module | Routes / service / repository responsibilities |
 | --- | --- |
@@ -137,8 +159,9 @@ app/
 | Voting | Ballot/participation, locks, time/quota checks, anonymous atomic writes |
 | Results | CLOSED tally, publication visibility, tie/zero-vote policy |
 
-Add each module's schemas, service and repository before registering its routes in
-`app/api/router.py`. Tests guard against API database access and service HTTP imports.
+Add each module's schemas, application service and infrastructure repository before
+registering its routes in `app/api/router.py`. Tests recursively guard dependencies,
+including relative imports, and check transitive domain/application import isolation.
 Keep transactions inside services, especially participation + ballot + choice.
 Implement MySQL row-lock/concurrency tests before accepting voting correctness.
 Do not enable reserved anonymity modes or multi-vote quotas from the DB schema.

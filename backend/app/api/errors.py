@@ -5,9 +5,25 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
-from app.core.errors import AppError
+from app.application.errors import AppError
 
 logger = logging.getLogger(__name__)
+
+APPLICATION_ERROR_STATUS = {
+    "AUTHENTICATION_REQUIRED": 401,
+    "INVALID_CREDENTIALS": 401,
+    "PERMISSION_DENIED": 403,
+    "ELECTION_NOT_FOUND": 404,
+    "USER_NOT_FOUND": 404,
+    "VOTER_NOT_FOUND": 404,
+    "ELECTION_NOT_EDITABLE": 409,
+    "VOTER_ALREADY_EXISTS": 409,
+    "RESOURCE_CONFLICT": 409,
+    "INVALID_VOTER": 422,
+    "VALIDATION_ERROR": 422,
+    "INTERNAL_ERROR": 500,
+    "SERVICE_UNAVAILABLE": 503,
+}
 
 
 def error_response(code: str, message: str, status: int, *, details=None, headers=None):
@@ -24,9 +40,11 @@ def error_response(code: str, message: str, status: int, *, details=None, header
 def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def business_error(request: Request, exc: AppError):
-        return error_response(
-            exc.code, exc.message, exc.status_code, details=exc.details, headers=exc.headers
-        )
+        status = APPLICATION_ERROR_STATUS.get(exc.code)
+        if status is None:
+            return internal_error_response(exc)
+        headers = {"WWW-Authenticate": "Bearer"} if exc.code == "AUTHENTICATION_REQUIRED" else None
+        return error_response(exc.code, exc.message, status, details=exc.details, headers=headers)
 
     @app.exception_handler(RequestValidationError)
     async def validation_error(request: Request, exc: RequestValidationError):

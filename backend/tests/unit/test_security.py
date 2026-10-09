@@ -4,8 +4,13 @@ import bcrypt
 import jwt
 import pytest
 
-from app.core.errors import AppError
-from app.core.security import TokenManager, hash_password, validate_new_password, verify_password
+from app.application.errors import AppError
+from app.infrastructure.security import (
+    TokenManager,
+    hash_password,
+    validate_new_password,
+    verify_password,
+)
 
 
 def test_bcrypt_policy_and_no_normalization():
@@ -33,7 +38,9 @@ def test_72_byte_boundary():
 
 
 def test_jwt_round_trip_has_no_password_or_vote_claims(settings):
-    tokens = TokenManager(settings)
+    tokens = TokenManager(
+        secret=settings.jwt_secret.get_secret_value(), expire_minutes=settings.jwt_expire_minutes
+    )
     token = tokens.issue(18446744073709551615)
     assert tokens.subject(token) == 18446744073709551615
     claims = jwt.decode(token, settings.jwt_secret.get_secret_value(), algorithms=["HS256"])
@@ -59,7 +66,10 @@ def test_invalid_jwt_claims(settings, changes):
     claims = {"sub": "21", "iat": now, "exp": now + timedelta(minutes=60)} | changes
     token = jwt.encode(claims, settings.jwt_secret.get_secret_value(), algorithm="HS256")
     with pytest.raises(AppError) as error:
-        TokenManager(settings).subject(token)
+        TokenManager(
+            secret=settings.jwt_secret.get_secret_value(),
+            expire_minutes=settings.jwt_expire_minutes,
+        ).subject(token)
     assert error.value.code == "AUTHENTICATION_REQUIRED"
 
 
@@ -78,4 +88,7 @@ def test_invalid_jwt_claims(settings, changes):
 def test_forged_algorithm_or_missing_claims(settings, algorithm, key, claims):
     token = jwt.encode(claims, key or settings.jwt_secret.get_secret_value(), algorithm=algorithm)
     with pytest.raises(AppError):
-        TokenManager(settings).subject(token)
+        TokenManager(
+            secret=settings.jwt_secret.get_secret_value(),
+            expire_minutes=settings.jwt_expire_minutes,
+        ).subject(token)

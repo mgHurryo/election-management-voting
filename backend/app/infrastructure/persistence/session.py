@@ -1,12 +1,11 @@
 from sqlalchemy import Engine, create_engine
+from sqlalchemy.engine import URL
 from sqlalchemy.orm import sessionmaker
 
-from app.core.config import Settings
 
-
-def create_database_engine(settings: Settings) -> Engine:
+def create_database_engine(database_url: URL) -> Engine:
     return create_engine(
-        settings.database_url(),
+        database_url,
         pool_pre_ping=True,
         pool_recycle=1800,
         echo=False,

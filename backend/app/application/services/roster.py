@@ -1,23 +1,23 @@
 from collections.abc import Callable
 
-from app.core.errors import AppError
-from app.models.roster import VoterMembership
-from app.services.ports import UnitOfWork
+from app.application.errors import AppError
+from app.application.ports import DuplicateMembership, MembershipReferenced, UnitOfWork
+from app.domain.roster import VoterMembership
 
 
 def election_not_found() -> AppError:
-    return AppError("ELECTION_NOT_FOUND", "Election absent, or detail outside visibility.", 404)
+    return AppError("ELECTION_NOT_FOUND", "Election absent, or detail outside visibility.")
 
 
 def election_not_editable() -> AppError:
-    return AppError("ELECTION_NOT_EDITABLE", "Mutation requires DRAFT.", 409)
+    return AppError("ELECTION_NOT_EDITABLE", "Mutation requires DRAFT.")
 
 
 class RosterService:
     """M2 voter roll workflows (API.md 4.13–4.15).
 
-    Each public method owns one transaction; role checks happen at the API
-    layer, election state and account validity are rechecked here.
+    Each public method owns one transaction. The API invokes the identity
+    service's role policy; election state and account validity are rechecked here.
     """
 
     def __init__(self, uow_factory: Callable[[], UnitOfWork]) -> None:
@@ -41,19 +41,22 @@ class RosterService:
                 raise election_not_editable()
             account = uow.users.by_id(user_id)
             if account is None:
-                raise AppError(
-                    "USER_NOT_FOUND", "ADMIN-specified roster account does not exist.", 404
-                )
+                raise AppError("USER_NOT_FOUND", "ADMIN-specified roster account does not exist.")
             if account.identity.status != "ACTIVE" or account.identity.role != "USER":
-                raise AppError("INVALID_VOTER", "Existing account is not ACTIVE or not USER.", 422)
+                raise AppError("INVALID_VOTER", "Existing account is not ACTIVE or not USER.")
             if uow.roster.membership(election_id, user_id) is not None:
                 raise AppError(
-                    "VOTER_ALREADY_EXISTS", "Duplicate membership; do not create another row.", 409
+                    "VOTER_ALREADY_EXISTS", "Duplicate membership; do not create another row."
                 )
-            uow.roster.add(election_id, user_id, vote_quota)
+            try:
+                uow.roster.add(election_id, user_id, vote_quota)
+            except DuplicateMembership as error:
+                raise AppError(
+                    "VOTER_ALREADY_EXISTS", "Duplicate membership; do not create another row."
+                ) from error
             membership = uow.roster.membership(election_id, user_id)
             if membership is None:  # pragma: no cover - defensive
-                raise AppError("INTERNAL_ERROR", "An internal error occurred.", 500)
+                raise AppError("INTERNAL_ERROR", "An internal error occurred.")
             uow.commit()
         return membership
 
@@ -65,12 +68,17 @@ class RosterService:
             if election.status != "DRAFT":
                 raise election_not_editable()
             if uow.roster.membership(election_id, user_id) is None:
-                raise AppError("VOTER_NOT_FOUND", "Target membership does not exist.", 404)
+                raise AppError("VOTER_NOT_FOUND", "Target membership does not exist.")
             if uow.roster.participation_count(election_id, user_id) > 0:
                 raise AppError(
                     "RESOURCE_CONFLICT",
                     "Existing reference/immutable record prevents safe mutation.",
-                    409,
                 )
-            uow.roster.remove(election_id, user_id)
+            try:
+                uow.roster.remove(election_id, user_id)
+            except MembershipReferenced as error:
+                raise AppError(
+                    "RESOURCE_CONFLICT",
+                    "Existing reference/immutable record prevents safe mutation.",
+                ) from error
             uow.commit()

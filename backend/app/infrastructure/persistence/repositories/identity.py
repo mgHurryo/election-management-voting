@@ -1,15 +1,9 @@
-from datetime import UTC, datetime
-
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import User
-from app.models.identity import UserAccount, UserIdentity
-
-
-def utc(value: datetime) -> datetime:
-    # MySQL DATETIME is timezone-naive; the connection and all writers use UTC.
-    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+from app.domain.identity import UserAccount, UserIdentity
+from app.infrastructure.persistence.mapping import utc
+from app.infrastructure.persistence.orm import User
 
 
 def account_from_row(row: User | None) -> UserAccount | None:

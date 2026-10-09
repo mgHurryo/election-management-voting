@@ -1687,12 +1687,13 @@ project-root/
 ├── backend/
 │   ├── app/
 │   │   ├── api/              # Route / HTTP Layer
-│   │   ├── services/         # Business Logic
-│   │   ├── repositories/     # Database Access
+│   │   ├── application/      # Services, repository/UoW/token ports, application errors
+│   │   │   └── services/     # Business Logic / transaction ownership
 │   │   ├── schemas/          # Pydantic Request / Response
-│   │   ├── models/           # Persistence / Domain Models
-│   │   ├── core/             # Config, auth, errors, shared infrastructure
-│   │   └── db/               # Connection / session / transaction helpers
+│   │   ├── domain/           # Plain domain values, no ORM / HTTP dependencies
+│   │   ├── infrastructure/   # SQLAlchemy persistence, JWT / bcrypt implementations
+│   │   │   └── persistence/  # ORM / repositories / session / unit_of_work
+│   │   └── bootstrap/        # Config and dependency composition
 │   └── tests/
 │       ├── unit/
 │       ├── integration/
@@ -1730,14 +1731,16 @@ project-root/
 ```text
 api/votes.py
     ↓
-services/vote_service.py
+application/services/vote_service.py
     ↓
-repositories/vote_repository.py
+infrastructure/persistence/repositories/vote_repository.py
     ↓
 MySQL
 ```
 
-`schemas/` 负责 HTTP 数据契约，`models/` 负责持久化 / 领域数据结构。两者不能因为字段相似就直接混为一层。
+`schemas/` 负责 HTTP 数据契约，`domain/` 保存纯领域数据，`infrastructure/persistence/orm/`
+负责持久化模型。三者不因字段相似而混为一层；运行时和初始化脚本共用 ORM metadata。
+应用服务依赖 `application/ports.py`，适配器实现协议，bootstrap 负责组装。
 
 ### 6.2 按业务模块组织
 
@@ -1790,7 +1793,10 @@ Repository -> API
 Database-specific logic -> API
 ```
 
-`core/` 提供认证、配置、异常、日志等基础能力，但不应反向依赖具体业务模块。
+上述是运行时调用方向。源码依赖通过 `application/ports.py` 反转：Service 不导入仓储实现，
+基础设施可导入应用协议，但禁止依赖具体应用服务或 API。domain 不依赖框架，application
+不依赖基础设施，bootstrap 是装配具体实现的唯一位置。HTTP 错误映射留在 API；JWT/bcrypt
+留在 infrastructure，业务角色规则留在 application。禁止 Repository 直接抛 HTTP/应用响应错误。
 
 ### 7.2 前端依赖方向
 
@@ -1853,6 +1859,10 @@ sequenceDiagram
 事务边界由 **Service Layer** 决定，因为只有 Service 知道“一次业务操作”需要同时修改哪些表。Repository 不应擅自把一个完整业务流程拆成互不相关的独立提交。
 
 对于投票提交，`vote_participation + ballots + ballot_choices` 必须处于同一个事务中。
+
+对于 DRAFT 名册变更，事务先 SELECT elections FOR UPDATE，再检查 DRAFT 并修改资格，
+持有选举行锁直到提交。开启选举流程应先锁同一选举行，再进行就绪校验和状态更新，防止
+状态检查后被并发打开。普通名册列表不加排他锁。统一锁顺序仍为 elections → election_voters。
 
 ---
 

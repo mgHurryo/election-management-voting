@@ -3,7 +3,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, StrictStr, field_validator
 
-from app.models.identity import UserIdentity
+from app.domain.identity import UserIdentity
 from app.schemas.common import ID, RequestModel, Timestamp
 
 
