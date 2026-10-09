@@ -16,8 +16,11 @@ class SqlAlchemyRosterRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def election(self, election_id: int) -> ElectionSnapshot | None:
-        row = self._session.get(Election, election_id)
+    def election(self, election_id: int, *, for_update: bool = False) -> ElectionSnapshot | None:
+        statement = select(Election).where(Election.id == election_id)
+        if for_update:
+            statement = statement.with_for_update().execution_options(populate_existing=True)
+        row = self._session.scalar(statement)
         if row is None:
             return None
         return ElectionSnapshot(id=row.id, status=row.status)

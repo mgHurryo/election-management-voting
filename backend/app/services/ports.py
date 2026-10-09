@@ -15,7 +15,9 @@ class HealthRepository(Protocol):
 
 
 class RosterRepository(Protocol):
-    def election(self, election_id: int) -> ElectionSnapshot | None: ...
+    def election(
+        self, election_id: int, *, for_update: bool = False
+    ) -> ElectionSnapshot | None: ...
     def membership(self, election_id: int, user_id: int) -> VoterMembership | None: ...
     def memberships(
         self, election_id: int, offset: int, limit: int

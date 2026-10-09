@@ -33,7 +33,8 @@ class RosterService:
 
     def add_voter(self, election_id: int, user_id: int, vote_quota: int) -> VoterMembership:
         with self._uow_factory() as uow:
-            election = uow.roster.election(election_id)
+            # Hold the election lock through commit so opening cannot race eligibility changes.
+            election = uow.roster.election(election_id, for_update=True)
             if election is None:
                 raise election_not_found()
             if election.status != "DRAFT":
@@ -50,15 +51,15 @@ class RosterService:
                     "VOTER_ALREADY_EXISTS", "Duplicate membership; do not create another row.", 409
                 )
             uow.roster.add(election_id, user_id, vote_quota)
-            uow.commit()
             membership = uow.roster.membership(election_id, user_id)
-        if membership is None:  # pragma: no cover - defensive
-            raise AppError("INTERNAL_ERROR", "An internal error occurred.", 500)
+            if membership is None:  # pragma: no cover - defensive
+                raise AppError("INTERNAL_ERROR", "An internal error occurred.", 500)
+            uow.commit()
         return membership
 
     def remove_voter(self, election_id: int, user_id: int) -> None:
         with self._uow_factory() as uow:
-            election = uow.roster.election(election_id)
+            election = uow.roster.election(election_id, for_update=True)
             if election is None:
                 raise election_not_found()
             if election.status != "DRAFT":
