@@ -3,7 +3,8 @@
 English / [简体中文](README_CN.md)
 
 This is the first implementation slice of Architecture v0.2 / SRS v0.1. It is
-**not the complete voting MVP**. No election, candidate, roster, vote or result
+**not the complete voting MVP**. M2 voter roster management is also implemented.
+No election, candidate, vote or result
 endpoint returns a placeholder success. Those operations remain unregistered.
 
 ## Implemented scope
@@ -26,7 +27,10 @@ endpoint returns a placeholder success. Those operations remain unregistered.
 | `GET /api/v1/auth/me` | Bearer token; account must remain ACTIVE | Implemented |
 | `GET /health/live` | Public operational probe, no database access | Implemented |
 | `GET /health/ready` | Public operational probe, database `SELECT 1` | Implemented |
-| Remaining 18 API.md operations | Not registered | Planned |
+| `GET /api/v1/elections/{id}/voters` | ADMIN | Implemented |
+| `POST /api/v1/elections/{id}/voters` | ADMIN; DRAFT, ACTIVE USER, quota 1 | Implemented |
+| `DELETE /api/v1/elections/{id}/voters/{user_id}` | ADMIN; DRAFT, no participation | Implemented |
+| Remaining 15 API.md operations | Not registered | Planned |
 
 Health routes are operational additions **outside `/api/v1`**. Readiness reports
 connectivity, not schema compatibility, migrations or voting readiness. An
@@ -90,7 +94,8 @@ uv run pytest --cov=app --cov-report=term-missing
 uv build
 ```
 
-Fast identity integration tests use SQLite only for the `users` table. They do
+Fast identity integration tests use SQLite only for the `users` table; roster
+API tests use SQLite with the full schema. They do
 **not** establish MySQL locking, voting concurrency or anonymous-storage correctness.
 A checked-in DDL snapshot verifies that the eight MySQL tables/indexes remain
 identical to the original bootstrap schema at commit `1153335`.
@@ -103,7 +108,9 @@ $env:TEST_MYSQL_URL = 'mysql+pymysql://test_user:<URL-encoded-password>@127.0.0.
 uv run pytest -m mysql
 ```
 
-Without this variable, three MySQL tests are skipped, not reported as verified.
+Without this variable, MySQL tests are skipped, not reported as verified.
+The suite includes four MySQL concurrency scenarios for add/remove versus an
+opening-state write, in addition to identity, schema and foreign-key checks.
 The backend CI provisions its own MySQL service and runs these tests in addition
 to lint, build and the full suite. No existing repository checks are disabled.
 The locked Starlette version currently emits an httpx TestClient deprecation
@@ -127,7 +134,6 @@ app/
 | --- | --- |
 | Elections | Create/list/detail/patch, DRAFT transitions, atomic initial membership |
 | Candidates | DRAFT-only CRUD, required introduction and candidate ownership |
-| Voters | DRAFT-only roster, ACTIVE USER validation and quota fixed to one |
 | Voting | Ballot/participation, locks, time/quota checks, anonymous atomic writes |
 | Results | CLOSED tally, publication visibility, tie/zero-vote policy |
 
