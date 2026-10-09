@@ -6,6 +6,7 @@ from app.db.session import create_database_engine, create_session_factory
 from app.db.unit_of_work import SqlAlchemyUnitOfWork
 from app.services.health import HealthService
 from app.services.identity import IdentityService
+from app.services.roster import RosterService
 
 
 class Container:
@@ -16,6 +17,7 @@ class Container:
         self.session_factory = create_session_factory(self.engine)
         self.identity = IdentityService(self.unit_of_work, TokenManager(settings))
         self.health = HealthService(self.unit_of_work)
+        self.roster = RosterService(self.unit_of_work)
         self._owns_engine = engine is None
 
     def unit_of_work(self) -> SqlAlchemyUnitOfWork:

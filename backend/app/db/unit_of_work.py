@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.repositories.health import SqlAlchemyHealthRepository
 from app.repositories.identity import SqlAlchemyIdentityRepository
+from app.repositories.roster import SqlAlchemyRosterRepository
 
 
 class SqlAlchemyUnitOfWork:
@@ -22,6 +23,7 @@ class SqlAlchemyUnitOfWork:
         self._session.begin()
         self.users = SqlAlchemyIdentityRepository(self._session)
         self.health = SqlAlchemyHealthRepository(self._session)
+        self.roster = SqlAlchemyRosterRepository(self._session)
         return self
 
     def commit(self) -> None:
