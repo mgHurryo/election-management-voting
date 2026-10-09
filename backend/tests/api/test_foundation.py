@@ -3,8 +3,9 @@ from fastapi.testclient import TestClient
 from sqlalchemy import update
 
 from app.api.dependencies import admin_user, identity_service
+from app.application.errors import AppError
+from app.infrastructure.persistence.orm import User
 from app.main import create_app
-from app.models import User
 
 
 def test_health(client):
@@ -47,6 +48,22 @@ def test_internal_errors_are_redacted(client, app, caplog):
     assert response.headers["cache-control"] == "no-store"
     assert "private" not in response.text + caplog.text
     assert "Password123" not in caplog.text
+
+
+def test_unmapped_application_error_is_sanitized(client, app, caplog):
+    def fail():
+        raise AppError("UNMAPPED_PRIVATE_CODE", "private-database-value")
+
+    app.dependency_overrides[identity_service] = fail
+    response = client.post(
+        "/api/v1/auth/login", json={"username": "voter", "password": "Password123"}
+    )
+    assert response.status_code == 500
+    assert response.json() == {
+        "error": {"code": "INTERNAL_ERROR", "message": "An internal error occurred."}
+    }
+    assert "private" not in response.text + caplog.text
+    assert "UNMAPPED_PRIVATE_CODE" not in response.text + caplog.text
 
 
 def test_malformed_json_and_unknown_key_are_redacted(client):

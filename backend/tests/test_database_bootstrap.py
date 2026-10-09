@@ -234,7 +234,7 @@ class BootstrapTests(unittest.TestCase):
             create_engine.assert_not_called()
 
     def test_schema_reuses_application_metadata(self):
-        from app.models import Base
+        from app.infrastructure.persistence.orm import Base
 
         self.assertIs(schema.Base, Base)
 

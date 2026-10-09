@@ -9,8 +9,8 @@ from app.api.errors import register_error_handlers
 from app.api.health import router as health_router
 from app.api.middleware import NoStoreMiddleware, SanitizedErrorMiddleware
 from app.api.router import router as api_router
-from app.core.config import Settings
-from app.core.container import Container
+from app.bootstrap.config import Settings
+from app.bootstrap.container import Container
 
 
 def create_app(*, settings: Settings | None = None, engine: Engine | None = None) -> FastAPI:

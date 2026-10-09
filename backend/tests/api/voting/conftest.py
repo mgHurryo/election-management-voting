@@ -17,7 +17,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.pool import StaticPool
 
-from app.models import Base
+from app.infrastructure.persistence.orm import Base
 
 # Election ids used across the M2/M4 tests.
 DRAFT_ELECTION = 1001  # DRAFT; roster mutations are allowed.

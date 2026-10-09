@@ -3,12 +3,14 @@
 [English](README.md) / 简体中文
 
 本次是架构 v0.2 / SRS v0.1 的**第一阶段框架实现，不是完整投票 MVP**。
-只注册已经实现并有测试的接口，选举、候选人、名册、投票和结果接口没有模拟成功返回。
+已实现 M2 选民名册管理；只注册已经实现并有测试的接口，选举、候选人、投票和结果接口没有模拟成功返回。
 
 ## 已完成
 
 - FastAPI 应用工厂、生命周期、`/api/v1` 路由和开发环境 OpenAPI。
 - API → Service → Repository 分层；统一装配依赖，Service 控制事务，Repository 不提交事务。
+- Service 与 UoW/仓储/令牌协议归 application，纯数据对象归 domain；SQLAlchemy/JWT/bcrypt
+  实现归 infrastructure，配置与装配归 bootstrap，HTTP 状态码和响应头仅由 API 映射。
 - 环境配置校验、独立 MySQL 应用账号、连接池、UTC 会话与连接释放。
 - 复用原有八张表，运行时和初始化脚本共用一份 ORM 模型，不修改数据库结构、不在启动时建表。
 - 统一成功 / 错误响应、脱敏校验错误、404 / 405 / 500、请求字段白名单、精确 CORS 来源和禁止缓存。
@@ -20,7 +22,10 @@
 | `GET /api/v1/auth/me` | Bearer 令牌，账号必须保持 ACTIVE | 已实现 |
 | `GET /health/live` | 运维探针，不访问数据库 | 已实现 |
 | `GET /health/ready` | 运维探针，执行数据库 SELECT 1 | 已实现 |
-| API 文档其余 18 个操作 | 尚未注册 | 后续实现 |
+| `GET /api/v1/elections/{id}/voters` | ADMIN | 已实现 |
+| `POST /api/v1/elections/{id}/voters` | ADMIN；DRAFT、ACTIVE USER、额度 1 | 已实现 |
+| `DELETE /api/v1/elections/{id}/voters/{user_id}` | ADMIN；DRAFT、没有参与记录 | 已实现 |
+| API 文档其余 15 个操作 | 尚未注册 | 后续实现 |
 
 健康检查是 `/api/v1` 之外的运维扩展。ready 只验证数据库连接，不能证明表结构、迁移或投票可用。
 数据库不可用时返回脱敏的 `503 SERVICE_UNAVAILABLE`。
@@ -49,7 +54,7 @@ uv run python database/init/01_init_schema.py
 
 原有脚本路径保持不变。`create_all` 只能初始化基线，不能替代已有数据库的迁移。
 账号由获授权的部署 / seed 流程准备，启动时不创建默认账号；seed 应调用
-`app.core.security.hash_password`。ADR-009 要求至少 8 个字符、最多 72 个 UTF-8 字节、
+`app.infrastructure.security.hash_password`。ADR-009 要求至少 8 个字符、最多 72 个 UTF-8 字节、
 至少一个字母和数字，不修剪密码。登录验证已有散列，不重新套用新账号复杂度规则。
 
 ```powershell
@@ -80,17 +85,23 @@ $env:TEST_MYSQL_URL = 'mysql+pymysql://test_user:<URL编码后的密码>@127.0.0
 uv run pytest -m mysql
 ```
 
-未设置时三个 MySQL 测试明确跳过，不算验证成功。新增 CI 使用独立 MySQL 服务执行完整测试、
+未设置时 MySQL 测试明确跳过，不算验证成功。CI 使用独立 MySQL 服务执行完整测试、
 lint 和构建，不关闭原有检查。当前锁定 Starlette 的 TestClient 对 httpx 发出弃用警告，
 保留该提示，不屏蔽或误报为测试失败。
 
 ## 后续开发顺序
 
 1. 选举与候选人：创建、初始名单原子写入、查询、DRAFT 编辑、开启 / 关闭。
-2. 选民名册：ACTIVE USER 校验，投票额度固定为 1。
+2. 选民名册已完成：ACTIVE USER 校验、额度固定为 1；修改先锁选举行再检查 DRAFT，持锁至提交。
 3. 投票：选举行锁、资格 / 时间 / 额度校验、匿名选票与参与记录原子提交。
 4. 结果：CLOSED 计票、公布权限；平票和零票处理需先确认 API D-06。
 
-每个模块先补 schemas / service / repository 与测试，再接入 `app/api/router.py`，
+每个模块先补 schemas / application service / infrastructure repository 与测试，再接入 `app/api/router.py`，
 不要为了补齐文档目录就发布占位接口。目录职责见英文说明中的 Code map。
 数据库保留的多票和非强制匿名模式不属于 v1。ADR-009 已确定的认证策略优先于 API D-08 的旧表述。
+
+内部 Python 导入路径已调整，HTTP 契约、环境变量名称和初始化脚本命令保持兼容。
+application/domain 的递归依赖守护与独立进程导入测试防止框架耦合回流；仓储仅转换可识别的
+重复键/引用冲突，由 Service 转为业务错误，再由 API 映射 HTTP。未知错误继续返回脱敏 500。
+后续开启选举流程需先锁同一选举行再检查就绪并更新状态；MySQL 测试覆盖名册新增/删除与开启的两种先后顺序。
+回滚重构提交即可恢复旧导入路径，无需数据库迁移。

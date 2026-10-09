@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
-from app.core.errors import AppError
-from app.services.ports import UnitOfWork
+from app.application.errors import AppError
+from app.application.ports import UnitOfWork
 
 
 class HealthService:
@@ -13,5 +13,5 @@ class HealthService:
             with self._uow_factory() as uow:
                 uow.health.ping()
         except Exception as exc:
-            raise AppError("SERVICE_UNAVAILABLE", "Service is not ready.", 503) from exc
+            raise AppError("SERVICE_UNAVAILABLE", "Service is not ready.") from exc
         return {"status": "ready"}

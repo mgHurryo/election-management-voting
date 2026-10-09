@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, field_validator
 
-from app.models.roster import VoterMembership
+from app.domain.roster import VoterMembership
 from app.schemas.common import ID, RequestModel, Timestamp
 
 

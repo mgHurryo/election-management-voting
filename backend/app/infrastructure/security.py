@@ -4,8 +4,7 @@ from datetime import UTC, datetime, timedelta
 import bcrypt
 import jwt
 
-from app.core.config import Settings
-from app.core.errors import authentication_required
+from app.application.errors import authentication_required
 
 ALGORITHM = "HS256"
 MAX_ID = 18446744073709551615
@@ -40,9 +39,9 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 
 class TokenManager:
-    def __init__(self, settings: Settings) -> None:
-        self._secret = settings.jwt_secret.get_secret_value()
-        self.expires_in = settings.jwt_expire_minutes * 60
+    def __init__(self, *, secret: str, expire_minutes: int) -> None:
+        self._secret = secret
+        self.expires_in = expire_minutes * 60
 
     def issue(self, user_id: int) -> str:
         now = datetime.now(UTC).replace(microsecond=0)

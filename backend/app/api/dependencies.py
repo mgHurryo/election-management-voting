@@ -3,11 +3,11 @@ from typing import Annotated
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.core.errors import authentication_required
-from app.models.identity import UserIdentity
-from app.services.health import HealthService
-from app.services.identity import IdentityService
-from app.services.roster import RosterService
+from app.application.errors import authentication_required
+from app.application.services.health import HealthService
+from app.application.services.identity import IdentityService
+from app.application.services.roster import RosterService
+from app.domain.identity import UserIdentity
 
 bearer = HTTPBearer(auto_error=False)
 

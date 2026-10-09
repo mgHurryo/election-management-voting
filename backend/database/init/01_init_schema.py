@@ -6,7 +6,7 @@ from pathlib import Path
 # Preserve direct execution: python database/init/01_init_schema.py.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from app.models import Base  # noqa: E402
+from app.infrastructure.persistence.orm import Base  # noqa: E402
 
 
 def main() -> None:

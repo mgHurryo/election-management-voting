@@ -1,5 +1,5 @@
-from app.db.base import Base
-from app.models.entities import (
+from app.infrastructure.persistence.base import Base
+from app.infrastructure.persistence.orm.entities import (
     AuditLog,
     Ballot,
     BallotChoice,

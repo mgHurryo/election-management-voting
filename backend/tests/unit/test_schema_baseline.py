@@ -3,7 +3,7 @@ from pathlib import Path
 from sqlalchemy.dialects import mysql
 from sqlalchemy.schema import CreateIndex, CreateTable
 
-from app.models import Base
+from app.infrastructure.persistence.orm import Base
 
 
 def test_mysql_ddl_matches_pre_framework_bootstrap():

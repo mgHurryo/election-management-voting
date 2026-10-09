@@ -1,15 +1,16 @@
+from sqlite3 import SQLITE_CONSTRAINT_PRIMARYKEY, SQLITE_CONSTRAINT_UNIQUE
+
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.errors import AppError
-from app.models import Election, ElectionVoter, User, VoteParticipation
-from app.models.roster import ElectionSnapshot, VoterMembership
-from app.repositories.identity import utc
+from app.application.ports import DuplicateMembership, MembershipReferenced
+from app.domain.roster import ElectionSnapshot, VoterMembership
+from app.infrastructure.persistence.mapping import utc
+from app.infrastructure.persistence.orm import Election, ElectionVoter, User, VoteParticipation
 
-
-def voter_already_exists() -> AppError:
-    return AppError("VOTER_ALREADY_EXISTS", "Duplicate membership; do not create another row.", 409)
+MYSQL_DUPLICATE_KEY = 1062
+MYSQL_ROW_IS_REFERENCED = 1451
 
 
 class SqlAlchemyRosterRepository:
@@ -60,15 +61,27 @@ class SqlAlchemyRosterRepository:
         try:
             self._session.flush()
         except IntegrityError as error:
-            # Two concurrent adds racing on the composite key surface as 409.
-            raise voter_already_exists() from error
+            # Other integrity failures (foreign keys, checks) are not duplicate memberships.
+            mysql_code = error.orig.args[0] if error.orig.args else None
+            sqlite_code = getattr(error.orig, "sqlite_errorcode", None)
+            if mysql_code == MYSQL_DUPLICATE_KEY or sqlite_code in (
+                SQLITE_CONSTRAINT_PRIMARYKEY,
+                SQLITE_CONSTRAINT_UNIQUE,
+            ):
+                raise DuplicateMembership() from error
+            raise
 
     def remove(self, election_id: int, user_id: int) -> None:
-        self._session.execute(
-            delete(ElectionVoter).where(
-                ElectionVoter.election_id == election_id, ElectionVoter.user_id == user_id
+        try:
+            self._session.execute(
+                delete(ElectionVoter).where(
+                    ElectionVoter.election_id == election_id, ElectionVoter.user_id == user_id
+                )
             )
-        )
+        except IntegrityError as error:
+            if error.orig.args and error.orig.args[0] == MYSQL_ROW_IS_REFERENCED:
+                raise MembershipReferenced() from error
+            raise
 
     def participation_count(self, election_id: int, user_id: int) -> int:
         count = self._session.scalar(

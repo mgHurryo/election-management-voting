@@ -1,9 +1,9 @@
 import pytest
 from sqlalchemy import select, update
 
-from app.db.session import create_session_factory
-from app.db.unit_of_work import SqlAlchemyUnitOfWork
-from app.models import User
+from app.infrastructure.persistence.orm import User
+from app.infrastructure.persistence.session import create_session_factory
+from app.infrastructure.persistence.unit_of_work import SqlAlchemyUnitOfWork
 
 
 def test_repository_returns_domain_snapshot_without_injection(engine):

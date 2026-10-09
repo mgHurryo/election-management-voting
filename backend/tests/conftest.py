@@ -5,10 +5,10 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.pool import StaticPool
 
-from app.core.config import Settings
-from app.core.security import hash_password
+from app.bootstrap.config import Settings
+from app.infrastructure.persistence.orm import User
+from app.infrastructure.security import hash_password
 from app.main import create_app
-from app.models import User
 
 
 @pytest.fixture

@@ -15,8 +15,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import delete
 
 from app.api.dependencies import AdminUser
+from app.infrastructure.persistence.orm import User
 from app.main import create_app
-from app.models import User
 
 ALGORITHM = "HS256"
 MAX_ID_AS_STRING = "18446744073709551615"
