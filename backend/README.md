@@ -96,7 +96,8 @@ uv run pytest --cov=app --cov-report=term-missing
 uv build
 ```
 
-Fast identity integration tests use SQLite only for the `users` table. They do
+Fast identity integration tests use SQLite only for the `users` table; roster
+API tests use SQLite with the full schema. They do
 **not** establish MySQL locking, voting concurrency or anonymous-storage correctness.
 A checked-in DDL snapshot verifies that the eight MySQL tables/indexes remain
 identical to the original bootstrap schema at commit `1153335`.
@@ -110,6 +111,8 @@ uv run pytest -m mysql
 ```
 
 Without this variable, MySQL tests are skipped, not reported as verified.
+The suite includes four MySQL concurrency scenarios for add/remove versus an
+opening-state write, in addition to identity, schema and foreign-key checks.
 The backend CI provisions its own MySQL service and runs these tests in addition
 to lint, build and the full suite. No existing repository checks are disabled.
 The locked Starlette version currently emits an httpx TestClient deprecation

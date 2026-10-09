@@ -75,7 +75,8 @@ uv run pytest --cov=app --cov-report=term-missing
 uv build
 ```
 
-快速身份模块集成测试仅在 SQLite 上创建 users 表，**不能替代 MySQL 锁、投票并发和匿名存储验证**。
+快速身份模块集成测试仅在 SQLite 上创建 users 表；名册 API 测试使用完整 SQLite schema。
+这些测试**不能替代 MySQL 锁、投票并发和匿名存储验证**。
 DDL 快照核对八张 MySQL 表及索引与框架实施前 `1153335` 提交一致。
 
 真实 MySQL 测试必须显式使用名称以 `_test` 结尾的**空的一次性数据库**；测试会创建并移除这八张表：
@@ -85,7 +86,8 @@ $env:TEST_MYSQL_URL = 'mysql+pymysql://test_user:<URL编码后的密码>@127.0.0
 uv run pytest -m mysql
 ```
 
-未设置时 MySQL 测试明确跳过，不算验证成功。CI 使用独立 MySQL 服务执行完整测试、
+未设置时 MySQL 测试明确跳过，不算验证成功。除身份、Schema 和外键验证外，测试还包括名册新增 / 删除
+与开启状态写入的四个 MySQL 并发场景。CI 使用独立 MySQL 服务执行完整测试、
 lint 和构建，不关闭原有检查。当前锁定 Starlette 的 TestClient 对 httpx 发出弃用警告，
 保留该提示，不屏蔽或误报为测试失败。
 

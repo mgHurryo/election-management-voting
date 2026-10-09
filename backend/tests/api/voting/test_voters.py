@@ -114,6 +114,29 @@ class TestAddVoter:
         assert data["created_at"].endswith("Z")
         assert data["updated_at"].endswith("Z")
 
+    def test_omitted_quota_defaults_to_one_and_persists_membership(
+        self, client, admin_headers, engine
+    ):
+        response = client.post(
+            voter_path(DRAFT_ELECTION), json={"user_id": "24"}, headers=admin_headers
+        )
+        assert response.status_code == 201
+        data = response.json()["data"]
+        assert data["user_id"] == "24"
+        assert data["vote_quota"] == 1
+        with engine.connect() as connection:
+            quota = connection.scalar(
+                select(ElectionVoter.vote_quota).where(
+                    ElectionVoter.election_id == DRAFT_ELECTION, ElectionVoter.user_id == 24
+                )
+            )
+        assert quota == 1
+
+    def test_openapi_declares_quota_optional_with_default_one(self, client):
+        schema = client.get("/openapi.json").json()["components"]["schemas"]["VoterCreate"]
+        assert schema["required"] == ["user_id"]
+        assert schema["properties"]["vote_quota"]["default"] == 1
+
     def test_duplicate_membership_returns_conflict_without_second_row(
         self, client, admin_headers, engine
     ):
@@ -177,7 +200,7 @@ class TestAddVoter:
     @pytest.mark.parametrize(
         "body",
         [
-            {"user_id": 24},
+            pytest.param({"user_id": 24}, id="numeric-user-id"),
             {"user_id": "24", "note": "extra"},
             {"user_id": "24", "vote_quota": "1"},
             {},
