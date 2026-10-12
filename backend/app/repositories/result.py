@@ -11,36 +11,38 @@ from app.models import BallotChoice, Election, ElectionCandidate    #从你项�
 #票数统计大类
 class CandidateResult:
     #设置属性票数和参选人id
-    def _init_(self, candidate_id:int,votes:int):
+    def __init__(self, candidate_id:int,candidate_name: str,votes:int):
+        self.candidate_name = candidate_name
         self.candidate_id=candidate_id
         self.votes=votes
 
 #设置数票大类
 class SqlAlchemyResultRepository:
-    def _init_(self,session):
+    def __init__(self,session: Session):
         self.session=session 
 
     #设置数票机制
-    def getTotalVote(self,election_id):
-        candidates=self.session.query(ElectionCandidate).filter(
+    def getTotalVote(self,election_id)-> List[CandidateResult]:
+        candidates=self.session_query(ElectionCandidate).filter(
             ElectionCandidate.election_id==election_id
         ).all()
         #设置候选人信息票数集合
         results=[]
         #正式数票机制
         for c in candidates:
-            vote_count=self.session.query(BallotChoice).filter(
+            vote_count=self.session_query(BallotChoice).filter(
                 BallotChoice.candidate_id == c.id
             ).count()
-        #放入结果列表中
-        results.append(CandidateResult(candidate_id=c.id,
-                                      votes=vote_count))
+            #放入结果列表中
+            results.append(CandidateResult(candidate_id=c.id,
+                                           candidate_name=c.name,
+                                           votes=vote_count))
         return results
     #获取选举状态
     def get_status(self,election_id):
         election=self.session.query(Election).filter(
             Election.id==election_id
-        ).first
+        ).first()
         return election
     #设置最新发布时间
     def publish(self,election_id):
