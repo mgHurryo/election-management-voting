@@ -6,6 +6,10 @@ import { RequireAuth, RequireRole } from './guards'
 const FoundationPage = lazy(() => import('../pages/FoundationPage'))
 const LoginPage = lazy(() => import('../pages/LoginPage'))
 const ElectionListPage = lazy(() => import('../pages/ElectionListPage'))
+const EditElectionPage = lazy(() => import('../pages/EditElectionPage'))
+const EditElectionPreview = import.meta.env.DEV
+  ? lazy(() => import('../dev/EditElectionPreview'))
+  : null
 const CreateElectionPage = lazy(() => import('../pages/CreateElectionPage'))
 const CreateElectionPreview = import.meta.env.DEV
   ? lazy(() => import('../dev/CreateElectionPreview'))
@@ -37,6 +41,9 @@ export function AppRoutes() {
           {CreateElectionPreview && (
             <Route path="__preview/elections/new" element={<CreateElectionPreview />} />
           )}
+          {EditElectionPreview && (
+            <Route path="__preview/elections/:id/edit" element={<EditElectionPreview />} />
+          )}
           <Route path="login" element={<LoginPage />} />
           <Route
             path="forbidden"
@@ -51,10 +58,7 @@ export function AppRoutes() {
             />
             <Route element={<RequireRole role="ADMIN" />}>
               <Route path="elections/new" element={<CreateElectionPage />} />
-              <Route
-                path="elections/:id/edit"
-                element={placeholder('配置选举', 'M3 · 后续实现草稿配置与状态操作。')}
-              />
+              <Route path="elections/:id/edit" element={<EditElectionPage />} />
               <Route
                 path="elections/:id/candidates"
                 element={placeholder('候选人管理', 'M3 · 后续实现草稿候选人管理。')}

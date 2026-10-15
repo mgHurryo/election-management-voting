@@ -24,6 +24,7 @@ interface Props {
     run: (action: StatusAction) => Promise<void>
   }
   listPath?: string
+  editPath?: string
 }
 const labels = { DRAFT: '草稿', OPEN: '开放', CLOSED: '关闭' }
 const formatter = new Intl.DateTimeFormat('zh-CN', {
@@ -50,6 +51,7 @@ export function ElectionDetailView({
   refresh,
   action,
   listPath = '/elections',
+  editPath,
 }: Props) {
   const [confirmation, setConfirmation] = useState<StatusAction | null>(null)
   const base = `/elections/${encodeURIComponent(election.id)}`
@@ -157,7 +159,7 @@ export function ElectionDetailView({
         <div className="election-action-links">
           {role === 'ADMIN' && election.status === 'DRAFT' && (
             <>
-              <Link to={`${base}/edit`}>编辑选举</Link>
+              <Link to={editPath || `${base}/edit`}>编辑选举</Link>
               <Link to={`${base}/candidates`}>候选人管理</Link>
               <Link to={`${base}/voters`}>选民名册</Link>
             </>

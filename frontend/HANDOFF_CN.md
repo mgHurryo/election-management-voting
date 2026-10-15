@@ -2,7 +2,7 @@
 
 本文件说明现有代码如何连接各前端页面，不替代 API.md 或后端生成的 OpenAPI。
 接口函数存在不等于服务已实现。字段和规则以仓库需求及双方确认的 API 契约为准。
-以下为当前本地 FE-03 分支状态；队友须先获得对应提交才能使用新组件。
+以下为当前本地 FE-04 分支状态；队友须先获得对应提交才能使用新组件。
 
 ## 1. 页面地址与职责
 
@@ -12,7 +12,7 @@
 | 选举列表   | /elections                | A 已实现 UI、筛选、分页，真实联调待完成          |
 | 创建选举   | /elections/new            | A 已实现；创建选举与初始名册，成功到详情         |
 | 选举详情   | /elections/:id            | A 已实现；只读候选人、管理员开启/关闭及模块入口  |
-| 编辑选举   | /elections/:id/edit       | A 待完成；不承担名册维护                         |
+| 编辑选举   | /elections/:id/edit       | A 已实现草稿编辑；不承担名册维护                 |
 | 候选人管理 | /elections/:id/candidates | 队友模块；主分支当前仍占位，具体负责人由团队确认 |
 | 选民名册   | /elections/:id/voters     | 队友模块；创建后的查询/添加/移除，不创建用户账号 |
 | 投票       | /elections/:id/vote       | 队友模块；选择并提交，与只读候选人介绍分开       |
@@ -69,7 +69,7 @@ A 的创建页填写初始 ID 并调用创建接口，后端原子创建选举�
 | src/components/elections/CandidateProfile.tsx   | <CandidateProfile candidate={candidate} />；只读照片/姓名/职位/简介；列表使用稳定 key |
 | src/components/elections/ElectionListView.tsx   | 展示列表；正式页面由 useElections 提供数据                                            |
 | src/components/elections/ElectionDetailView.tsx | 详情展示；状态操作由 Hook 注入                                                        |
-| src/components/elections/ElectionCreateForm.tsx | 创建表单；正式/预览共用，编辑是否复用待后续实现                                       |
+| src/components/elections/ElectionCreateForm.tsx | 创建表单；正式/预览共用，基础输入与编辑页共用 ElectionFields                          |
 | src/shared/electionForm.ts                      | 创建参数校验、字符串 ID 检查、本地时间转换                                            |
 
 不要在业务 Hook 中引入 src/dev 的示例数据。不要在各自页面重新创建公共导航。
@@ -94,6 +94,23 @@ npm run dev 后，使用终端显示的本地地址：
 - /__preview/elections/new：创建表单校验与模拟提交，不保存。
 
 这些路由只在开发模式存在，正式页面仍需真实账号及后端。
-当前后续工作：A 的编辑页、各队友业务页、真实账号/状态数据准备、接口联调、
+当前后续工作：各队友业务页、真实账号/状态数据准备、接口联调、
 团队确认公共样式、最终补齐本文档的负责人/提交/已验证服务版本。
 尚未实现的页面不能标记为已交付。本文档会随剩余开发继续更新。
+
+## 7. 编辑页交接补充
+
+A 的四页界面与接口调用现已实现，真实后端联调仍未完成。
+编辑页只对 ADMIN 开放，进入时重新 GET 选举并确认 DRAFT。
+仅发送实际变更的 title、position_title、description、starts_at、ends_at。
+清空说明用 null；空 PATCH 不发送；不提交 voter_ids、状态、创建者或发布时间。
+没有改动时提示无需保存。服务器最终校验权限、状态和时间，前端不能替代。
+保存成功后重新进入详情获取服务器数据；失败保留输入。
+状态冲突或不明结果会阻止继续保存，提示核对资料并显式重新加载，
+重新加载会放弃未保存的输入，不自动重复 PATCH。
+
+创建/编辑的五个基础字段统一在 ElectionFields，校验复用 electionForm。
+编辑比较与时区转换在 electionPatch；useEditElection 负责加载和保存。
+开发预览 /__preview/elections/1001/edit 可从详情“编辑选举”进入；模拟保存
+只展示待提交字段，不会改写真实数据或预览列表/详情。正式构建不含此入口。
+FE-04 包含 FE-01/02/03 依赖，尚未上传。队友同步时以最终评审通过的提交为准。

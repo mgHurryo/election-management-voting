@@ -5,6 +5,7 @@ import type { ElectionInput } from '../../api/types'
 import type { ElectionFormErrors, ElectionFormValues } from '../../shared/electionForm'
 import { validateElectionForm } from '../../shared/electionForm'
 import { errorMessage } from '../../shared/errors'
+import { ElectionFields } from './ElectionFields'
 import './ElectionCreateForm.css'
 
 interface Props {
@@ -67,68 +68,7 @@ export function ElectionCreateForm({
       <form onSubmit={(event) => void submit(event)} noValidate>
         <fieldset disabled={pending}>
           <legend>选举资料（* 为必填）</legend>
-          <label className="field">
-            <span>选举名称 *</span>
-            <input
-              name="title"
-              required
-              value={values.title}
-              onChange={(event) => update('title', event.target.value)}
-              {...attributes('title')}
-            />
-            {fieldError('title')}
-          </label>
-          <label className="field">
-            <span>竞选职位 *</span>
-            <input
-              name="position_title"
-              required
-              value={values.position_title}
-              onChange={(event) => update('position_title', event.target.value)}
-              {...attributes('position_title')}
-            />
-            {fieldError('position_title')}
-          </label>
-          <label className="field">
-            <span>选举说明（选填）</span>
-            <textarea
-              name="description"
-              rows={4}
-              value={values.description}
-              onChange={(event) => update('description', event.target.value)}
-              {...attributes('description')}
-            />
-            {fieldError('description')}
-          </label>
-          <div className="election-create-times">
-            <label className="field">
-              <span>开始时间 *</span>
-              <input
-                type="datetime-local"
-                name="starts_at"
-                step="1"
-                required
-                value={values.starts_at}
-                onChange={(event) => update('starts_at', event.target.value)}
-                {...attributes('starts_at')}
-              />
-              {fieldError('starts_at')}
-            </label>
-            <label className="field">
-              <span>结束时间 *</span>
-              <input
-                type="datetime-local"
-                name="ends_at"
-                step="1"
-                required
-                value={values.ends_at}
-                onChange={(event) => update('ends_at', event.target.value)}
-                {...attributes('ends_at')}
-              />
-              {fieldError('ends_at')}
-            </label>
-          </div>
-          <p>按浏览器所在时区输入，提交时转换为 UTC 时间。</p>
+          <ElectionFields values={values} errors={errors} onChange={update} idPrefix="create" />
           <label className="field">
             <span>初始选民用户 ID *</span>
             <textarea

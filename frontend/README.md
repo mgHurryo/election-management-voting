@@ -2,7 +2,7 @@
 
 React + TypeScript + Vite frontend scaffold for the election management and voting system.
 
-**Scope:** the shared frontend foundation, M1 login form, M3 election list, and election detail with read-only candidate profiles are implemented. The list uses the existing `api.elections` wrapper, server-side status filtering and pagination (20 per page), localized times, admin-only create navigation, and loading/empty/error/retry states. Election creation is also implemented; edit, candidate management, voter roll, voting and result routes remain placeholders. There are no fake login accounts or demo rows in the real election list. A development-only preview is described below. Election endpoints are still pending in the backend master baseline; API wrappers target the **draft** contract in `../API.md`, and complete live integration is not verified.
+**Scope:** the shared frontend foundation, M1 login form, M3 election list, and election detail with read-only candidate profiles are implemented. The list uses the existing `api.elections` wrapper, server-side status filtering and pagination (20 per page), localized times, admin-only create navigation, and loading/empty/error/retry states. Election creation and draft editing are also implemented; candidate management, voter roll, voting and result routes remain placeholders. There are no fake login accounts or demo rows in the real election list. A development-only preview is described below. Election endpoints are still pending in the backend master baseline; API wrappers target the **draft** contract in `../API.md`, and complete live integration is not verified.
 
 ## Quick start
 
@@ -32,7 +32,7 @@ npm run preview
 ```text
 src/
   routes/       Route tree, authentication and role guards
-  pages/        Landing page, login, election list/detail and remaining placeholders
+  pages/        Landing page, login, election list/detail/create/edit and remaining placeholders
   components/   Base layout, async states, render error boundary
   hooks/        Shared auth hook
   store/        Auth context/provider and access-token storage
@@ -78,7 +78,7 @@ The result route is only a placeholder; the backend must enforce CLOSED state fo
 
 Election list tests use mocked API responses and cover authentication redirects, role-based create navigation, detail links with BIGINT string IDs, pagination/filter reset, failure versus empty results, manual retry, and stale response handling. These are not live backend integration tests.
 
-Replace the remaining placeholders one module at a time. Election detail is implemented; create/edit and the other business destinations still lead to placeholders. Their forms and workflows are separate tasks. Reconcile draft API changes and verify the list against real backend data when election endpoints are available.
+Replace the remaining placeholders one module at a time. Election list, detail, creation and draft editing are implemented. Candidate management, voter-roll, voting and result destinations remain placeholders and belong to their own tasks. Reconcile draft API changes and verify the list against real backend data when election endpoints are available.
 
 ## Local election list preview
 
@@ -135,5 +135,21 @@ It is reachable via the preview list's create link and is excluded from producti
 
 See [Frontend handoff (Chinese)](HANDOFF_CN.md) for page boundaries, route parameters,
 existing API helpers and reusable components. This is a working handoff document;
-edit-page implementation and live integration remain pending. FE-03 includes FE-01
-and FE-02 as unmerged dependencies. No branch has been pushed by this work.
+live integration and the other business modules remain pending. The current FE-04
+branch includes FE-01, FE-02 and FE-03 as unmerged dependencies. No branch has been pushed by this work.
+
+## Draft election editing
+
+ADMIN /elections/:id/edit now loads the election independently, refuses non-DRAFT
+records and PATCHes only changed writable fields. It does not query candidates or
+edit voter_ids. Empty changes do not submit; clearing a description sends null.
+The create/edit forms share ElectionFields and field validation. Datetime prefill
+uses browser local time, retains seconds and compares instants before including
+time fields. Save success returns to detail; errors preserve inputs. A state conflict
+or uncertain write blocks saving until explicit reload of authoritative data.
+
+Development /__preview/elections/1001/edit reuses the same form with fictional data
+and a simulated patch summary only. Details link to it; simulated edits do not
+persist or alter the list/detail fixtures. The production build excludes this route.
+The A UI scope (list/detail/create/edit) is implemented, not live-integration verified.
+See HANDOFF_CN.md for teammate boundaries and remaining work.

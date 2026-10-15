@@ -35,7 +35,12 @@ export default function ElectionDetailPreview() {
   function handleLink(event: MouseEvent<HTMLDivElement>) {
     if (!(event.target instanceof Element)) return
     const anchor = event.target.closest('a')
-    if (!anchor || anchor.getAttribute('href') === '/__preview/elections') return
+    if (
+      !anchor ||
+      anchor.getAttribute('href') === '/__preview/elections' ||
+      anchor.getAttribute('href') === `/__preview/elections/${id}/edit`
+    )
+      return
     event.preventDefault()
     setNotice('这是详情外观预览；编辑、管理、投票和结果功能请在正式页面登录后使用。')
   }
@@ -44,7 +49,7 @@ export default function ElectionDetailPreview() {
       <aside className="state" aria-label="开发预览说明">
         <strong>开发预览 · 全部为示例数据</strong>
         <p>此处展示管理员视角，候选人和简介均为虚构。不会查询或修改真实选举。</p>
-        <p>可以返回预览列表；其他业务入口和确认开启／关闭只显示说明。</p>
+        <p>可以返回预览列表或进入编辑预览；其他业务入口和确认开启／关闭只显示说明。</p>
         {notice && <p role="status">{notice}</p>}
       </aside>
       <div onClickCapture={handleLink}>
@@ -63,6 +68,7 @@ export default function ElectionDetailPreview() {
           retryCandidates={() => {}}
           refresh={() => {}}
           listPath="/__preview/elections"
+          editPath={`/__preview/elections/${id}/edit`}
           action={{
             pending: false,
             error: null,
