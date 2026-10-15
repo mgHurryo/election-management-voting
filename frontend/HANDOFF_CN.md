@@ -10,12 +10,12 @@
 
 ## 1. 先看本次交付了哪些页面
 
-| 页面 | 正式地址 | 已实现功能 | 其他模块继续负责 |
-| --- | --- | --- | --- |
-| 选举列表 | `/elections` | 列表、状态筛选、分页、加载/空/失败提示、详情入口、管理员创建入口 | 未新增搜索和删除选举 |
-| 选举详情 | `/elections/:id` | 基本信息、只读候选人介绍及分页、管理员开启/关闭确认、其他模块入口 | 候选人增删改、名册维护、投票、计票和发布结果 |
-| 创建选举 | `/elections/new` | 名称、职位、说明、起止时间、初始选民 ID；校验并提交，成功进入详情 | 不创建用户、不添加候选人、不直接开启投票 |
-| 编辑选举 | `/elections/:id/edit` | 独立加载草稿、预填、校验、仅提交修改字段，成功返回详情 | 不修改名册、候选人和选举状态 |
+| 页面     | 正式地址              | 已实现功能                                                        | 其他模块继续负责                             |
+| -------- | --------------------- | ----------------------------------------------------------------- | -------------------------------------------- |
+| 选举列表 | `/elections`          | 列表、状态筛选、分页、加载/空/失败提示、详情入口、管理员创建入口  | 未新增搜索和删除选举                         |
+| 选举详情 | `/elections/:id`      | 基本信息、只读候选人介绍及分页、管理员开启/关闭确认、其他模块入口 | 候选人增删改、名册维护、投票、计票和发布结果 |
+| 创建选举 | `/elections/new`      | 名称、职位、说明、起止时间、初始选民 ID；校验并提交，成功进入详情 | 不创建用户、不添加候选人、不直接开启投票     |
+| 编辑选举 | `/elections/:id/edit` | 独立加载草稿、预填、校验、仅提交修改字段，成功返回详情            | 不修改名册、候选人和选举状态                 |
 
 列表和详情需要登录；创建和编辑需要 ADMIN。编辑只允许 DRAFT 状态。
 候选人管理、选民名册、投票、结果页仍有原有占位内容，不能把入口存在理解成这些页面已完成。
@@ -61,10 +61,10 @@ election-management-voting/
 
 ### 修改的 3 个原有文件
 
-| 仓库内位置 | 改了什么 |
-| --- | --- |
-| `README.md` | 更新整体前端进度，增加交接说明入口 |
-| `frontend/README.md` | 更新运行、预览、验证和实现范围说明 |
+| 仓库内位置                          | 改了什么                                                               |
+| ----------------------------------- | ---------------------------------------------------------------------- |
+| `README.md`                         | 更新整体前端进度，增加交接说明入口                                     |
+| `frontend/README.md`                | 更新运行、预览、验证和实现范围说明                                     |
 | `frontend/src/routes/AppRoutes.tsx` | 四个占位页面换成实际页面；新增开发预览入口；保留权限保护和其他模块占位 |
 
 ### 新增 1 份说明
@@ -75,60 +75,60 @@ election-management-voting/
 
 以下文件在 `frontend/src/pages/`：
 
-| 文件 | 用途 |
-| --- | --- |
-| `ElectionListPage.tsx` | 列表页入口 |
+| 文件                     | 用途       |
+| ------------------------ | ---------- |
+| `ElectionListPage.tsx`   | 列表页入口 |
 | `ElectionDetailPage.tsx` | 详情页入口 |
 | `CreateElectionPage.tsx` | 创建页入口 |
-| `EditElectionPage.tsx` | 编辑页入口 |
+| `EditElectionPage.tsx`   | 编辑页入口 |
 
 ### 新增 4 个操作逻辑文件
 
 以下文件在 `frontend/src/hooks/`：
 
-| 文件 | 用途 |
-| --- | --- |
-| `useElections.ts` | 列表查询、筛选、分页、重试 |
-| `useElectionDetail.ts` | 详情、候选人查询，以及开启/关闭操作 |
+| 文件                   | 用途                                         |
+| ---------------------- | -------------------------------------------- |
+| `useElections.ts`      | 列表查询、筛选、分页、重试                   |
+| `useElectionDetail.ts` | 详情、候选人查询，以及开启/关闭操作          |
 | `useCreateElection.ts` | 创建请求、避免重复提交、处理失败或结果不明确 |
-| `useEditElection.ts` | 加载草稿、提交修改、处理状态冲突和失败 |
+| `useEditElection.ts`   | 加载草稿、提交修改、处理状态冲突和失败       |
 
 ### 新增 6 个界面组件、3 个样式文件
 
 以下文件在 `frontend/src/components/elections/`：
 
-| 文件 | 用途 |
-| --- | --- |
-| `ElectionListView.tsx` | 列表、筛选和分页界面 |
-| `ElectionDetailView.tsx` | 详情、候选人区域及其他模块入口 |
-| `CandidateProfile.tsx` | 单个候选人的照片、姓名、职位和简介，可复用 |
-| `ElectionCreateForm.tsx` | 创建表单 |
-| `ElectionEditForm.tsx` | 编辑表单 |
-| `ElectionFields.tsx` | 创建和编辑共用的基础输入框 |
-| `ElectionListView.css` | 列表样式 |
-| `ElectionDetailView.css` | 详情及候选人卡片样式 |
-| `ElectionCreateForm.css` | 创建和编辑共用的表单样式 |
+| 文件                     | 用途                                       |
+| ------------------------ | ------------------------------------------ |
+| `ElectionListView.tsx`   | 列表、筛选和分页界面                       |
+| `ElectionDetailView.tsx` | 详情、候选人区域及其他模块入口             |
+| `CandidateProfile.tsx`   | 单个候选人的照片、姓名、职位和简介，可复用 |
+| `ElectionCreateForm.tsx` | 创建表单                                   |
+| `ElectionEditForm.tsx`   | 编辑表单                                   |
+| `ElectionFields.tsx`     | 创建和编辑共用的基础输入框                 |
+| `ElectionListView.css`   | 列表样式                                   |
+| `ElectionDetailView.css` | 详情及候选人卡片样式                       |
+| `ElectionCreateForm.css` | 创建和编辑共用的表单样式                   |
 
 ### 新增 2 个字段处理文件
 
 以下文件在 `frontend/src/shared/`：
 
-| 文件 | 用途 |
-| --- | --- |
-| `electionForm.ts` | 校验字段、时间、初始选民 ID，把本地时间转成请求时间 |
-| `electionPatch.ts` | 预填编辑资料，仅整理实际修改的字段 |
+| 文件               | 用途                                                |
+| ------------------ | --------------------------------------------------- |
+| `electionForm.ts`  | 校验字段、时间、初始选民 ID，把本地时间转成请求时间 |
+| `electionPatch.ts` | 预填编辑资料，仅整理实际修改的字段                  |
 
 ### 新增 5 个开发预览文件
 
 以下文件在 `frontend/src/dev/`：
 
-| 文件 | 用途 |
-| --- | --- |
-| `ElectionListPreview.tsx` | 列表预览 |
-| `ElectionDetailPreview.tsx` | 详情预览 |
-| `CreateElectionPreview.tsx` | 模拟创建 |
-| `EditElectionPreview.tsx` | 模拟编辑 |
-| `electionExamples.ts` | 虚构选举、候选人数据 |
+| 文件                        | 用途                 |
+| --------------------------- | -------------------- |
+| `ElectionListPreview.tsx`   | 列表预览             |
+| `ElectionDetailPreview.tsx` | 详情预览             |
+| `CreateElectionPreview.tsx` | 模拟创建             |
+| `EditElectionPreview.tsx`   | 模拟编辑             |
+| `electionExamples.ts`       | 虚构选举、候选人数据 |
 
 ### 新增 5 个测试文件
 
@@ -145,19 +145,19 @@ election-management-voting/
 
 不需要读完所有新增文件才能开始。建议按这个顺序：
 
-| 顺序 | 文件 | 看什么 |
-| --- | --- | --- |
-| 1 | 本文第 4–6 节 | 路由、ID、接口、复用组件及职责边界 |
-| 2 | [src/routes/AppRoutes.tsx](src/routes/AppRoutes.tsx) | 自己模块的占位地址和外层角色保护 |
-| 3 | [ElectionDetailView.tsx](src/components/elections/ElectionDetailView.tsx) | 用户从哪个按钮进入自己的模块 |
-| 4 | 原有 [src/api/index.ts](src/api/index.ts) 和 [src/api/types.ts](src/api/types.ts) | 可调用函数、请求字段和返回类型 |
+| 顺序 | 文件                                                                              | 看什么                             |
+| ---- | --------------------------------------------------------------------------------- | ---------------------------------- |
+| 1    | 本文第 4–6 节                                                                     | 路由、ID、接口、复用组件及职责边界 |
+| 2    | [src/routes/AppRoutes.tsx](src/routes/AppRoutes.tsx)                              | 自己模块的占位地址和外层角色保护   |
+| 3    | [ElectionDetailView.tsx](src/components/elections/ElectionDetailView.tsx)         | 用户从哪个按钮进入自己的模块       |
+| 4    | 原有 [src/api/index.ts](src/api/index.ts) 和 [src/api/types.ts](src/api/types.ts) | 可调用函数、请求字段和返回类型     |
 
-| 自己负责的部分 | 重点衔接 |
-| --- | --- |
-| 选民名册 | 详情页“选民名册”入口；用现有名册接口查询、添加、移除 |
-| 候选人管理 | 详情页管理入口；候选人增删改由自己实现；只读卡片可复用 |
-| 投票 | 详情页投票入口；读取选票、资格和额度；自己实现选择与提交 |
-| 结果 | 详情页结果入口；自己实现票数展示和管理员发布 |
+| 自己负责的部分 | 重点衔接                                                 |
+| -------------- | -------------------------------------------------------- |
+| 选民名册       | 详情页“选民名册”入口；用现有名册接口查询、添加、移除     |
+| 候选人管理     | 详情页管理入口；候选人增删改由自己实现；只读卡片可复用   |
+| 投票           | 详情页投票入口；读取选票、资格和额度；自己实现选择与提交 |
+| 结果           | 详情页结果入口；自己实现票数展示和管理员发布             |
 
 不需要调用 A 的列表、创建或编辑 Hook，也不需要读取 A 的虚构预览数据。双方通过选举 ID 和后端数据衔接。
 
@@ -175,12 +175,12 @@ api.voters('1001', 1) 查询名册
 
 其他模块已经预留这些正式地址：
 
-| 功能 | 地址 | 访问与实现要点 |
-| --- | --- | --- |
-| 候选人管理 | `/elections/:id/candidates` | ADMIN；独立加载并管理本场候选人 |
-| 选民名册 | `/elections/:id/voters` | ADMIN；维护已有账号的参选资格 |
-| 投票 | `/elections/:id/vote` | USER；后端校验资格、时间和投票额度 |
-| 结果 | `/elections/:id/results` | 已登录；管理员关闭后查看/发布，普通用户查看已发布结果，具体权限由后端执行 |
+| 功能       | 地址                        | 访问与实现要点                                                            |
+| ---------- | --------------------------- | ------------------------------------------------------------------------- |
+| 候选人管理 | `/elections/:id/candidates` | ADMIN；独立加载并管理本场候选人                                           |
+| 选民名册   | `/elections/:id/voters`     | ADMIN；维护已有账号的参选资格                                             |
+| 投票       | `/elections/:id/vote`       | USER；后端校验资格、时间和投票额度                                        |
+| 结果       | `/elections/:id/results`    | 已登录；管理员关闭后查看/发布，普通用户查看已发布结果，具体权限由后端执行 |
 
 队友完成页面后，在现有 `AppRoutes.tsx` 替换对应占位内容，保留外层保护。修改公共路由前先协调，避免覆盖彼此的改动。
 
@@ -219,61 +219,61 @@ const { id } = useParams()
 
 ### 5.2 A 四页已经使用的接口
 
-| 操作 | 函数 | HTTP 路径 | 结果 |
-| --- | --- | --- | --- |
-| 列表 | `api.elections({ page, page_size, status })` | GET `/elections`，参数放查询字符串 | 分页 `Election[]` |
-| 详情 | `api.election(id)` | GET `/elections/:id` | `{ data: Election }` |
-| 创建 | `api.createElection(input)` | POST `/elections` | `{ data: Election }` |
-| 修改草稿 | `api.updateElection(id, patch)` | PATCH `/elections/:id` | `{ data: Election }` |
-| 开启 | `api.openElection(id)` | POST `/elections/:id/open` | `{ data: Election }` |
-| 关闭 | `api.closeElection(id)` | POST `/elections/:id/close` | `{ data: Election }` |
-| 只读候选人 | `api.candidates(id, page)` | GET `/elections/:id/candidates` | 分页 `Candidate[]` |
+| 操作       | 函数                                         | HTTP 路径                          | 结果                 |
+| ---------- | -------------------------------------------- | ---------------------------------- | -------------------- |
+| 列表       | `api.elections({ page, page_size, status })` | GET `/elections`，参数放查询字符串 | 分页 `Election[]`    |
+| 详情       | `api.election(id)`                           | GET `/elections/:id`               | `{ data: Election }` |
+| 创建       | `api.createElection(input)`                  | POST `/elections`                  | `{ data: Election }` |
+| 修改草稿   | `api.updateElection(id, patch)`              | PATCH `/elections/:id`             | `{ data: Election }` |
+| 开启       | `api.openElection(id)`                       | POST `/elections/:id/open`         | `{ data: Election }` |
+| 关闭       | `api.closeElection(id)`                      | POST `/elections/:id/close`        | `{ data: Election }` |
+| 只读候选人 | `api.candidates(id, page)`                   | GET `/elections/:id/candidates`    | 分页 `Candidate[]`   |
 
 列表参数均可省略；`status` 使用 `DRAFT / OPEN / CLOSED`。
 
 创建字段 `ElectionInput`：
 
-| 字段 | 类型 | 当前前端处理 |
-| --- | --- | --- |
-| `title` | string | 必填，1–200 字符 |
-| `position_title` | string | 必填，1–100 字符；一场选举一个职位 |
-| `description` | string 或 null，可省略 | 最多 10000 字符；可为空 |
-| `starts_at` / `ends_at` | string | 本地日期时间输入转 UTC 秒精度时间；开始早于结束 |
-| `voter_ids` | string[] | 非空、不重复的正整数账号 ID；不创建账号 |
+| 字段                    | 类型                   | 当前前端处理                                    |
+| ----------------------- | ---------------------- | ----------------------------------------------- |
+| `title`                 | string                 | 必填，1–200 字符                                |
+| `position_title`        | string                 | 必填，1–100 字符；一场选举一个职位              |
+| `description`           | string 或 null，可省略 | 最多 10000 字符；可为空                         |
+| `starts_at` / `ends_at` | string                 | 本地日期时间输入转 UTC 秒精度时间；开始早于结束 |
+| `voter_ids`             | string[]               | 非空、不重复的正整数账号 ID；不创建账号         |
 
 编辑参数 `ElectionPatch` 只包含上述基础字段中实际改变的部分，**不包含 `voter_ids`**。清空说明发送 `description: null`，没有改动不发送 PATCH。
 创建初始非空名册来自当前 API 草案 D-03，字段/ID/时间约定对应 D-01，需团队确认最终契约。
 
 ### 5.3 名册、候选人、投票、结果模块使用的接口
 
-| 操作 | 函数 | HTTP 路径 | 结果/请求说明 |
-| --- | --- | --- | --- |
-| 名册查询 | `api.voters(id, page)` | GET `/elections/:id/voters` | 分页 `Voter[]`，默认第 1 页，每页 20 |
-| 添加选民 | `api.addVoter(id, userId)` | POST `/elections/:id/voters` | 封装发送 `{ user_id: userId }`，返回 `{ data: Voter }` |
-| 移除选民 | `api.removeVoter(id, userId)` | DELETE `/elections/:id/voters/:userId` | 204，无正文 |
-| 候选人查询 | `api.candidates(id, page)` | GET `/elections/:id/candidates` | 分页 `Candidate[]`，默认第 1 页，每页 20 |
-| 添加候选人 | `api.addCandidate(id, input)` | POST `/elections/:id/candidates` | `{ data: Candidate }` |
-| 修改候选人 | `api.updateCandidate(id, candidateId, patch)` | PATCH `/elections/:id/candidates/:candidateId` | `{ data: Candidate }` |
-| 删除候选人 | `api.deleteCandidate(id, candidateId)` | DELETE `/elections/:id/candidates/:candidateId` | 204，无正文 |
-| 读取选票 | `api.ballot(id)` | GET `/elections/:id/ballot` | `{ data: Ballot }`，含选举、候选人和参与状态 |
-| 读取参与状态 | `api.participation(id)` | GET `/elections/:id/participation` | `{ data: Participation }` |
-| 投票 | `api.vote(id, candidateId)` | POST `/elections/:id/votes` | 封装发送 `{ candidate_id: candidateId }`；返回 `{ data: { election_id, accepted: true } }` |
-| 读取结果 | `api.results(id)` | GET `/elections/:id/results` | `{ data: Result }` |
-| 发布结果 | `api.publishResults(id)` | POST `/elections/:id/results/publish` | `{ data: Result }` |
+| 操作         | 函数                                          | HTTP 路径                                       | 结果/请求说明                                                                              |
+| ------------ | --------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| 名册查询     | `api.voters(id, page)`                        | GET `/elections/:id/voters`                     | 分页 `Voter[]`，默认第 1 页，每页 20                                                       |
+| 添加选民     | `api.addVoter(id, userId)`                    | POST `/elections/:id/voters`                    | 封装发送 `{ user_id: userId }`，返回 `{ data: Voter }`                                     |
+| 移除选民     | `api.removeVoter(id, userId)`                 | DELETE `/elections/:id/voters/:userId`          | 204，无正文                                                                                |
+| 候选人查询   | `api.candidates(id, page)`                    | GET `/elections/:id/candidates`                 | 分页 `Candidate[]`，默认第 1 页，每页 20                                                   |
+| 添加候选人   | `api.addCandidate(id, input)`                 | POST `/elections/:id/candidates`                | `{ data: Candidate }`                                                                      |
+| 修改候选人   | `api.updateCandidate(id, candidateId, patch)` | PATCH `/elections/:id/candidates/:candidateId`  | `{ data: Candidate }`                                                                      |
+| 删除候选人   | `api.deleteCandidate(id, candidateId)`        | DELETE `/elections/:id/candidates/:candidateId` | 204，无正文                                                                                |
+| 读取选票     | `api.ballot(id)`                              | GET `/elections/:id/ballot`                     | `{ data: Ballot }`，含选举、候选人和参与状态                                               |
+| 读取参与状态 | `api.participation(id)`                       | GET `/elections/:id/participation`              | `{ data: Participation }`                                                                  |
+| 投票         | `api.vote(id, candidateId)`                   | POST `/elections/:id/votes`                     | 封装发送 `{ candidate_id: candidateId }`；返回 `{ data: { election_id, accepted: true } }` |
+| 读取结果     | `api.results(id)`                             | GET `/elections/:id/results`                    | `{ data: Result }`                                                                         |
+| 发布结果     | `api.publishResults(id)`                      | POST `/elections/:id/results/publish`           | `{ data: Result }`                                                                         |
 
 候选人新增输入 `CandidateInput` 为 `name`、`description`，以及可选 `photo_url`（string/null）、`display_order`（number）。修改输入是这些字段的部分集合。
 候选人返回对象里有 `position_title`，但现有新增输入类型没有这个字段，不应自行发送额外的职位字段。
 
 常用返回数据：
 
-| 类型 | 主要字段 |
-| --- | --- |
-| `Election` | `id, title, position_title, description, status, starts_at, ends_at, results_published_at`，另含创建者、隐私模式、时间戳 |
-| `Candidate` | `id, election_id, name, position_title, description, photo_url, display_order`，另含时间戳 |
-| `Voter` | `election_id, user_id, display_name, vote_quota`，另含时间戳；当前名额为 1 |
-| `Participation` | `election_id, eligible, vote_quota, used_votes, remaining_votes` |
-| `Ballot` | `election, candidates, participation` |
-| `Result` | `election_id, position_title, results_published_at, total_votes, candidates, winner_candidate_id`；候选人结果含 `candidate_id, name, vote_count` |
+| 类型            | 主要字段                                                                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Election`      | `id, title, position_title, description, status, starts_at, ends_at, results_published_at`，另含创建者、隐私模式、时间戳                         |
+| `Candidate`     | `id, election_id, name, position_title, description, photo_url, display_order`，另含时间戳                                                       |
+| `Voter`         | `election_id, user_id, display_name, vote_quota`，另含时间戳；当前名额为 1                                                                       |
+| `Participation` | `election_id, eligible, vote_quota, used_votes, remaining_votes`                                                                                 |
+| `Ballot`        | `election, candidates, participation`                                                                                                            |
+| `Result`        | `election_id, position_title, results_published_at, total_votes, candidates, winner_candidate_id`；候选人结果含 `candidate_id, name, vote_count` |
 
 ### 5.4 查询名册的最小调用示例
 
@@ -353,12 +353,12 @@ npm run dev
 
 默认端口为 5173；若终端给出其他端口，请替换地址中的端口。
 
-| 页面 | 可在自己的电脑打开的地址 |
-| --- | --- |
-| 列表 | `http://localhost:5173/__preview/elections` |
-| 详情及候选人介绍 | `http://localhost:5173/__preview/elections/1001` |
-| 创建 | `http://localhost:5173/__preview/elections/new` |
-| 编辑 | `http://localhost:5173/__preview/elections/1001/edit` |
+| 页面             | 可在自己的电脑打开的地址                              |
+| ---------------- | ----------------------------------------------------- |
+| 列表             | `http://localhost:5173/__preview/elections`           |
+| 详情及候选人介绍 | `http://localhost:5173/__preview/elections/1001`      |
+| 创建             | `http://localhost:5173/__preview/elections/new`       |
+| 编辑             | `http://localhost:5173/__preview/elections/1001/edit` |
 
 **预览不需要后端或真实登录，使用虚构数据。** 模拟创建/编辑显示校验或待提交内容，不会保存到数据库，也不会更新预览列表和详情；开启/关闭只展示说明。
 预览入口仅在开发模式存在，正式生产构建不包含这些入口和示例模块。
@@ -369,13 +369,13 @@ GitHub 保存代码和 PR，不会因此自动生成在线网站。`localhost` �
 
 ## 8. 本次与原有资料的关系
 
-| 原有资料 | 本次如何使用 |
-| --- | --- |
+| 原有资料                                            | 本次如何使用                                                                                             |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | [需求 SRS](../docs/requirements/REQUIREMENTS_CN.md) | FR-01/02 对应创建和配置，FR-06 对应角色入口，FR-13 对应开启/关闭；只读候选人介绍不等于完成全部候选人管理 |
-| [架构](../docs/architecture/ARCHITECTURE_CN.md) | 沿用页面/组件、Hook 和 API 层的组织方式 |
-| [API 契约](../docs/api/API_CN.md) | 4.3–4.9 为 A 使用的主要接口；草案中的待评审项仍需确认 |
-| [Future Work](../docs/future/FUTURE_CN.md) | 没有加入多职位、多选、实时票数、导出等扩展 |
-| [协作规则](../RULES.md) | 功能分支提交，经 PR 和检查后合并 master |
+| [架构](../docs/architecture/ARCHITECTURE_CN.md)     | 沿用页面/组件、Hook 和 API 层的组织方式                                                                  |
+| [API 契约](../docs/api/API_CN.md)                   | 4.3–4.9 为 A 使用的主要接口；草案中的待评审项仍需确认                                                    |
+| [Future Work](../docs/future/FUTURE_CN.md)          | 没有加入多职位、多选、实时票数、导出等扩展                                                               |
+| [协作规则](../RULES.md)                             | 功能分支提交，经 PR 和检查后合并 master                                                                  |
 
 原仓库已有前端框架、登录、请求封装、后端基础和名册等代码，本次在其上开发，没有重写整个项目。
 例如历史 [PR #15](https://github.com/mgHurryo/election-management-voting/pull/15) 是前端框架，[PR #22](https://github.com/mgHurryo/election-management-voting/pull/22) 是登录页，[PR #23](https://github.com/mgHurryo/election-management-voting/pull/23) 是名册后端。
