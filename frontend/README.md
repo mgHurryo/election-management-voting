@@ -133,7 +133,7 @@ Development /__preview/elections/new shares the same form, performs local valida
 and shows a clearly labeled simulated result without calling the API or saving data.
 It is reachable via the preview list's create link and is excluded from production.
 
-See [Frontend handoff (Chinese)](HANDOFF_CN.md) for page boundaries, route parameters,
+See [A frontend delivery and teammate handoff (Chinese)](HANDOFF_CN.md) for page boundaries, route parameters,
 existing API helpers and reusable components. This is a working handoff document;
 live integration and the other business modules remain pending. The current FE-04
 branch includes FE-01, FE-02 and FE-03 as unmerged dependencies. No branch has been pushed by this work.
