@@ -2,7 +2,7 @@
 
 React + TypeScript + Vite frontend scaffold for the election management and voting system.
 
-**Scope:** the shared frontend foundation, M1 login form, and M3 election list are implemented. The list uses the existing `api.elections` wrapper, server-side status filtering and pagination (20 per page), localized times, admin-only create navigation, and loading/empty/error/retry states. Other business routes remain placeholders. There are no fake accounts or runtime demo data. Election endpoints are still pending in the backend master baseline; API wrappers target the **draft** contract in `../API.md`, and complete live integration is not verified.
+**Scope:** the shared frontend foundation, M1 login form, and M3 election list are implemented. The list uses the existing `api.elections` wrapper, server-side status filtering and pagination (20 per page), localized times, admin-only create navigation, and loading/empty/error/retry states. Other business routes remain placeholders. There are no fake login accounts or demo rows in the real election list. A development-only preview is described below. Election endpoints are still pending in the backend master baseline; API wrappers target the **draft** contract in `../API.md`, and complete live integration is not verified.
 
 ## Quick start
 
@@ -79,3 +79,13 @@ The result route is only a placeholder; the backend must enforce CLOSED state fo
 Election list tests use mocked API responses and cover authentication redirects, role-based create navigation, detail links with BIGINT string IDs, pagination/filter reset, failure versus empty results, manual retry, and stale response handling. These are not live backend integration tests.
 
 Replace the remaining placeholders one module at a time. Election detail and create links currently lead to placeholders; their forms and workflows are separate tasks. Reconcile draft API changes and verify the list against real backend data when election endpoints are available.
+
+## Local election list preview
+
+With npm run dev, open /__preview/elections on the printed local origin.
+This development-only route reuses the real list view with clearly labeled fictional
+elections, no login, and three rows per preview page. Filtering and pagination work
+locally; create/detail links only display an explanation and do not navigate or write data.
+It does not set a token or change the real auth guards. Normal shell navigation still
+opens real routes, which require authentication. Production builds omit the preview route
+and its example module. Real /elections continues to use the backend and 20 rows per page.

@@ -6,6 +6,9 @@ import { RequireAuth, RequireRole } from './guards'
 const FoundationPage = lazy(() => import('../pages/FoundationPage'))
 const LoginPage = lazy(() => import('../pages/LoginPage'))
 const ElectionListPage = lazy(() => import('../pages/ElectionListPage'))
+const ElectionListPreview = import.meta.env.DEV
+  ? lazy(() => import('../dev/ElectionListPreview'))
+  : null
 const PlaceholderPage = lazy(() => import('../pages/PlaceholderPage'))
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage'))
 const placeholder = (title: string, description: string) => (
@@ -17,6 +20,9 @@ export function AppRoutes() {
       <Routes>
         <Route element={<AppLayout />}>
           <Route index element={<FoundationPage />} />
+          {ElectionListPreview && (
+            <Route path="__preview/elections" element={<ElectionListPreview />} />
+          )}
           <Route path="login" element={<LoginPage />} />
           <Route
             path="forbidden"
