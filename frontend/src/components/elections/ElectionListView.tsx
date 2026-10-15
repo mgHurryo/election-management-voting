@@ -19,11 +19,16 @@ function formatTime(value: string) {
   return Number.isNaN(date.getTime()) ? '时间不可用' : dateFormat.format(date)
 }
 
-type Props = ReturnType<typeof useElections> & { isAdmin: boolean; detailBasePath?: string }
+type Props = ReturnType<typeof useElections> & {
+  isAdmin: boolean
+  detailBasePath?: string
+  createPath?: string
+}
 
 export function ElectionListView({
   isAdmin,
   detailBasePath = '/elections',
+  createPath = '/elections/new',
   page,
   status,
   loading,
@@ -43,7 +48,7 @@ export function ElectionListView({
           <h1 id="elections-heading">选举列表</h1>
         </div>
         {isAdmin && (
-          <Link className="election-create-link" to="/elections/new">
+          <Link className="election-create-link" to={createPath}>
             创建选举
           </Link>
         )}

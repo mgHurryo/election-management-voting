@@ -32,11 +32,11 @@ it('previews the shared list without a session or API calls and keeps actions lo
   expect(screen.getByText('第 1 页 · 共 2 场选举')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: '下一页' })).toBeDisabled()
   fireEvent.click(screen.getByRole('link', { name: '创建选举' }))
-  expect(
-    screen.getByText('创建功能请在正式页面登录后使用；预览中不执行真实创建。'),
-  ).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('link', { name: '查看详情：示例：小组代表选举' }))
-  expect(await screen.findByRole('heading', { name: '示例：小组代表选举' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: '创建选举' })).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('link', { name: '取消' }))
+  await screen.findByRole('heading', { name: '选举列表' })
+  fireEvent.click(screen.getByRole('link', { name: '查看详情：示例：班长选举' }))
+  expect(await screen.findByRole('heading', { name: '示例：班长选举' })).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: '示例候选人甲' })).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: '示例候选人乙' })).toBeInTheDocument()
   fireEvent.click(screen.getByRole('link', { name: '返回选举列表' }))

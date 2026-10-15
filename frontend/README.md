@@ -2,7 +2,7 @@
 
 React + TypeScript + Vite frontend scaffold for the election management and voting system.
 
-**Scope:** the shared frontend foundation, M1 login form, M3 election list, and election detail with read-only candidate profiles are implemented. The list uses the existing `api.elections` wrapper, server-side status filtering and pagination (20 per page), localized times, admin-only create navigation, and loading/empty/error/retry states. Create/edit, candidate management, voter roll, voting and result routes remain placeholders. There are no fake login accounts or demo rows in the real election list. A development-only preview is described below. Election endpoints are still pending in the backend master baseline; API wrappers target the **draft** contract in `../API.md`, and complete live integration is not verified.
+**Scope:** the shared frontend foundation, M1 login form, M3 election list, and election detail with read-only candidate profiles are implemented. The list uses the existing `api.elections` wrapper, server-side status filtering and pagination (20 per page), localized times, admin-only create navigation, and loading/empty/error/retry states. Election creation is also implemented; edit, candidate management, voter roll, voting and result routes remain placeholders. There are no fake login accounts or demo rows in the real election list. A development-only preview is described below. Election endpoints are still pending in the backend master baseline; API wrappers target the **draft** contract in `../API.md`, and complete live integration is not verified.
 
 ## Quick start
 
@@ -85,7 +85,7 @@ Replace the remaining placeholders one module at a time. Election detail is impl
 With npm run dev, open /__preview/elections on the printed local origin.
 This development-only route reuses the real list view with clearly labeled fictional
 elections, no login, and three rows per preview page. Filtering and pagination work
-locally; detail links open the corresponding development-only detail preview. Create and other unfinished business links only display an explanation; they do not write data.
+locally; detail links open the corresponding development-only detail preview. The create link opens its own development preview. Other unfinished business links only display an explanation; they do not write data.
 It does not set a token or change the real auth guards. Normal shell navigation still
 opens real routes, which require authentication. Production builds omit the preview route
 and its example module. Real /elections continues to use the backend and 20 rows per page.
@@ -114,8 +114,26 @@ During npm run dev, /__preview/elections/:id shares this same detail view and sh
 three explicitly fictional profiles in the administrator view. Return navigation
 works; state confirmations and unfinished links only show a preview explanation.
 No credentials are created and no real election reads/writes are sent by the preview.
-The example module and both preview routes are absent from production bundles.
+The example module and preview routes are absent from production bundles.
 
 FE-02 is a separate local branch from the latest master with FE-01 commits carried
 forward as an unmerged dependency. Backend integration is still pending; mocked
 tests and local preview do not establish that the real election APIs are ready.
+
+## Election creation and frontend handoff
+
+ADMIN /elections/new now uses the existing create wrapper. The form validates
+documented text limits, valid local dates, start-before-end, and nonempty unique
+positive BIGINT string voter IDs. Local times convert to UTC with seconds.
+Passwords/accounts/candidates are not created here. Successful creation navigates
+to the returned election ID. Failed submissions preserve inputs; uncertain results
+block another write until explicit review of the election list. No automatic retries.
+
+Development /__preview/elections/new shares the same form, performs local validation
+and shows a clearly labeled simulated result without calling the API or saving data.
+It is reachable via the preview list's create link and is excluded from production.
+
+See [Frontend handoff (Chinese)](HANDOFF_CN.md) for page boundaries, route parameters,
+existing API helpers and reusable components. This is a working handoff document;
+edit-page implementation and live integration remain pending. FE-03 includes FE-01
+and FE-02 as unmerged dependencies. No branch has been pushed by this work.

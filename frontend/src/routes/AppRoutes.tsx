@@ -6,6 +6,10 @@ import { RequireAuth, RequireRole } from './guards'
 const FoundationPage = lazy(() => import('../pages/FoundationPage'))
 const LoginPage = lazy(() => import('../pages/LoginPage'))
 const ElectionListPage = lazy(() => import('../pages/ElectionListPage'))
+const CreateElectionPage = lazy(() => import('../pages/CreateElectionPage'))
+const CreateElectionPreview = import.meta.env.DEV
+  ? lazy(() => import('../dev/CreateElectionPreview'))
+  : null
 const ElectionDetailPage = lazy(() => import('../pages/ElectionDetailPage'))
 const ElectionDetailPreview = import.meta.env.DEV
   ? lazy(() => import('../dev/ElectionDetailPreview'))
@@ -30,6 +34,9 @@ export function AppRoutes() {
           {ElectionDetailPreview && (
             <Route path="__preview/elections/:id" element={<ElectionDetailPreview />} />
           )}
+          {CreateElectionPreview && (
+            <Route path="__preview/elections/new" element={<CreateElectionPreview />} />
+          )}
           <Route path="login" element={<LoginPage />} />
           <Route
             path="forbidden"
@@ -43,10 +50,7 @@ export function AppRoutes() {
               element={placeholder('选举结果', 'M6 / M7 · 后续接入关闭后计票、发布及结果展示。')}
             />
             <Route element={<RequireRole role="ADMIN" />}>
-              <Route
-                path="elections/new"
-                element={placeholder('创建选举', 'M3 · 后续实现草稿创建表单。')}
-              />
+              <Route path="elections/new" element={<CreateElectionPage />} />
               <Route
                 path="elections/:id/edit"
                 element={placeholder('配置选举', 'M3 · 后续实现草稿配置与状态操作。')}

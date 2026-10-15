@@ -1,0 +1,60 @@
+.election-create {
+  max-width: 900px;
+}
+.election-create form {
+  margin-top: 24px;
+}
+.election-create fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.election-create legend {
+  padding: 0;
+  margin-bottom: 18px;
+  font-weight: 600;
+}
+.election-create .field {
+  margin-bottom: 18px;
+}
+.election-create .field textarea {
+  font: inherit;
+  color: inherit;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: white;
+  resize: vertical;
+  width: 100%;
+}
+.election-create .field input {
+  width: 100%;
+  min-width: 0;
+}
+.election-create textarea:focus-visible {
+  outline: 3px solid #5f9d85;
+  outline-offset: 1px;
+}
+.election-create-times {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.election-create-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 20px;
+  margin-top: 24px;
+}
+.election-create .error button {
+  display: block;
+  margin-top: 16px;
+}
+@media (max-width: 700px) {
+  .election-create-times {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+}
