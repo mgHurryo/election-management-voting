@@ -31,7 +31,7 @@ This is a group project developed for the **COMP 3500SEF** course.
 
 ## Frontend Framework
 
-The infrastructure-only React + TypeScript scaffold is available under [`frontend/`](frontend/README.md). Business routes are placeholders; no voting workflow or backend integration is implemented.
+The React + TypeScript frontend is available under [`frontend/`](frontend/README.md). Login and the election list UI are implemented using the shared auth/API layer; other business routes remain placeholders. The election list still requires live backend integration when its endpoint is available; no complete voting workflow is implemented.
 
 ```bash
 cd frontend

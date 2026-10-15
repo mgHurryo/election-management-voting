@@ -5,6 +5,7 @@ import { LoadingState } from '../components/AsyncState'
 import { RequireAuth, RequireRole } from './guards'
 const FoundationPage = lazy(() => import('../pages/FoundationPage'))
 const LoginPage = lazy(() => import('../pages/LoginPage'))
+const ElectionListPage = lazy(() => import('../pages/ElectionListPage'))
 const PlaceholderPage = lazy(() => import('../pages/PlaceholderPage'))
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage'))
 const placeholder = (title: string, description: string) => (
@@ -22,10 +23,7 @@ export function AppRoutes() {
             element={placeholder('无权访问', '当前账户不具备访问此模块的角色权限。')}
           />
           <Route element={<RequireAuth />}>
-            <Route
-              path="elections"
-              element={placeholder('选举列表', 'M3 · 后续接入可见范围过滤与分页列表。')}
-            />
+            <Route path="elections" element={<ElectionListPage />} />
             <Route
               path="elections/:id"
               element={placeholder('选举详情', 'M3 · 后续接入选举状态、时间窗及候选人信息。')}

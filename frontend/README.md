@@ -2,7 +2,7 @@
 
 React + TypeScript + Vite frontend scaffold for the election management and voting system.
 
-**Scope:** infrastructure only. All business routes are placeholders. There is no login form, election CRUD UI, ballot workflow, result UI, fake account, or demo data. The backend foundation implements identity and health only; API wrappers target the **draft** contract in `../API.md` and do not imply that the remaining business endpoints or a complete system exist.
+**Scope:** the shared frontend foundation, M1 login form, and M3 election list are implemented. The list uses the existing `api.elections` wrapper, server-side status filtering and pagination (20 per page), localized times, admin-only create navigation, and loading/empty/error/retry states. Other business routes remain placeholders. There are no fake accounts or runtime demo data. Election endpoints are still pending in the backend master baseline; API wrappers target the **draft** contract in `../API.md`, and complete live integration is not verified.
 
 ## Quick start
 
@@ -15,7 +15,7 @@ Copy-Item .env.example .env.local
 npm run dev
 ```
 
-Open the URL printed by Vite. `/` displays the framework shell without a backend. Protected routes redirect to the `/login` placeholder until a future login implementation uses `useAuth().signIn()`.
+Open the URL printed by Vite. `/` displays the framework shell without a backend. Protected routes redirect to the existing `/login` form. A working identity backend and pre-seeded account are required to reach `/elections`; without a working election endpoint the list shows an error, not demo rows.
 
 Default API prefix: `/api/v1`. During development, Vite proxies `/api` to `http://127.0.0.1:8000`. Configure `API_PROXY_TARGET` in `.env.local` to change it. `VITE_API_BASE_URL` changes the public API base URL. Never place secrets in `VITE_*` variables. Local environment files must not be committed.
 
@@ -32,7 +32,7 @@ npm run preview
 ```text
 src/
   routes/       Route tree, authentication and role guards
-  pages/        Public framework landing page and business placeholders
+  pages/        Public landing page, login, election list and remaining placeholders
   components/   Base layout, async states, render error boundary
   hooks/        Shared auth hook
   store/        Auth context/provider and access-token storage
@@ -43,7 +43,7 @@ src/
 
 Dependency direction: **pages/components → hooks/context → api → HTTP**. No database access or authoritative business rules belong in the frontend. The API module currently has wrappers for all 20 operations in the draft operation index; it does not execute workflows automatically.
 
-## Route placeholders
+## Routes
 
 | Route                                   | Access        | Module           |
 | --------------------------------------- | ------------- | ---------------- |
@@ -74,6 +74,8 @@ The result route is only a placeholder; the backend must enforce CLOSED state fo
 - Permission, eligibility, quota, time window and anonymity enforcement remain backend responsibilities.
 - Production should use HTTPS and a same-origin `/api/v1` reverse proxy. Configure the static host to return `index.html` for non-API client routes. `vite preview` is only for local build checks, not a production server.
 
-## Next implementation steps (not included)
+## Verification and remaining implementation
 
-Replace route placeholders one module at a time; connect the existing auth/API layer; add feature-specific forms, loading/error handling, contract tests and accessibility tests. Reconcile draft API changes before integration. No business implementation is part of this scaffold.
+Election list tests use mocked API responses and cover authentication redirects, role-based create navigation, detail links with BIGINT string IDs, pagination/filter reset, failure versus empty results, manual retry, and stale response handling. These are not live backend integration tests.
+
+Replace the remaining placeholders one module at a time. Election detail and create links currently lead to placeholders; their forms and workflows are separate tasks. Reconcile draft API changes and verify the list against real backend data when election endpoints are available.
