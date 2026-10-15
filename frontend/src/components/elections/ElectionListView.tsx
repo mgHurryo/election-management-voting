@@ -19,10 +19,11 @@ function formatTime(value: string) {
   return Number.isNaN(date.getTime()) ? '时间不可用' : dateFormat.format(date)
 }
 
-type Props = ReturnType<typeof useElections> & { isAdmin: boolean }
+type Props = ReturnType<typeof useElections> & { isAdmin: boolean; detailBasePath?: string }
 
 export function ElectionListView({
   isAdmin,
+  detailBasePath = '/elections',
   page,
   status,
   loading,
@@ -107,7 +108,7 @@ export function ElectionListView({
                       </td>
                       <td>
                         <Link
-                          to={`/elections/${encodeURIComponent(election.id)}`}
+                          to={`${detailBasePath}/${encodeURIComponent(election.id)}`}
                           aria-label={`查看详情：${election.title}`}
                         >
                           查看详情

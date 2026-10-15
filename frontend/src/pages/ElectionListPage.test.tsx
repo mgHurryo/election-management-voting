@@ -58,6 +58,11 @@ function mount(role: Role | null = 'USER') {
 describe('election list', () => {
   it('loads the protected route, preserves BIGINT IDs, and opens details', async () => {
     const list = vi.spyOn(api, 'elections').mockResolvedValue(response())
+    vi.spyOn(api, 'election').mockResolvedValue({ data: election })
+    vi.spyOn(api, 'candidates').mockResolvedValue({
+      data: [],
+      meta: { page: 1, page_size: 20, total: 0 },
+    })
     mount()
     const link = await screen.findByRole('link', { name: '查看详情：班长选举' })
     expect(link).toHaveAttribute('href', '/elections/9007199254740993')
@@ -65,7 +70,7 @@ describe('election list', () => {
     expect(screen.queryByRole('link', { name: '创建选举' })).not.toBeInTheDocument()
     expect(list).toHaveBeenCalledWith({ page: 1, page_size: 20, status: undefined })
     fireEvent.click(link)
-    expect(await screen.findByRole('heading', { name: '选举详情' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '班长选举' })).toBeInTheDocument()
   })
 
   it('shows the administrator create entry and navigates to the existing route', async () => {

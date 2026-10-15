@@ -6,6 +6,10 @@ import { RequireAuth, RequireRole } from './guards'
 const FoundationPage = lazy(() => import('../pages/FoundationPage'))
 const LoginPage = lazy(() => import('../pages/LoginPage'))
 const ElectionListPage = lazy(() => import('../pages/ElectionListPage'))
+const ElectionDetailPage = lazy(() => import('../pages/ElectionDetailPage'))
+const ElectionDetailPreview = import.meta.env.DEV
+  ? lazy(() => import('../dev/ElectionDetailPreview'))
+  : null
 const ElectionListPreview = import.meta.env.DEV
   ? lazy(() => import('../dev/ElectionListPreview'))
   : null
@@ -23,6 +27,9 @@ export function AppRoutes() {
           {ElectionListPreview && (
             <Route path="__preview/elections" element={<ElectionListPreview />} />
           )}
+          {ElectionDetailPreview && (
+            <Route path="__preview/elections/:id" element={<ElectionDetailPreview />} />
+          )}
           <Route path="login" element={<LoginPage />} />
           <Route
             path="forbidden"
@@ -30,10 +37,7 @@ export function AppRoutes() {
           />
           <Route element={<RequireAuth />}>
             <Route path="elections" element={<ElectionListPage />} />
-            <Route
-              path="elections/:id"
-              element={placeholder('选举详情', 'M3 · 后续接入选举状态、时间窗及候选人信息。')}
-            />
+            <Route path="elections/:id" element={<ElectionDetailPage />} />
             <Route
               path="elections/:id/results"
               element={placeholder('选举结果', 'M6 / M7 · 后续接入关闭后计票、发布及结果展示。')}
