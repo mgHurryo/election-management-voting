@@ -61,6 +61,7 @@ plan/status/
 *.key
 *.pem
 *.p12
+*.v2c
 *.pfx
 credentials.json
 secrets.*
@@ -257,3 +258,4 @@ scratch/
 .vitepress/dist/
 docs/_build/
 site/_site/
+docs/architecture/annotated/
