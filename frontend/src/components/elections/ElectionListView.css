@@ -1,0 +1,90 @@
+.election-list {
+  max-width: 1200px;
+}
+.election-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.election-create-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  background: var(--color-primary);
+  color: white;
+  text-decoration: none;
+}
+.election-filter {
+  max-width: 220px;
+  margin: 24px 0;
+}
+.election-filter select {
+  font: inherit;
+  color: inherit;
+  background: white;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+.election-filter select:focus-visible,
+.election-table-scroll:focus-visible {
+  outline: 3px solid #5f9d85;
+  outline-offset: 3px;
+}
+.election-table-scroll {
+  overflow-x: auto;
+}
+.election-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 14px;
+}
+.election-table-caption {
+  text-align: left;
+  padding: 0 0 12px;
+  color: var(--color-muted);
+}
+.election-table th,
+.election-table td {
+  padding: 16px 12px;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+.election-table th {
+  font-weight: 600;
+}
+.election-table th:first-child,
+.election-table td:nth-child(2) {
+  min-width: 120px;
+  overflow-wrap: anywhere;
+}
+.election-table time {
+  display: block;
+  min-width: 150px;
+}
+.election-table td:last-child {
+  min-width: 90px;
+}
+.election-status {
+  display: inline-block;
+  white-space: nowrap;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #edf5ef;
+  color: var(--color-primary);
+}
+.election-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+  font-size: 14px;
+}
