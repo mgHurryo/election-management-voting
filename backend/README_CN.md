@@ -1,9 +1,8 @@
-# 后端基础框架
+# 后端实现状态
 
 [English](README.md) / 简体中文
 
-本次是架构 v0.2 / SRS v0.1 的**第一阶段框架实现，不是完整投票 MVP**。
-已实现 M2 选民名册管理；只注册已经实现并有测试的接口，选举、候选人、投票和结果接口没有模拟成功返回。
+后端已实现架构 v0.2 / SRS v0.1 的 M1 身份认证、M2 选民名册管理和 M3 选举/候选人管理；**尚不是完整投票 MVP**。选票、参与状态、投票和结果接口仍未注册。
 
 ## 已完成
 
@@ -20,10 +19,16 @@
 | `GET /api/v1/auth/me` | Bearer 令牌，账号必须保持 ACTIVE | 已实现 |
 | `GET /health/live` | 运维探针，不访问数据库 | 已实现 |
 | `GET /health/ready` | 运维探针，执行数据库 SELECT 1 | 已实现 |
+| `GET /api/v1/elections`、`GET /api/v1/elections/{id}` | 已认证；按可见范围过滤 | 已实现 |
+| `POST /api/v1/elections` | ADMIN；原子创建 DRAFT 与初始名册 | 已实现 |
+| `PATCH /api/v1/elections/{id}` | ADMIN；仅 DRAFT | 已实现 |
+| `POST /api/v1/elections/{id}/open`、`/close` | ADMIN；时间窗与生命周期校验 | 已实现 |
+| `GET /api/v1/elections/{id}/candidates` | ADMIN 或开放时间窗内的合资格 USER | 已实现 |
+| `POST/PATCH/DELETE /api/v1/elections/{id}/candidates` | ADMIN；仅 DRAFT；保护已被选票引用的候选人 | 已实现 |
 | `GET /api/v1/elections/{id}/voters` | ADMIN | 已实现 |
 | `POST /api/v1/elections/{id}/voters` | ADMIN；DRAFT、ACTIVE USER、额度 1 | 已实现 |
 | `DELETE /api/v1/elections/{id}/voters/{user_id}` | ADMIN；DRAFT、没有参与记录 | 已实现 |
-| API 文档其余 15 个操作 | 尚未注册 | 后续实现 |
+| 选票、参与状态、投票和结果操作（5 个） | 尚未注册 | 后续实现 |
 
 健康检查是 `/api/v1` 之外的运维扩展。ready 只验证数据库连接，不能证明表结构、迁移或投票可用。
 数据库不可用时返回脱敏的 `503 SERVICE_UNAVAILABLE`。
@@ -73,8 +78,8 @@ uv run pytest --cov=app --cov-report=term-missing
 uv build
 ```
 
-快速身份模块集成测试仅在 SQLite 上创建 users 表；名册 API 测试使用完整 SQLite schema。
-这些测试**不能替代 MySQL 锁、投票并发和匿名存储验证**。
+快速身份模块集成测试仅在 SQLite 上创建 users 表；选举和名册 API 测试使用完整 SQLite schema。
+MySQL 专项测试验证选举/名册行锁行为；这些测试**不能替代投票并发和匿名存储验证**。
 DDL 快照核对八张 MySQL 表及索引与框架实施前 `1153335` 提交一致。
 
 真实 MySQL 测试必须显式使用名称以 `_test` 结尾的**空的一次性数据库**；测试会创建并移除这八张表：
@@ -85,16 +90,14 @@ uv run pytest -m mysql
 ```
 
 未设置时 MySQL 测试明确跳过，不算验证成功。除身份、Schema 和外键验证外，测试还包括名册新增 / 删除
-与开启状态写入的四个 MySQL 并发场景。CI 使用独立 MySQL 服务执行完整测试、
+与开启状态写入的并发场景，以及候选人修改与开启的并发场景。CI 使用独立 MySQL 服务执行完整测试、
 lint 和构建，不关闭原有检查。当前锁定 Starlette 的 TestClient 对 httpx 发出弃用警告，
 保留该提示，不屏蔽或误报为测试失败。
 
 ## 后续开发顺序
 
-1. 选举与候选人：创建、初始名单原子写入、查询、DRAFT 编辑、开启 / 关闭。
-2. 选民名册已完成：ACTIVE USER 校验、额度固定为 1；修改先锁选举行再检查 DRAFT，持锁至提交。
-3. 投票：选举行锁、资格 / 时间 / 额度校验、匿名选票与参与记录原子提交。
-4. 结果：CLOSED 计票、公布权限；平票和零票处理需先确认 API D-06。
+1. 选票与参与状态：选举行锁、资格 / 时间 / 额度校验、匿名选票与参与记录原子提交。
+2. 结果：CLOSED 计票、公布权限；平票和零票处理需先确认 API D-06。
 
 每个模块先补 schemas / service / repository 与测试，再接入 `app/api/router.py`，
 不要为了补齐文档目录就发布占位接口。目录职责见英文说明中的 Code map。

@@ -25,7 +25,7 @@ def test_readiness_failure_does_not_leak_database_details(client, app, monkeypat
 
 
 def test_framework_errors_are_normalized(client):
-    response = client.get("/api/v1/elections")
+    response = client.get("/api/v1/not-implemented")
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "ROUTE_NOT_FOUND"
     response = client.delete("/api/v1/auth/me")
@@ -89,6 +89,12 @@ def test_openapi_documents_only_implemented_operations(client):
     assert set(schema["paths"]) == {
         "/api/v1/auth/login",
         "/api/v1/auth/me",
+        "/api/v1/elections",
+        "/api/v1/elections/{election_id}",
+        "/api/v1/elections/{election_id}/open",
+        "/api/v1/elections/{election_id}/close",
+        "/api/v1/elections/{election_id}/candidates",
+        "/api/v1/elections/{election_id}/candidates/{candidate_id}",
         "/api/v1/elections/{election_id}/voters",
         "/api/v1/elections/{election_id}/voters/{user_id}",
         "/health/live",

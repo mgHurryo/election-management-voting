@@ -93,7 +93,8 @@ class Election(Base):
     )
 
     id: Mapped[int] = mapped_column(
-        BIGINT(unsigned=True),
+        # SQLite's test adapter only auto-generates row IDs for INTEGER PRIMARY KEY.
+        BIGINT(unsigned=True).with_variant(Integer, "sqlite"),
         primary_key=True,
         autoincrement=True,
     )
@@ -154,7 +155,7 @@ class ElectionCandidate(Base):
     )
 
     id: Mapped[int] = mapped_column(
-        BIGINT(unsigned=True),
+        BIGINT(unsigned=True).with_variant(Integer, "sqlite"),
         primary_key=True,
         autoincrement=True,
     )

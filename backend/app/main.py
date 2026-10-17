@@ -28,7 +28,7 @@ def create_app(*, settings: Settings | None = None, engine: Engine | None = None
     app = FastAPI(
         title="Election Management and Voting API",
         version="0.1.0",
-        description="Backend foundation. Only identity and operational health are implemented.",
+        description="Identity, voter roster, election and candidate management API.",
         lifespan=lifespan,
         redirect_slashes=False,
         docs_url="/docs" if settings.app_env != "production" else None,
