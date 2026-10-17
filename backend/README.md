@@ -2,10 +2,10 @@
 
 English / [简体中文](README_CN.md)
 
-This is the first implementation slice of Architecture v0.2 / SRS v0.1. It is
-**not the complete voting MVP**. M2 voter roster management is also implemented.
-No election, candidate, vote or result
-endpoint returns a placeholder success. Those operations remain unregistered.
+This backend implements M1 identity, M2 voter roster management and M3 election
+and candidate management from Architecture v0.2 / SRS v0.1. It is **not the
+complete voting MVP**: ballot, participation, vote and result operations remain
+unregistered.
 
 ## Implemented scope
 
@@ -27,10 +27,16 @@ endpoint returns a placeholder success. Those operations remain unregistered.
 | `GET /api/v1/auth/me` | Bearer token; account must remain ACTIVE | Implemented |
 | `GET /health/live` | Public operational probe, no database access | Implemented |
 | `GET /health/ready` | Public operational probe, database `SELECT 1` | Implemented |
+| `GET /api/v1/elections` and `GET /api/v1/elections/{id}` | Authenticated; visibility-filtered | Implemented |
+| `POST /api/v1/elections` | ADMIN; atomic DRAFT and initial roster creation | Implemented |
+| `PATCH /api/v1/elections/{id}` | ADMIN; DRAFT only | Implemented |
+| `POST /api/v1/elections/{id}/open` and `/close` | ADMIN; time-window and lifecycle checks | Implemented |
+| `GET /api/v1/elections/{id}/candidates` | ADMIN or eligible USER during the open window | Implemented |
+| `POST/PATCH/DELETE /api/v1/elections/{id}/candidates` | ADMIN; DRAFT only; protects referenced candidates | Implemented |
 | `GET /api/v1/elections/{id}/voters` | ADMIN | Implemented |
 | `POST /api/v1/elections/{id}/voters` | ADMIN; DRAFT, ACTIVE USER, quota 1 | Implemented |
 | `DELETE /api/v1/elections/{id}/voters/{user_id}` | ADMIN; DRAFT, no participation | Implemented |
-| Remaining 15 API.md operations | Not registered | Planned |
+| Ballot, participation, vote and result operations (5) | Not registered | Planned |
 
 Health routes are operational additions **outside `/api/v1`**. Readiness reports
 connectivity, not schema compatibility, migrations or voting readiness. An
@@ -79,9 +85,10 @@ uv run uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 --no-a
 ```
 
 Use `/docs` or `/openapi.json` in development. With `APP_ENV=production`, both are
-disabled. Liveness and docs can start without connecting to MySQL; readiness and
-identity need the database. Stop the process with Ctrl+C. Do not enable SQL echo,
-request-body/token logging or proxy query logging for authentication/voting.
+disabled. Liveness and docs can start without connecting to MySQL; readiness,
+identity, election, candidate and voter-roster APIs need the database. Stop the
+process with Ctrl+C. Do not enable SQL echo, request-body/token logging or proxy
+query logging for authentication/voting.
 Use TLS and deployment-level login rate limiting before any public deployment;
 rate limiting and browser token handling are not implemented by this backend slice.
 
@@ -94,9 +101,9 @@ uv run pytest --cov=app --cov-report=term-missing
 uv build
 ```
 
-Fast identity integration tests use SQLite only for the `users` table; roster
-API tests use SQLite with the full schema. They do
-**not** establish MySQL locking, voting concurrency or anonymous-storage correctness.
+Fast identity integration tests use SQLite only for the `users` table; election
+and roster API tests use SQLite with the full schema. MySQL-specific tests exercise
+row-lock behavior; they do **not** establish voting concurrency or anonymous storage.
 A checked-in DDL snapshot verifies that the eight MySQL tables/indexes remain
 identical to the original bootstrap schema at commit `1153335`.
 
@@ -109,14 +116,14 @@ uv run pytest -m mysql
 ```
 
 Without this variable, MySQL tests are skipped, not reported as verified.
-The suite includes four MySQL concurrency scenarios for add/remove versus an
-opening-state write, in addition to identity, schema and foreign-key checks.
+The suite includes MySQL concurrency scenarios for roster add/remove and candidate
+edits versus opening, in addition to identity, schema and foreign-key checks.
 The backend CI provisions its own MySQL service and runs these tests in addition
 to lint, build and the full suite. No existing repository checks are disabled.
 The locked Starlette version currently emits an httpx TestClient deprecation
 warning; it is visible rather than suppressed and does not fail the tests.
 
-## Code map and next slices
+## Code map and remaining slices
 
 ```text
 app/
@@ -130,14 +137,12 @@ app/
   core/                    settings, JWT/password helpers and composition root
 ```
 
-| Next module | Routes / service / repository responsibilities |
+| Remaining module | Routes / service / repository responsibilities |
 | --- | --- |
-| Elections | Create/list/detail/patch, DRAFT transitions, atomic initial membership |
-| Candidates | DRAFT-only CRUD, required introduction and candidate ownership |
 | Voting | Ballot/participation, locks, time/quota checks, anonymous atomic writes |
 | Results | CLOSED tally, publication visibility, tie/zero-vote policy |
 
-Add each module's schemas, service and repository before registering its routes in
+Add remaining modules' schemas, service and repository before registering routes in
 `app/api/router.py`. Tests guard against API database access and service HTTP imports.
 Keep transactions inside services, especially participation + ballot + choice.
 Implement MySQL row-lock/concurrency tests before accepting voting correctness.

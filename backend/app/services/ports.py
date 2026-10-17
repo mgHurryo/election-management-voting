@@ -1,7 +1,9 @@
+from datetime import datetime
 from types import TracebackType
 from typing import Protocol, Self
 
-from app.models.identity import UserAccount
+from app.models.elections import CandidateDetails, ElectionDetails
+from app.models.identity import UserAccount, UserIdentity
 from app.models.roster import ElectionSnapshot, VoterMembership
 
 
@@ -27,10 +29,59 @@ class RosterRepository(Protocol):
     def participation_count(self, election_id: int, user_id: int) -> int: ...
 
 
+class ElectionsRepository(Protocol):
+    def create(
+        self,
+        *,
+        title: str,
+        position_title: str,
+        description: str | None,
+        created_by: int,
+        starts_at: datetime,
+        ends_at: datetime,
+        voter_ids: list[int],
+    ) -> ElectionDetails: ...
+    def election(self, election_id: int, *, for_update: bool = False) -> ElectionDetails | None: ...
+    def elections(
+        self,
+        *,
+        user: UserIdentity,
+        status: str | None,
+        offset: int,
+        limit: int,
+    ) -> tuple[list[ElectionDetails], int]: ...
+    def update_election(self, election_id: int, changes: dict[str, object]) -> ElectionDetails: ...
+    def update_status(self, election_id: int, status: str) -> ElectionDetails: ...
+    def has_active_voter(self, election_id: int) -> bool: ...
+    def has_valid_candidates(self, election_id: int) -> bool: ...
+    def candidates(
+        self, election_id: int, offset: int, limit: int
+    ) -> tuple[list[CandidateDetails], int]: ...
+    def candidate(
+        self, election_id: int, candidate_id: int, *, for_update: bool = False
+    ) -> CandidateDetails | None: ...
+    def add_candidate(
+        self,
+        election_id: int,
+        *,
+        name: str,
+        description: str,
+        photo_url: str | None,
+        display_order: int,
+    ) -> CandidateDetails: ...
+    def update_candidate(
+        self, election_id: int, candidate_id: int, changes: dict[str, object]
+    ) -> CandidateDetails: ...
+    def candidate_is_referenced(self, election_id: int, candidate_id: int) -> bool: ...
+    def delete_candidate(self, election_id: int, candidate_id: int) -> None: ...
+    def has_voter(self, election_id: int, user_id: int) -> bool: ...
+
+
 class UnitOfWork(Protocol):
     users: IdentityRepository
     health: HealthRepository
     roster: RosterRepository
+    elections: ElectionsRepository
 
     def __enter__(self) -> Self: ...
     def __exit__(

@@ -3,6 +3,7 @@ from typing import Self
 
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.repositories.elections import SqlAlchemyElectionsRepository
 from app.repositories.health import SqlAlchemyHealthRepository
 from app.repositories.identity import SqlAlchemyIdentityRepository
 from app.repositories.roster import SqlAlchemyRosterRepository
@@ -24,6 +25,7 @@ class SqlAlchemyUnitOfWork:
         self.users = SqlAlchemyIdentityRepository(self._session)
         self.health = SqlAlchemyHealthRepository(self._session)
         self.roster = SqlAlchemyRosterRepository(self._session)
+        self.elections = SqlAlchemyElectionsRepository(self._session)
         return self
 
     def commit(self) -> None:

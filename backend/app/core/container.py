@@ -4,6 +4,7 @@ from app.core.config import Settings
 from app.core.security import TokenManager
 from app.db.session import create_database_engine, create_session_factory
 from app.db.unit_of_work import SqlAlchemyUnitOfWork
+from app.services.elections import ElectionsService
 from app.services.health import HealthService
 from app.services.identity import IdentityService
 from app.services.roster import RosterService
@@ -18,6 +19,7 @@ class Container:
         self.identity = IdentityService(self.unit_of_work, TokenManager(settings))
         self.health = HealthService(self.unit_of_work)
         self.roster = RosterService(self.unit_of_work)
+        self.elections = ElectionsService(self.unit_of_work)
         self._owns_engine = engine is None
 
     def unit_of_work(self) -> SqlAlchemyUnitOfWork:

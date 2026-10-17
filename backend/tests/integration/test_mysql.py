@@ -15,8 +15,10 @@ from app.core.errors import AppError
 from app.db.session import create_session_factory
 from app.db.unit_of_work import SqlAlchemyUnitOfWork
 from app.main import create_app
-from app.models import Base, Election, ElectionVoter, User
+from app.models import Base, Election, ElectionCandidate, ElectionVoter, User
+from app.repositories.elections import SqlAlchemyElectionsRepository
 from app.repositories.roster import SqlAlchemyRosterRepository
+from app.services.elections import ElectionsService
 from app.services.roster import RosterService
 
 pytestmark = pytest.mark.mysql
@@ -225,3 +227,95 @@ def test_mysql_roster_waits_for_open_then_rejects(mysql_engine, mysql_roster, op
             select(ElectionVoter.user_id).where(ElectionVoter.election_id == 10)
         )
         assert (membership is not None) == (operation == "remove")
+
+
+@pytest.fixture
+def mysql_elections(mysql_engine, password_hash):
+    now = datetime.now(UTC).replace(tzinfo=None, microsecond=0)
+    with mysql_engine.begin() as connection:
+        connection.execute(
+            insert(User),
+            [
+                dict(
+                    id=51,
+                    username="election_admin",
+                    password_hash=password_hash,
+                    display_name="Admin",
+                    role="ADMIN",
+                    status="ACTIVE",
+                ),
+                dict(
+                    id=52,
+                    username="election_voter",
+                    password_hash=password_hash,
+                    display_name="Voter",
+                    role="USER",
+                    status="ACTIVE",
+                ),
+            ],
+        )
+        connection.execute(
+            insert(Election).values(
+                id=20,
+                title="Election lock test",
+                position_title="Chair",
+                created_by=51,
+                status="DRAFT",
+                privacy_mode="FORCED_ANONYMOUS",
+                starts_at=now - timedelta(minutes=5),
+                ends_at=now + timedelta(minutes=5),
+            )
+        )
+        connection.execute(insert(ElectionVoter).values(election_id=20, user_id=52, vote_quota=1))
+        connection.execute(
+            insert(ElectionCandidate).values(
+                id=201,
+                election_id=20,
+                name="Existing Candidate",
+                description="Valid introduction.",
+                display_order=0,
+            )
+        )
+    factory = create_session_factory(mysql_engine)
+    service = ElectionsService(lambda: SqlAlchemyUnitOfWork(factory))
+    yield service
+    with mysql_engine.begin() as connection:
+        connection.execute(delete(ElectionCandidate).where(ElectionCandidate.election_id == 20))
+        connection.execute(delete(ElectionVoter).where(ElectionVoter.election_id == 20))
+        connection.execute(delete(Election).where(Election.id == 20))
+        connection.execute(delete(User).where(User.id.in_([51, 52])))
+
+
+def test_mysql_open_waits_for_candidate_edit_commit(mysql_engine, mysql_elections, monkeypatch):
+    locked, release = Event(), Event()
+    original = SqlAlchemyElectionsRepository.election
+
+    def pause_after_lock(repository, election_id, *, for_update=False):
+        election = original(repository, election_id, for_update=for_update)
+        if for_update:
+            locked.set()
+            assert release.wait(10), "Candidate mutation did not release election lock"
+        return election
+
+    monkeypatch.setattr(SqlAlchemyElectionsRepository, "election", pause_after_lock)
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(
+            mysql_elections.add_candidate,
+            20,
+            name="Concurrent Candidate",
+            description="Added before opening.",
+            photo_url=None,
+            display_order=1,
+        )
+        try:
+            assert locked.wait(5), "Candidate mutation did not acquire election lock"
+            with pytest.raises(OperationalError) as error, mysql_engine.begin() as connection:
+                connection.execute(text("SET SESSION innodb_lock_wait_timeout = 1"))
+                connection.execute(update(Election).where(Election.id == 20).values(status="OPEN"))
+            assert error.value.orig.args[0] == 1205
+        finally:
+            release.set()
+        future.result(timeout=5)
+
+    opened = mysql_elections.open_election(20)
+    assert opened.status == "OPEN"

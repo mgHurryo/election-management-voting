@@ -5,6 +5,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.errors import authentication_required
 from app.models.identity import UserIdentity
+from app.services.elections import ElectionsService
 from app.services.health import HealthService
 from app.services.identity import IdentityService
 from app.services.roster import RosterService
@@ -24,9 +25,14 @@ def roster_service(request: Request) -> RosterService:
     return request.app.state.container.roster
 
 
+def elections_service(request: Request) -> ElectionsService:
+    return request.app.state.container.elections
+
+
 IdentityServiceDep = Annotated[IdentityService, Depends(identity_service)]
 HealthServiceDep = Annotated[HealthService, Depends(health_service)]
 RosterServiceDep = Annotated[RosterService, Depends(roster_service)]
+ElectionsServiceDep = Annotated[ElectionsService, Depends(elections_service)]
 
 
 def current_user(
