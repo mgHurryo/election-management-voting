@@ -1,0 +1,453 @@
+.candidate-management {
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 48px;
+}
+
+.candidate-backbar {
+  margin-top: 24px;
+}
+
+.candidate-page-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 28px;
+  margin: 20px 0 26px;
+}
+
+.candidate-page-heading h1 {
+  font-family: var(--serif);
+  font-size: 42px;
+  font-weight: 900;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.candidate-page-subtitle {
+  margin-top: 8px;
+  color: var(--soft);
+  font-size: 15px;
+}
+
+.candidate-add-button {
+  flex: 0 0 auto;
+}
+
+.candidate-management-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 0 0 24px;
+  padding: 13px 0;
+  border-top: 1px solid var(--hair);
+  border-bottom: 1px solid var(--hair);
+  color: var(--soft);
+  font-size: 13px;
+}
+
+.candidate-status {
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.candidate-status-open {
+  border-color: var(--verm);
+  color: var(--verm-deep);
+}
+
+.candidate-count {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.candidate-lock-note {
+  margin-left: auto;
+}
+
+.candidate-editor {
+  margin: 26px 0 38px;
+  padding: 20px 0 24px;
+  border-top: 2px solid var(--ink);
+  border-bottom: 1px solid var(--hair);
+}
+
+.editor-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.editor-heading h2 {
+  font-family: var(--serif);
+  font-size: 25px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.editor-heading p {
+  margin-top: 6px;
+  color: var(--soft);
+  font-size: 13px;
+}
+
+.candidate-form-grid {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.82fr) minmax(0, 1.18fr);
+  gap: 22px 44px;
+  align-items: start;
+  margin: 24px 0 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.candidate-form-identity {
+  min-width: 0;
+}
+
+.candidate-form-grid .field {
+  margin-bottom: 20px;
+}
+
+.candidate-form-grid .field > span {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.candidate-form-grid input,
+.candidate-form-grid textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+}
+
+.candidate-form-grid textarea {
+  min-height: 240px;
+  resize: vertical;
+}
+
+.candidate-form-grid input:focus-visible,
+.candidate-form-grid textarea:focus-visible {
+  outline-color: var(--verm);
+}
+
+.candidate-form-description {
+  min-width: 0;
+}
+
+.candidate-form-error {
+  margin-top: 4px;
+}
+
+.candidate-editor-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 22px;
+  margin-top: 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--hair);
+}
+
+.candidate-empty {
+  padding: 28px 0 34px;
+  border-top: 1px solid var(--ink);
+}
+
+.candidate-empty h2 {
+  font-family: var(--serif);
+  font-size: 25px;
+  font-weight: 700;
+}
+
+.candidate-empty p {
+  margin: 6px 0 20px;
+  color: var(--soft);
+}
+
+.candidate-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.candidate-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 14px;
+}
+
+.candidate-table caption {
+  padding: 0 0 13px;
+  color: var(--soft);
+  text-align: left;
+  font-size: 13px;
+}
+
+.candidate-table th,
+.candidate-table td {
+  padding: 15px 12px;
+  border-top: 1px solid var(--hair);
+  vertical-align: top;
+}
+
+.candidate-table thead th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--line);
+  color: var(--soft);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.candidate-table tbody tr:hover {
+  background: rgba(232, 224, 212, 0.24);
+}
+
+.candidate-table [data-label='Order'] {
+  width: 82px;
+  color: var(--verm-deep);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.candidate-table tbody th {
+  min-width: 180px;
+  font-family: var(--serif);
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.candidate-description-cell {
+  min-width: 340px;
+  max-width: 680px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.55;
+}
+
+.candidate-table [data-label='Photo'] {
+  min-width: 130px;
+  white-space: nowrap;
+}
+
+.candidate-photo-link {
+  color: var(--verm-deep);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.muted-text {
+  color: var(--soft);
+}
+
+.candidate-row-actions {
+  min-width: 160px;
+}
+
+.row-action-buttons,
+.delete-confirmation {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.delete-confirmation {
+  gap: 8px 12px;
+}
+
+.delete-confirmation > span {
+  width: 100%;
+  color: var(--verm-deep);
+  font-size: 12px;
+}
+
+.candidate-row-action {
+  min-height: 36px;
+  padding: 4px 0;
+}
+
+.candidate-danger-action {
+  min-height: 36px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(168, 56, 45, 0.35);
+  color: var(--verm-deep);
+  font-size: 13px;
+}
+
+.candidate-management-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--hair);
+  color: var(--soft);
+  font-size: 13px;
+}
+
+.candidate-management-pagination button:disabled,
+.candidate-editor button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+@media (max-width: 900px) {
+  .candidate-management {
+    padding: 0 28px;
+  }
+
+  .candidate-form-grid {
+    grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
+    column-gap: 28px;
+  }
+
+  .candidate-description-cell {
+    min-width: 270px;
+  }
+}
+
+@media (max-width: 760px) {
+  .candidate-management {
+    padding: 0 20px;
+  }
+
+  .candidate-page-heading {
+    align-items: start;
+    flex-direction: column;
+    gap: 18px;
+    margin: 18px 0 22px;
+  }
+
+  .candidate-page-heading h1 {
+    font-size: 34px;
+  }
+
+  .candidate-page-heading .candidate-add-button {
+    align-self: flex-start;
+  }
+
+  .candidate-management-meta {
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .candidate-lock-note {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .candidate-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .candidate-form-grid .field {
+    margin-bottom: 18px;
+  }
+
+  .candidate-form-grid textarea {
+    min-height: 180px;
+  }
+
+  .candidate-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    clip-path: inset(50%);
+  }
+
+  .candidate-table,
+  .candidate-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .candidate-table caption {
+    display: block;
+    width: 100%;
+    white-space: normal;
+  }
+
+  .candidate-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(48px, auto) minmax(0, 1fr);
+    border-top: 1px solid var(--ink);
+    padding: 8px 0 14px;
+  }
+
+  .candidate-table th,
+  .candidate-table td {
+    min-width: 0;
+    padding: 9px 4px;
+    border: 0;
+  }
+
+  .candidate-table [data-label='Order'] {
+    width: auto;
+    align-self: center;
+    color: var(--verm-deep);
+  }
+
+  .candidate-table [data-label='Candidate'] {
+    align-self: center;
+    font-size: 20px;
+  }
+
+  .candidate-table [data-label='Candidate']::before {
+    display: none;
+  }
+
+  .candidate-table [data-label='Description'],
+  .candidate-table [data-label='Photo'],
+  .candidate-table [data-label='Actions'] {
+    grid-column: 1 / -1;
+  }
+
+  .candidate-table [data-label]::before {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--soft);
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .candidate-table tbody th::before {
+    display: none;
+  }
+
+  .candidate-description-cell {
+    min-width: 0;
+    max-width: none;
+  }
+
+  .candidate-row-actions {
+    width: 100%;
+  }
+
+  .candidate-editor-actions {
+    gap: 18px;
+  }
+}

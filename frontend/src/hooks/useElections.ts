@@ -2,7 +2,33 @@ import { useEffect, useState } from 'react'
 import { api } from '../api'
 import type { Election, ElectionStatus, Paginated } from '../api/types'
 
-export type StatusFilter = ElectionStatus | ''
+export type StatusFilter = Exclude<ElectionStatus, 'CLOSED'> | ''
+
+const pageSize = 20
+
+/** Compose the two supported status filters before paginating; CLOSED never consumes a row. */
+async function loadElections(page: number, status: StatusFilter): Promise<Paginated<Election>> {
+  if (status) return api.elections({ page, page_size: pageSize, status })
+  const [open, firstDrafts] = await Promise.all([
+    api.elections({ page, page_size: pageSize, status: 'OPEN' }),
+    api.elections({ page: 1, page_size: pageSize, status: 'DRAFT' }),
+  ])
+  const rows = [...open.data]
+  const draftOffset = Math.max(0, (page - 1) * pageSize - open.meta.total)
+  const needed = Math.min(pageSize - rows.length, firstDrafts.meta.total - draftOffset)
+  if (needed > 0) {
+    const firstPage = Math.floor(draftOffset / pageSize) + 1
+    const lastPage = Math.floor((draftOffset + needed - 1) / pageSize) + 1
+    const draftPages = await Promise.all(
+      Array.from({ length: lastPage - firstPage + 1 }, (_, index) => {
+        const draftPage = firstPage + index
+        return draftPage === 1 ? firstDrafts : api.elections({ page: draftPage, page_size: pageSize, status: 'DRAFT' })
+      }),
+    )
+    rows.push(...draftPages.flatMap((result) => result.data).slice(draftOffset % pageSize, draftOffset % pageSize + needed))
+  }
+  return { data: rows, meta: { page, page_size: pageSize, total: open.meta.total + firstDrafts.meta.total } }
+}
 
 export function useElections() {
   const [query, setQuery] = useState<{ page: number; status: StatusFilter }>({
@@ -19,7 +45,7 @@ export function useElections() {
 
   useEffect(() => {
     let active = true
-    api.elections({ page: query.page, page_size: 20, status: query.status || undefined }).then(
+    loadElections(query.page, query.status).then(
       (data) => {
         if (active) setResult({ key, data, error: null })
       },

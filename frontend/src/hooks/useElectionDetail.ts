@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api'
-import type { Election, Envelope, Paginated, Candidate, Role } from '../api/types'
+import type { Election, Envelope, Paginated, Candidate, Role, Ballot } from '../api/types'
 
 function useRead<T>(key: string, enabled: boolean, load: () => Promise<T>) {
   const [snapshot, setSnapshot] = useState<{ key: string; data: T | null; error: unknown } | null>(
@@ -82,7 +82,7 @@ export function useElectionStatusAction(id: string, refresh: () => void) {
       if (action === 'open') await api.openElection(id)
       else await api.closeElection(id)
       if (current === generation.current) {
-        setMessage(action === 'open' ? '选举已开启。' : '选举已关闭。')
+        setMessage(action === 'open' ? 'Voting is open.' : 'Voting is closed.')
         refresh()
       }
     } catch (reason) {
@@ -93,4 +93,12 @@ export function useElectionStatusAction(id: string, refresh: () => void) {
     }
   }
   return { pending, error, message, run }
+}
+
+/** The ballot endpoint owns eligibility, quota and the complete candidate set. */
+export function useBallot(id: string, enabled: boolean) {
+  const [revision, setRevision] = useState(0)
+  const load = useCallback(() => api.ballot(id), [id])
+  const result = useRead<Envelope<Ballot>>(`${id}/${revision}`, enabled, load)
+  return { ...result, retry: () => setRevision((value) => value + 1) }
 }

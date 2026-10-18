@@ -38,15 +38,15 @@ export function validateElectionFields(values: ElectionFieldValues): {
   const title = values.title.trim()
   const position = values.position_title.trim()
   const description = values.description.trim()
-  if (!title || [...title].length > 200) errors.title = '请输入 1–200 字符的选举名称。'
+  if (!title || [...title].length > 200) errors.title = 'Enter 1–200 characters for the election name.'
   if (!position || [...position].length > 100)
-    errors.position_title = '请输入 1–100 字符的竞选职位。'
-  if ([...description].length > 10000) errors.description = '说明不能超过 10000 字符。'
+    errors.position_title = 'Enter 1–100 characters for the position.'
+  if ([...description].length > 10000) errors.description = 'The description cannot exceed 10000 characters.'
   const start = localTime(values.starts_at)
   const end = localTime(values.ends_at)
-  if (!start) errors.starts_at = '请输入有效的开始时间。'
-  if (!end) errors.ends_at = '请输入有效的结束时间。'
-  if (start && end && start >= end) errors.ends_at = '结束时间必须晚于开始时间。'
+  if (!start) errors.starts_at = 'Enter a valid start time.'
+  if (!end) errors.ends_at = 'Enter a valid end time.'
+  if (start && end && start >= end) errors.ends_at = 'The end time must be after the start time.'
   if (Object.keys(errors).length || !start || !end) return { errors, input: null }
   return {
     errors,
@@ -70,10 +70,10 @@ export function validateElectionForm(values: ElectionFormValues): {
     .trim()
     .split(/[\s,，、]+/)
     .filter(Boolean)
-  if (!ids.length) errors.voters = '请至少填写一个已有选民的用户 ID。'
+  if (!ids.length) errors.voters = 'Enter at least one existing voter ID.'
   else if (ids.some((id) => !/^[1-9][0-9]*$/.test(id) || BigInt(id) > 18446744073709551615n))
-    errors.voters = '用户 ID 须为正整数字符串，且不超过 18446744073709551615。'
-  else if (new Set(ids).size !== ids.length) errors.voters = '用户 ID 不能重复，请移除重复项。'
+    errors.voters = 'Voter IDs must be positive integers no larger than 18446744073709551615.'
+  else if (new Set(ids).size !== ids.length) errors.voters = 'Voter IDs must be unique. Remove duplicates.'
   return {
     errors,
     input: fields.input && !Object.keys(errors).length ? { ...fields.input, voter_ids: ids } : null,

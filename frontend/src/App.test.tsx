@@ -1,12 +1,32 @@
 import { render, screen } from '@testing-library/react'
 import { expect, it, vi } from 'vitest'
 import App from './App'
-it('renders the public framework shell without a backend or fake data', async () => {
-  const fetcher = vi.fn()
-  vi.stubGlobal('fetch', fetcher)
+
+vi.mock('./api', () => ({
+  api: new Proxy(
+    {},
+    {
+      get: () =>
+        vi.fn().mockResolvedValue({ data: [], meta: { page: 1, page_size: 6, total: 0 } }),
+    },
+  ),
+}))
+
+vi.mock('./hooks/useAuth', () => ({
+  useAuth: () => ({
+    user: null,
+    loading: false,
+    error: null,
+    restore: vi.fn(),
+    signIn: vi.fn(),
+    signOut: vi.fn(),
+  }),
+}))
+
+it('protects the elections home when no session exists', async () => {
   window.history.replaceState({}, '', '/')
   render(<App />)
-  expect(await screen.findByRole('heading', { name: '前端框架已就绪' })).toBeInTheDocument()
-  expect(screen.getByRole('navigation', { name: '主导航' })).toBeInTheDocument()
-  expect(fetcher).not.toHaveBeenCalled()
+  expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument()
+  expect(screen.getAllByText('Civic')).toHaveLength(2)
+  expect(screen.getByRole('textbox', { name: 'Username' })).toBeInTheDocument()
 })

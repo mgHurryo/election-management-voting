@@ -5,8 +5,10 @@ interface Props {
   errors: ElectionFormErrors
   onChange: (field: keyof ElectionFieldValues, value: string) => void
   idPrefix: string
+  section?: 'all' | 'details' | 'description'
 }
-export function ElectionFields({ values, errors, onChange, idPrefix }: Props) {
+
+export function ElectionFields({ values, errors, onChange, idPrefix, section = 'all' }: Props) {
   function fieldError(field: keyof ElectionFieldValues) {
     return errors[field] ? (
       <span id={idPrefix + '-' + field + '-error'} className="form-error" role="alert">
@@ -20,63 +22,64 @@ export function ElectionFields({ values, errors, onChange, idPrefix }: Props) {
       'aria-describedby': errors[field] ? idPrefix + '-' + field + '-error' : undefined,
     }
   }
-  return (
+  const name = (
+    <label className="lfield election-create-name">
+      <span>Election name *</span>
+      <input
+        name="title"
+        value={values.title}
+        onChange={(event) => onChange('title', event.target.value)}
+        {...attributes('title')}
+      />
+      {fieldError('title')}
+    </label>
+  )
+  const position = (
+    <label className="lfield election-create-position">
+      <span>Position *</span>
+      <input
+        name="position_title"
+        value={values.position_title}
+        onChange={(event) => onChange('position_title', event.target.value)}
+        {...attributes('position_title')}
+      />
+      {fieldError('position_title')}
+    </label>
+  )
+  const description = (
+    <label className="lfield election-create-description">
+      <span>Description (optional)</span>
+      <textarea
+        name="description"
+        rows={4}
+        value={values.description}
+        onChange={(event) => onChange('description', event.target.value)}
+        {...attributes('description')}
+      />
+      {fieldError('description')}
+    </label>
+  )
+  const schedule = (
     <>
-      {' '}
-      <label className="field">
-        <span>选举名称 *</span>
-        <input
-          name="title"
-          required
-          value={values.title}
-          onChange={(event) => onChange('title', event.target.value)}
-          {...attributes('title')}
-        />
-        {fieldError('title')}
-      </label>
-      <label className="field">
-        <span>竞选职位 *</span>
-        <input
-          name="position_title"
-          required
-          value={values.position_title}
-          onChange={(event) => onChange('position_title', event.target.value)}
-          {...attributes('position_title')}
-        />
-        {fieldError('position_title')}
-      </label>
-      <label className="field">
-        <span>选举说明（选填）</span>
-        <textarea
-          name="description"
-          rows={4}
-          value={values.description}
-          onChange={(event) => onChange('description', event.target.value)}
-          {...attributes('description')}
-        />
-        {fieldError('description')}
-      </label>
-      <div className="election-create-times">
-        <label className="field">
-          <span>开始时间 *</span>
+      <div className="lgbox-wrap election-create-times">
+        <label className="lfield">
+          <span>Opens at *</span>
           <input
             type="datetime-local"
             name="starts_at"
             step="1"
-            required
             value={values.starts_at}
             onChange={(event) => onChange('starts_at', event.target.value)}
             {...attributes('starts_at')}
           />
           {fieldError('starts_at')}
         </label>
-        <label className="field">
-          <span>结束时间 *</span>
+        <label className="lfield">
+          <span>Closes at *</span>
           <input
             type="datetime-local"
             name="ends_at"
             step="1"
-            required
             value={values.ends_at}
             onChange={(event) => onChange('ends_at', event.target.value)}
             {...attributes('ends_at')}
@@ -84,7 +87,27 @@ export function ElectionFields({ values, errors, onChange, idPrefix }: Props) {
           {fieldError('ends_at')}
         </label>
       </div>
-      <p>按浏览器所在时区输入，提交时转换为 UTC 时间。</p>
+      <p className="lsub election-create-time-note">
+        Times are entered in your local time zone and submitted as UTC.
+      </p>
+    </>
+  )
+
+  if (section === 'details')
+    return (
+      <>
+        {name}
+        {position}
+        {schedule}
+      </>
+    )
+  if (section === 'description') return description
+  return (
+    <>
+      {name}
+      {position}
+      {description}
+      {schedule}
     </>
   )
 }

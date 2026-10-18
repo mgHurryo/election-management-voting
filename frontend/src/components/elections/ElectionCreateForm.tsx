@@ -15,8 +15,8 @@ interface Props {
   uncertain: boolean
   allowAfterReview: () => void
   cancelPath?: string
-  preview?: boolean
 }
+
 export function ElectionCreateForm({
   onSubmit,
   pending,
@@ -24,7 +24,6 @@ export function ElectionCreateForm({
   uncertain,
   allowAfterReview,
   cancelPath = '/elections',
-  preview = false,
 }: Props) {
   const [values, setValues] = useState<ElectionFormValues>({
     title: '',
@@ -35,78 +34,111 @@ export function ElectionCreateForm({
     voters: '',
   })
   const [errors, setErrors] = useState<ElectionFormErrors>({})
+
   function update(field: keyof ElectionFormValues, value: string) {
     setValues((current) => ({ ...current, [field]: value }))
     setErrors((current) => ({ ...current, [field]: undefined }))
   }
-  async function submit(event: FormEvent<HTMLFormElement>) {
+
+  function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (pending || uncertain) return
     const result = validateElectionForm(values)
     setErrors(result.errors)
-    if (result.input) await onSubmit(result.input)
+    if (result.input) void onSubmit(result.input)
   }
+
   function fieldError(field: keyof ElectionFormValues) {
     return errors[field] ? (
-      <span id={`create-${field}-error`} className="form-error" role="alert">
+      <span id={'create-' + field + '-error'} className="form-error" role="alert">
         {errors[field]}
       </span>
     ) : null
   }
+
   function attributes(field: keyof ElectionFormValues) {
     return {
       'aria-invalid': !!errors[field],
-      'aria-describedby': errors[field] ? `create-${field}-error` : undefined,
+      'aria-describedby': errors[field] ? 'create-' + field + '-error' : undefined,
     }
   }
+
   return (
-    <section className="placeholder election-create" aria-labelledby="create-election-heading">
-      <Link to={cancelPath}>返回选举列表</Link>
-      <h1 id="create-election-heading">创建选举</h1>
-      <p>创建后为草稿，再到详情页配置候选人和维护名册，准备好后开启投票。</p>
-      <p>投票规则固定为：一个职位、单选、一人一票、强制匿名。</p>
-      <form onSubmit={(event) => void submit(event)} noValidate>
-        <fieldset disabled={pending}>
-          <legend>选举资料（* 为必填）</legend>
-          <ElectionFields values={values} errors={errors} onChange={update} idPrefix="create" />
-          <label className="field">
-            <span>初始选民用户 ID *</span>
-            <textarea
-              name="voter_ids"
-              rows={3}
-              required
-              value={values.voters}
-              onChange={(event) => update('voters', event.target.value)}
-              {...attributes('voters')}
+    <div className="wrap election-create">
+      <div className="phead">
+        <h1>Create election</h1>
+      </div>
+      <form className="formbox" onSubmit={submit} noValidate>
+        <fieldset className="election-create-grid" disabled={pending}>
+          <legend className="visually-hidden">Election details</legend>
+          <section className="election-create-details" aria-labelledby="create-details-heading">
+            <h2 id="create-details-heading">Election details</h2>
+            <ElectionFields
+              values={values}
+              errors={errors}
+              onChange={update}
+              idPrefix="create"
+              section="details"
             />
-            {fieldError('voters')}
-          </label>
-          <p>
-            用逗号、空格或换行分隔。仅填写已有有效普通用户的 ID，不能重复。真实账号 ID
-            需由后端提供；本页不创建账号。
-          </p>
+          </section>
+          <section
+            className="election-create-eligibility"
+            aria-labelledby="create-eligibility-heading"
+          >
+            <h2 id="create-eligibility-heading">Description and eligibility</h2>
+            <ElectionFields
+              values={values}
+              errors={errors}
+              onChange={update}
+              idPrefix="create"
+              section="description"
+            />
+            <div className="election-create-voters">
+              <label className="lfield">
+                <span>Voter IDs *</span>
+                <textarea
+                  name="voters"
+                  rows={6}
+                  value={values.voters}
+                  onChange={(event) => update('voters', event.target.value)}
+                  {...attributes('voters')}
+                />
+              </label>
+              {fieldError('voters')}
+            </div>
+            <p className="lsub election-create-voter-help">
+              Separate IDs with commas, spaces or new lines. Only existing active voter IDs; no
+              duplicates. IDs are provided by the backend; accounts are not created here.
+            </p>
+          </section>
         </fieldset>
         {error ? (
-          <div className="state error" role="alert">
+          <div className="state" role="alert">
             <p>{errorMessage(error)}</p>
             {uncertain && (
               <>
-                <p>创建结果尚未确认。请先查看选举列表核对，避免重复创建。</p>
-                <Link to={cancelPath}>去列表核对</Link>
-                <button type="button" onClick={allowAfterReview}>
-                  已核对未创建，允许重新提交
-                </button>
+                <p>The outcome is not confirmed. Check the election list before retrying to avoid duplicates.</p>
+                <div className="actions">
+                  <Link className="btn ghost" to={cancelPath}>
+                    Open the list
+                  </Link>
+                  <button type="button" onClick={allowAfterReview}>
+                    Reviewed — allow resubmission
+                  </button>
+                </div>
               </>
             )}
           </div>
         ) : null}
-        <div className="election-create-actions">
-          <Link to={cancelPath}>取消</Link>
-          <button type="submit" disabled={pending || uncertain}>
-            {pending ? '创建中…' : preview ? '模拟提交（不保存）' : '创建草稿'}
+        <div className="actions">
+          <Link className="quiet" to={cancelPath}>
+            Cancel
+          </Link>
+          <button className="btn main" type="submit" disabled={pending || uncertain}>
+            {pending ? 'Creating…' : 'Create draft'}
           </button>
         </div>
       </form>
-    </section>
+    </div>
   )
 }
