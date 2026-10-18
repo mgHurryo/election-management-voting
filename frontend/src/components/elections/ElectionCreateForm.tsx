@@ -117,7 +117,10 @@ export function ElectionCreateForm({
             <p>{errorMessage(error)}</p>
             {uncertain && (
               <>
-                <p>The outcome is not confirmed. Check the election list before retrying to avoid duplicates.</p>
+                <p>
+                  The outcome is not confirmed. Check the election list before retrying to avoid
+                  duplicates.
+                </p>
                 <div className="actions">
                   <Link className="btn ghost" to={cancelPath}>
                     Open the list

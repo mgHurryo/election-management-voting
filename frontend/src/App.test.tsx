@@ -6,8 +6,7 @@ vi.mock('./api', () => ({
   api: new Proxy(
     {},
     {
-      get: () =>
-        vi.fn().mockResolvedValue({ data: [], meta: { page: 1, page_size: 6, total: 0 } }),
+      get: () => vi.fn().mockResolvedValue({ data: [], meta: { page: 1, page_size: 6, total: 0 } }),
     },
   ),
 }))

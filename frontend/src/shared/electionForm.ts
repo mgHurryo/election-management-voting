@@ -38,10 +38,12 @@ export function validateElectionFields(values: ElectionFieldValues): {
   const title = values.title.trim()
   const position = values.position_title.trim()
   const description = values.description.trim()
-  if (!title || [...title].length > 200) errors.title = 'Enter 1–200 characters for the election name.'
+  if (!title || [...title].length > 200)
+    errors.title = 'Enter 1–200 characters for the election name.'
   if (!position || [...position].length > 100)
     errors.position_title = 'Enter 1–100 characters for the position.'
-  if ([...description].length > 10000) errors.description = 'The description cannot exceed 10000 characters.'
+  if ([...description].length > 10000)
+    errors.description = 'The description cannot exceed 10000 characters.'
   const start = localTime(values.starts_at)
   const end = localTime(values.ends_at)
   if (!start) errors.starts_at = 'Enter a valid start time.'
@@ -73,7 +75,8 @@ export function validateElectionForm(values: ElectionFormValues): {
   if (!ids.length) errors.voters = 'Enter at least one existing voter ID.'
   else if (ids.some((id) => !/^[1-9][0-9]*$/.test(id) || BigInt(id) > 18446744073709551615n))
     errors.voters = 'Voter IDs must be positive integers no larger than 18446744073709551615.'
-  else if (new Set(ids).size !== ids.length) errors.voters = 'Voter IDs must be unique. Remove duplicates.'
+  else if (new Set(ids).size !== ids.length)
+    errors.voters = 'Voter IDs must be unique. Remove duplicates.'
   return {
     errors,
     input: fields.input && !Object.keys(errors).length ? { ...fields.input, voter_ids: ids } : null,

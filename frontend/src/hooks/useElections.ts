@@ -22,12 +22,21 @@ async function loadElections(page: number, status: StatusFilter): Promise<Pagina
     const draftPages = await Promise.all(
       Array.from({ length: lastPage - firstPage + 1 }, (_, index) => {
         const draftPage = firstPage + index
-        return draftPage === 1 ? firstDrafts : api.elections({ page: draftPage, page_size: pageSize, status: 'DRAFT' })
+        return draftPage === 1
+          ? firstDrafts
+          : api.elections({ page: draftPage, page_size: pageSize, status: 'DRAFT' })
       }),
     )
-    rows.push(...draftPages.flatMap((result) => result.data).slice(draftOffset % pageSize, draftOffset % pageSize + needed))
+    rows.push(
+      ...draftPages
+        .flatMap((result) => result.data)
+        .slice(draftOffset % pageSize, (draftOffset % pageSize) + needed),
+    )
   }
-  return { data: rows, meta: { page, page_size: pageSize, total: open.meta.total + firstDrafts.meta.total } }
+  return {
+    data: rows,
+    meta: { page, page_size: pageSize, total: open.meta.total + firstDrafts.meta.total },
+  }
 }
 
 export function useElections() {

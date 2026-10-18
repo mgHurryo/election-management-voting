@@ -21,7 +21,8 @@ page.on('request', (request) => {
 })
 page.on('requestfailed', (request) => {
   const pathname = new URL(request.url()).pathname
-  if (pathname.startsWith('/api/')) failedRequests.push({ path: pathname, reason: request.failure()?.errorText })
+  if (pathname.startsWith('/api/'))
+    failedRequests.push({ path: pathname, reason: request.failure()?.errorText })
 })
 page.on('response', (response) => {
   const pathname = new URL(response.url()).pathname.replace(/\/$/, '')
@@ -29,8 +30,10 @@ page.on('response', (response) => {
   if (pathname === '/api/v1/auth/login') statuses.login = response.status()
   else if (pathname === '/api/v1/elections') statuses.list = response.status()
   else if (/^\/api\/v1\/elections\/[^/]+$/.test(pathname)) statuses.detail = response.status()
-  else if (/^\/api\/v1\/elections\/[^/]+\/candidates$/.test(pathname)) statuses.candidates = response.status()
-  else if (/^\/api\/v1\/elections\/[^/]+\/ballot$/.test(pathname)) statuses.ballot = response.status()
+  else if (/^\/api\/v1\/elections\/[^/]+\/candidates$/.test(pathname))
+    statuses.candidates = response.status()
+  else if (/^\/api\/v1\/elections\/[^/]+\/ballot$/.test(pathname))
+    statuses.ballot = response.status()
 })
 
 try {
@@ -47,24 +50,35 @@ try {
   if (await voteLink.count()) {
     await voteLink.click()
     await page.getByRole('heading', { name: 'Candidates' }).waitFor({ timeout: 20000 })
-    await page.waitForFunction(() => document.querySelector('.candidate-list') || document.querySelector('[role="alert"]'), { timeout: 25000 })
+    await page.waitForFunction(
+      () => document.querySelector('.candidate-list') || document.querySelector('[role="alert"]'),
+      { timeout: 25000 },
+    )
     await page.waitForTimeout(1000)
   }
 
   if (pageErrors.length) throw new Error(`Browser runtime errors: ${pageErrors.length}`)
-  console.log(JSON.stringify({
-    result: statuses.list ? 'read-only live smoke completed' : 'incomplete: election list response not observed',
-    currentPath: new URL(page.url()).pathname,
-    authenticated: statuses.login === 200,
-    electionListStatus: statuses.list ?? 'not observed',
-    electionDetailStatus: statuses.detail ?? 'not observed',
-    candidateStatus: statuses.candidates ?? 'not observed',
-    ballotStatus: statuses.ballot ?? 'not observed (no open election visible)',
-    apiResponses,
-    apiRequests,
-    failedRequests,
-    browserRuntimeErrors: pageErrors.length,
-  }, null, 2))
+  console.log(
+    JSON.stringify(
+      {
+        result: statuses.list
+          ? 'read-only live smoke completed'
+          : 'incomplete: election list response not observed',
+        currentPath: new URL(page.url()).pathname,
+        authenticated: statuses.login === 200,
+        electionListStatus: statuses.list ?? 'not observed',
+        electionDetailStatus: statuses.detail ?? 'not observed',
+        candidateStatus: statuses.candidates ?? 'not observed',
+        ballotStatus: statuses.ballot ?? 'not observed (no open election visible)',
+        apiResponses,
+        apiRequests,
+        failedRequests,
+        browserRuntimeErrors: pageErrors.length,
+      },
+      null,
+      2,
+    ),
+  )
 } finally {
   await browser.close()
 }

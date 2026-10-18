@@ -69,7 +69,8 @@ export default function ElectionListPage() {
               className={(status ?? '') === f.key ? 'on' : ''}
               aria-pressed={status === f.key}
             >
-              {f.label}{status === f.key && data ? ` (${total})` : ''}
+              {f.label}
+              {status === f.key && data ? ` (${total})` : ''}
             </button>
           ))}
         </div>

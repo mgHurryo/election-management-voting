@@ -30,7 +30,8 @@ const messages: Record<string, string> = {
   NETWORK_ERROR: 'Unable to reach the server. Check your network or backend service.',
   REQUEST_ABORTED:
     'The request timed out or was cancelled. A timeout does not mean the operation failed.',
-  ROUTE_NOT_FOUND: 'This service is not available on the current backend. Please try again once it is available.',
+  ROUTE_NOT_FOUND:
+    'This service is not available on the current backend. Please try again once it is available.',
   INVALID_RESPONSE: 'The server returned an unrecognized response. Check the API configuration.',
 }
 

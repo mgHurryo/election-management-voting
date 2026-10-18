@@ -192,9 +192,7 @@ function CandidateManagementContent({ id }: { id: string }) {
       <header className="candidate-page-heading">
         <div>
           <h1 id="candidate-management-heading">{election.title}</h1>
-          <p className="candidate-page-subtitle">
-            Candidates for {election.position_title}
-          </p>
+          <p className="candidate-page-subtitle">Candidates for {election.position_title}</p>
         </div>
         {canEdit && !editorOpen && (
           <button className="btn main candidate-add-button" type="button" onClick={startCreate}>
@@ -203,16 +201,15 @@ function CandidateManagementContent({ id }: { id: string }) {
         )}
       </header>
 
-      <div
-        className="candidate-management-meta"
-        aria-label="Election status and candidate count"
-      >
+      <div className="candidate-management-meta" aria-label="Election status and candidate count">
         <span className={`candidate-status candidate-status-${election.status.toLowerCase()}`}>
           {election.status === 'DRAFT' ? 'Draft' : election.status === 'OPEN' ? 'Open' : 'Closed'}
         </span>
         <span className="candidate-count">{data.meta.total} candidates</span>
         {!canEdit && (
-          <span className="candidate-lock-note">Candidate details are locked once voting opens</span>
+          <span className="candidate-lock-note">
+            Candidate details are locked once voting opens
+          </span>
         )}
       </div>
 
@@ -364,7 +361,9 @@ function CandidateManagementContent({ id }: { id: string }) {
                             disabled={pending}
                             type="button"
                             onClick={() => void removeCandidate(candidate.id)}
-                          >Confirm delete</button>
+                          >
+                            Confirm delete
+                          </button>
                           <button
                             className="quiet candidate-row-action"
                             type="button"
