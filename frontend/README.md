@@ -2,7 +2,7 @@
 
 React + TypeScript + Vite frontend scaffold for the election management and voting system.
 
-**Scope:** the shared frontend foundation, M1 login form, M3 election list, and election detail with read-only candidate profiles are implemented. The list uses the existing `api.elections` wrapper, server-side status filtering and pagination (20 per page), localized times, admin-only create navigation, and loading/empty/error/retry states. Election creation and draft editing are also implemented; candidate management, voter roll, voting and result routes remain placeholders. There are no fake login accounts or demo rows in the real election list. A development-only preview is described below. Election endpoints are still pending in the backend master baseline; API wrappers target the **draft** contract in `../API.md`, and complete live integration is not verified.
+**Scope:** the shared frontend foundation, M1 login form, M3 election list/detail, election creation and draft editing, candidate management, and the in-page ballot UI are implemented. The list uses the existing `api.elections` wrapper, server-side status filtering and pagination (20 per page), localized times, admin-only create navigation, and loading/empty/error/retry states. The ballot UI supports candidate selection, review, and confirmation, but the backend does not yet provide the ballot and vote-submission routes required to complete a real vote. Voter-roll and result routes remain placeholders. There are no fake login accounts or demo rows in the real election list. A development-only preview is described below. Election and voting endpoints are still pending in the backend master baseline; API wrappers target the **draft** contract in `../API.md`, and complete live integration is not verified.
 
 ## Quick start
 
@@ -32,7 +32,7 @@ npm run preview
 ```text
 src/
   routes/       Route tree, authentication and role guards
-  pages/        Landing page, login, election list/detail/create/edit and remaining placeholders
+  pages/        Landing page, login, election list/detail/create/edit, candidate management and remaining placeholders
   components/   Base layout, async states, render error boundary
   hooks/        Shared auth hook
   store/        Auth context/provider and access-token storage
@@ -78,7 +78,7 @@ The result route is only a placeholder; the backend must enforce CLOSED state fo
 
 Election list tests use mocked API responses and cover authentication redirects, role-based create navigation, detail links with BIGINT string IDs, pagination/filter reset, failure versus empty results, manual retry, and stale response handling. These are not live backend integration tests.
 
-Replace the remaining placeholders one module at a time. Election list, detail, creation and draft editing are implemented. Candidate management, voter-roll, voting and result destinations remain placeholders and belong to their own tasks. Reconcile draft API changes and verify the list against real backend data when election endpoints are available.
+Replace the remaining placeholders one module at a time. Election list, detail, creation, draft editing, candidate management, and the in-page ballot UI are implemented. The ballot UI cannot complete a real vote until the backend implements its ballot and vote-submission routes. Voter-roll and result destinations remain placeholders. Reconcile draft API changes and verify live behavior as backend endpoints become available.
 
 ## Local election list preview
 
@@ -104,11 +104,13 @@ Permission/time rejections explain the restriction rather than reporting an empt
 candidate list. Route changes discard old responses and reset candidate pagination.
 
 Admin DRAFT actions link to edit/candidate/voter pages and confirm opening. OPEN
-admins can confirm closing; CLOSED admins can enter the result page. User voting
-navigation appears for OPEN elections but does not claim eligibility. Closed users
-only see result navigation after publication. Status writes run once per explicit
-confirmation and refresh server state; failures offer a read refresh, not automatic
-write retries. No candidate editing, vote submission or result publishing is added.
+admins can confirm closing; CLOSED admins can enter the result page. For OPEN
+elections, users can select a candidate, review the selection, and confirm the
+one-way ballot in the detail page. Closed users only see result navigation after
+publication. Status writes run once per explicit confirmation and refresh server
+state; failures offer a read refresh, not automatic write retries. Candidate
+management and ballot UI are implemented, but real vote submission and result
+publishing remain unavailable until the backend routes are implemented.
 
 During npm run dev, /__preview/elections/:id shares this same detail view and shows
 three explicitly fictional profiles in the administrator view. Return navigation

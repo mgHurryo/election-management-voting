@@ -55,7 +55,7 @@ GitHub Release
 
 ## 前端框架
 
-React + TypeScript 工程骨架位于 [`frontend/`](../frontend/README.md)。当前仅包含框架基础设施与占位路由，不包含业务页面、投票流程或真实后端联调。
+React + TypeScript 前端位于 [`frontend/`](../frontend/README.md)。登录、选举列表与详情、创建和草稿编辑、候选人管理，以及详情页内的候选人选择、复核和确认界面已实现。选民名册与结果页面仍为占位；由于后端尚未提供 ballot 和 vote submission 路由，真实投票提交链路尚不可用，完整后端联调也未验证。
 
 ```bash
 cd frontend
