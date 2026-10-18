@@ -2,7 +2,7 @@
 
 React + TypeScript + Vite frontend scaffold for the election management and voting system.
 
-**Scope:** the shared frontend foundation, M1 login form, M3 election list, and election detail with read-only candidate profiles are implemented. The list uses the existing `api.elections` wrapper, server-side status filtering and pagination (20 per page), localized times, admin-only create navigation, and loading/empty/error/retry states. Election creation and draft editing are also implemented; candidate management, voter roll, voting and result routes remain placeholders. There are no fake login accounts or demo rows in the real election list. A development-only preview is described below. Election endpoints are still pending in the backend master baseline; API wrappers target the **draft** contract in `../API.md`, and complete live integration is not verified.
+**Scope:** the shared frontend foundation, login, election list/detail, creation, draft editing, and candidate management are implemented. The interface follows the editorial election direction with paper, charcoal, vermilion, serif display typography, and responsive, keyboard-accessible controls. Election and candidate pages use the existing API client, server-side filtering/pagination and explicit loading, empty, error and retry states. Voter eligibility, ballot submission, and results remain dependent on backend endpoints and must not be inferred from frontend routes. Browser E2E tests use intercepted API contract responses; see [Frontend design constraints](../docs/frontend/FRONTEND_CONSTRAINTS.md) for product, visual, ballot, and accessibility requirements.
 
 ## Quick start
 

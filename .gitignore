@@ -259,3 +259,9 @@ scratch/
 docs/_build/
 site/_site/
 docs/architecture/annotated/
+
+# Imported local frontend design tooling and reference captures
+.github/hooks/impeccable.json
+.github/skills/impeccable/
+.impeccable/
+plan/design-references/
