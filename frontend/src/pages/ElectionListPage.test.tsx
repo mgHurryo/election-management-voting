@@ -9,8 +9,8 @@ import { AppRoutes } from '../routes/AppRoutes'
 
 const election: Election = {
   id: '9007199254740993',
-  title: '班长选举',
-  position_title: '班长',
+  title: 'Class representative election',
+  position_title: 'Class representative',
   description: null,
   created_by: '1',
   status: 'DRAFT',
@@ -22,11 +22,15 @@ const election: Election = {
   updated_at: '',
 }
 
+function row(status: Election['status'], id = election.id): Election {
+  return { ...election, id, status, title: `${status} election ${id}` }
+}
+
 function response(page = 1, total = 1, rows: Election[] = [election]): Paginated<Election> {
   return { data: rows, meta: { page, page_size: 20, total } }
 }
 
-function mount(role: Role | null = 'USER') {
+function mount(role: Role | null = 'USER', path = '/elections') {
   return render(
     <AuthContext.Provider
       value={{
@@ -34,7 +38,7 @@ function mount(role: Role | null = 'USER') {
           ? {
               id: '2',
               username: 'test',
-              display_name: '测试用户',
+              display_name: 'Test user',
               role,
               status: 'ACTIVE',
               created_at: '',
@@ -48,79 +52,139 @@ function mount(role: Role | null = 'USER') {
         signOut: vi.fn(),
       }}
     >
-      <MemoryRouter initialEntries={['/elections']}>
+      <MemoryRouter initialEntries={[path]}>
         <AppRoutes />
       </MemoryRouter>
     </AuthContext.Provider>,
   )
 }
 
-describe('election list', () => {
-  it('loads the protected route, preserves BIGINT IDs, and opens details', async () => {
-    const list = vi.spyOn(api, 'elections').mockResolvedValue(response())
-    vi.spyOn(api, 'election').mockResolvedValue({ data: election })
-    vi.spyOn(api, 'candidates').mockResolvedValue({
-      data: [],
-      meta: { page: 1, page_size: 20, total: 0 },
-    })
+describe('elections home', () => {
+  it('lists every server-visible state without losing BIGINT IDs or server ordering', async () => {
+    const list = vi
+      .spyOn(api, 'elections')
+      .mockResolvedValue(
+        response(1, 3, [
+          row('CLOSED', '9007199254740995'),
+          row('OPEN', '9007199254740993'),
+          row('DRAFT', '9007199254740994'),
+        ]),
+      )
     mount()
-    const link = await screen.findByRole('link', { name: '查看详情：班长选举' })
-    expect(link).toHaveAttribute('href', '/elections/9007199254740993')
-    expect(screen.getByRole('cell', { name: '草稿' })).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: '创建选举' })).not.toBeInTheDocument()
-    expect(list).toHaveBeenCalledWith({ page: 1, page_size: 20, status: undefined })
-    fireEvent.click(link)
-    expect(await screen.findByRole('heading', { name: '班长选举' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'OPEN election 9007199254740993' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Vote' })).toHaveAttribute(
+      'href',
+      '/elections/9007199254740993',
+    )
+    expect(
+      screen.getByRole('heading', { name: 'DRAFT election 9007199254740994' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'CLOSED election 9007199254740995' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent),
+    ).toEqual([
+      'CLOSED election 9007199254740995',
+      'OPEN election 9007199254740993',
+      'DRAFT election 9007199254740994',
+    ])
+    expect(list).toHaveBeenCalledExactlyOnceWith({ page: 1, page_size: 20 })
+    expect(screen.getByRole('button', { name: 'All (3)' })).toBeInTheDocument()
   })
 
   it('shows the administrator create entry and navigates to the existing route', async () => {
-    vi.spyOn(api, 'elections').mockResolvedValue(response())
+    vi.spyOn(api, 'elections').mockImplementation(async (query) => response(query?.page, 0, []))
     mount('ADMIN')
-    await screen.findByRole('heading', { name: '选举列表' })
-    const links = screen.getAllByRole('link', { name: '创建选举' })
-    fireEvent.click(links[links.length - 1]!)
-    expect(await screen.findByRole('heading', { name: '创建选举' })).toBeInTheDocument()
+    await screen.findByRole('heading', { name: 'Elections' })
+    fireEvent.click(screen.getByRole('link', { name: 'New election' }))
+    expect(await screen.findByRole('heading', { name: 'Create election' })).toBeInTheDocument()
+  })
+
+  it('keeps published closed elections discoverable after navigation and a fresh mount', async () => {
+    const published: Election = {
+      ...election,
+      status: 'CLOSED',
+      results_published_at: '2026-10-20T10:00:00Z',
+    }
+    vi.spyOn(api, 'elections').mockResolvedValue(response(1, 1, [published]))
+    vi.spyOn(api, 'election').mockResolvedValue({ data: published })
+    const view = mount()
+    fireEvent.click(await screen.findByRole('link', { name: 'Details' }))
+    expect(await screen.findByRole('link', { name: 'View results' })).toHaveAttribute(
+      'href',
+      `/elections/${election.id}/results`,
+    )
+    fireEvent.click(screen.getByRole('link', { name: 'All elections' }))
+    await screen.findByRole('heading', { name: election.title })
+    view.unmount()
+    mount()
+    fireEvent.click(await screen.findByRole('button', { name: 'Closed' }))
+    fireEvent.click(await screen.findByRole('link', { name: 'Details' }))
+    fireEvent.click(await screen.findByRole('link', { name: 'View results' }))
+    expect(await screen.findByRole('heading', { name: 'Results' })).toBeInTheDocument()
   })
 
   it('redirects anonymous visitors to login without requesting elections', async () => {
     const list = vi.spyOn(api, 'elections')
     mount(null)
-    expect(await screen.findByRole('heading', { name: '登录' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument()
     expect(list).not.toHaveBeenCalled()
   })
 
-  it('paginates on the server and resets to page one when filtering', async () => {
+  it('redirects the legacy vote URL to the matching election detail', async () => {
+    const detail = vi
+      .spyOn(api, 'election')
+      .mockResolvedValue({ data: { ...election, status: 'OPEN' } })
+    const list = vi.spyOn(api, 'elections')
+    vi.spyOn(api, 'candidates').mockResolvedValue({
+      data: [],
+      meta: { page: 1, page_size: 20, total: 0 },
+    })
+    mount('USER', `/elections/${election.id}/vote`)
+    expect(await screen.findByRole('heading', { name: 'Candidate List' })).toBeInTheDocument()
+    await waitFor(() => expect(detail).toHaveBeenCalledWith(election.id))
+    expect(list).not.toHaveBeenCalled()
+  })
+
+  it('uses server pagination for All and resets to page one for each status filter', async () => {
     const list = vi.spyOn(api, 'elections').mockImplementation(async (query) => {
-      return response(query?.page, query?.status ? 1 : 21)
+      if (query?.status) return response(query.page, 1, [row(query.status, 'filtered')])
+      return response(query?.page, 21, [row('CLOSED', `page-${query?.page}`)])
     })
     mount()
-    const next = await screen.findByRole('button', { name: '下一页' })
-    expect(screen.getByRole('button', { name: '上一页' })).toBeDisabled()
-    fireEvent.click(next)
-    await waitFor(() =>
-      expect(list).toHaveBeenLastCalledWith({ page: 2, page_size: 20, status: undefined }),
-    )
-    await waitFor(() => expect(screen.getByRole('button', { name: '下一页' })).toBeDisabled())
-    fireEvent.change(screen.getByLabelText('选举状态'), { target: { value: 'OPEN' } })
-    await waitFor(() =>
-      expect(list).toHaveBeenLastCalledWith({ page: 1, page_size: 20, status: 'OPEN' }),
-    )
-    await waitFor(() => expect(screen.getByRole('button', { name: '上一页' })).toBeDisabled())
+    await screen.findByRole('heading', { name: 'CLOSED election page-1' })
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+    await screen.findByRole('heading', { name: 'CLOSED election page-2' })
+    expect(list).toHaveBeenLastCalledWith({ page: 2, page_size: 20 })
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
+    for (const [label, status] of [
+      ['Open', 'OPEN'],
+      ['Draft', 'DRAFT'],
+      ['Closed', 'CLOSED'],
+    ]) {
+      fireEvent.click(screen.getByRole('button', { name: label }))
+      await screen.findByRole('heading', { name: `${status} election filtered` })
+      expect(list).toHaveBeenLastCalledWith({ page: 1, page_size: 20, status })
+      expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled()
+    }
   })
 
   it('distinguishes a failed request from an empty result and allows retry', async () => {
-    const list = vi
-      .spyOn(api, 'elections')
-      .mockRejectedValueOnce(new ApiError('NETWORK_ERROR'))
-      .mockResolvedValueOnce(response(1, 0, []))
+    let calls = 0
+    const list = vi.spyOn(api, 'elections').mockImplementation(async () => {
+      calls += 1
+      if (calls === 1) throw new ApiError('NETWORK_ERROR')
+      return response(1, 0, [])
+    })
     mount()
-    expect(await screen.findByRole('alert')).toHaveTextContent('无法连接服务器')
-    expect(screen.queryByText('暂无可查看的选举。')).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: '重试' }))
-    expect(await screen.findByText('暂无可查看的选举。')).toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toHaveTextContent('Unable to reach the server')
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    expect(await screen.findByText('No elections to show.')).toBeInTheDocument()
     expect(list).toHaveBeenCalledTimes(2)
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '下一页' })).toBeDisabled()
   })
 
   it('does not overwrite a new filter result when an older request finishes late', async () => {
@@ -128,17 +192,17 @@ describe('election list', () => {
     const oldRequest = new Promise<Paginated<Election>>((resolve) => {
       finishOld = resolve
     })
-    const list = vi
-      .spyOn(api, 'elections')
-      .mockReturnValueOnce(oldRequest)
-      .mockResolvedValueOnce(response(1, 0, []))
+    const list = vi.spyOn(api, 'elections').mockImplementation((query) => {
+      if (!query?.status) return oldRequest
+      return Promise.resolve(response(1, 0, []))
+    })
     mount()
     await waitFor(() => expect(list).toHaveBeenCalledTimes(1))
-    expect(screen.getByText('正在加载…')).toBeInTheDocument()
-    fireEvent.change(screen.getByLabelText('选举状态'), { target: { value: 'CLOSED' } })
-    expect(await screen.findByText('当前状态下暂无可查看的选举。')).toBeInTheDocument()
+    expect(screen.getByText('Loading…')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Draft' }))
+    expect(await screen.findByText('No elections to show.')).toBeInTheDocument()
     await act(async () => finishOld(response()))
-    expect(screen.queryByRole('link', { name: '查看详情：班长选举' })).not.toBeInTheDocument()
-    expect(screen.getByText('当前状态下暂无可查看的选举。')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Details' })).not.toBeInTheDocument()
+    expect(screen.getByText('No elections to show.')).toBeInTheDocument()
   })
 })

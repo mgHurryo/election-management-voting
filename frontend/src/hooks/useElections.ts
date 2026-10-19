@@ -4,6 +4,8 @@ import type { Election, ElectionStatus, Paginated } from '../api/types'
 
 export type StatusFilter = ElectionStatus | ''
 
+const pageSize = 20
+
 export function useElections() {
   const [query, setQuery] = useState<{ page: number; status: StatusFilter }>({
     page: 1,
@@ -19,14 +21,20 @@ export function useElections() {
 
   useEffect(() => {
     let active = true
-    api.elections({ page: query.page, page_size: 20, status: query.status || undefined }).then(
-      (data) => {
-        if (active) setResult({ key, data, error: null })
-      },
-      (error: unknown) => {
-        if (active) setResult({ key, data: null, error })
-      },
-    )
+    api
+      .elections({
+        page: query.page,
+        page_size: pageSize,
+        ...(query.status ? { status: query.status } : {}),
+      })
+      .then(
+        (data) => {
+          if (active) setResult({ key, data, error: null })
+        },
+        (error: unknown) => {
+          if (active) setResult({ key, data: null, error })
+        },
+      )
     // Ignore late responses after changing filters, pages, or leaving the page.
     return () => {
       active = false

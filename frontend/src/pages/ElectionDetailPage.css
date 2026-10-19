@@ -1,0 +1,379 @@
+.election-detail {
+  max-width: 1160px;
+  padding-right: 48px;
+  padding-left: 48px;
+}
+
+.election-back-link {
+  display: inline-block;
+  margin-top: 26px;
+}
+
+.election-detail-header {
+  max-width: 980px;
+  padding: 28px 0 34px;
+  border-bottom: 1px solid var(--line);
+}
+
+.election-voter-heading {
+  max-width: 980px;
+  padding: 38px 0 8px;
+}
+
+.election-voter-kick {
+  color: var(--verm-deep);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  overflow-wrap: anywhere;
+}
+
+.election-voter-heading h1 {
+  margin-top: 6px;
+  font-family: var(--serif);
+  font-size: 42px;
+  font-weight: 900;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.election-title-row {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+
+.election-title-row h1 {
+  min-width: 0;
+  font-family: var(--serif);
+  font-size: 48px;
+  font-weight: 900;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+
+.election-position {
+  margin-top: 8px;
+  color: var(--soft);
+  font-size: 17px;
+}
+
+.election-description {
+  max-width: 68ch;
+  margin-top: 16px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.election-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(280px, 0.78fr);
+  align-items: start;
+  gap: 72px;
+  margin-top: 34px;
+}
+
+.election-detail-grid-ballot {
+  display: block;
+  margin-top: 22px;
+}
+
+.election-candidates {
+  min-width: 0;
+}
+
+.election-section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--ink);
+}
+
+.election-section-heading h2,
+.election-facts-panel h2,
+.election-admin-panel h2 {
+  font-family: var(--serif);
+  font-size: 25px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.election-section-heading p {
+  margin-top: 5px;
+  color: var(--soft);
+  font-size: 13px;
+}
+
+.election-detail .cand-modes {
+  margin: 18px 0 10px;
+}
+
+.election-detail .candidate-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 52px;
+  row-gap: 0;
+}
+
+.election-detail-grid-ballot .candidate-list {
+  border-top: 1px solid var(--hair);
+}
+
+.election-detail .cand-prof {
+  grid-template-columns: 116px minmax(0, 1fr);
+  gap: 22px;
+  padding: 24px 0 26px;
+  border-top: 1px solid var(--hair);
+}
+
+.election-detail .cand-prof:first-child {
+  border-top: 0;
+}
+
+.election-detail .cand-prof .pic {
+  width: 116px;
+  height: 145px;
+  font-size: 52px;
+}
+
+.election-detail .cand-prof h3 {
+  font-family: var(--serif);
+  font-size: 27px;
+  font-weight: 900;
+}
+
+.election-detail .cand-prof .cpos {
+  margin: 4px 0 9px;
+  color: var(--soft);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.election-detail .cand-prof .cdesc {
+  margin-top: 0;
+  color: var(--ink);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.election-detail .cand-prof .cpos {
+  margin: 5px 0 10px;
+  color: var(--verm-deep);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.election-detail .cand-prof .cdesc {
+  color: var(--soft);
+  text-align: justify;
+}
+
+.election-detail .cand-grid .cpos {
+  margin-top: 3px;
+  color: var(--soft);
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+}
+
+.election-detail .cand-dir .dno {
+  color: var(--soft);
+  font-size: 13px;
+}
+
+.election-detail .cand-dir .drow {
+  grid-template-columns: 46px 170px minmax(0, 1fr) auto;
+  gap: 20px;
+}
+
+.candidate-pager {
+  justify-content: center;
+}
+
+.election-detail .cand-prof-readonly {
+  cursor: default;
+}
+
+.election-detail-aside {
+  min-width: 0;
+  padding-left: 28px;
+  border-left: 1px solid var(--hair);
+}
+
+.election-facts-panel,
+.election-admin-panel,
+.election-results-panel {
+  padding: 0 0 24px;
+  border-bottom: 1px solid var(--hair);
+}
+
+.election-facts-panel h2,
+.election-admin-panel h2 {
+  margin-bottom: 16px;
+  font-size: 21px;
+}
+
+.election-facts {
+  margin: 0;
+}
+
+.election-facts > div {
+  display: grid;
+  grid-template-columns: minmax(74px, 0.7fr) minmax(0, 1.3fr);
+  gap: 12px;
+  align-items: baseline;
+  padding: 12px 0;
+  border-top: 1px solid var(--hair);
+}
+
+.election-facts dt {
+  color: var(--soft);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.election-facts dd {
+  min-width: 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.election-admin-panel {
+  padding-top: 24px;
+}
+
+.election-admin-links {
+  display: grid;
+  margin-bottom: 20px;
+}
+
+.election-admin-links .lnk {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--hair);
+}
+
+.election-admin-panel > .btn {
+  width: 100%;
+  min-height: 46px;
+  justify-content: center;
+}
+
+.election-admin-panel .bconfirm {
+  margin-top: 10px;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--hair);
+}
+
+.election-admin-panel .bconfirm .warn {
+  color: var(--verm-deep);
+}
+
+.election-admin-panel .bconfirm .ghost {
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.election-admin-panel .state {
+  margin-top: 14px;
+}
+
+.election-results-panel {
+  padding-top: 22px;
+}
+
+.election-detail .election-results-panel .noticeline {
+  padding: 0;
+}
+
+@media (max-width: 1000px) {
+  .election-detail-grid {
+    grid-template-columns: minmax(0, 1.5fr) minmax(250px, 0.9fr);
+    gap: 38px;
+  }
+
+  .election-detail-aside {
+    padding-left: 20px;
+  }
+}
+
+@media (max-width: 900px) {
+  .election-detail {
+    padding-right: 22px;
+    padding-left: 22px;
+  }
+}
+
+@media (max-width: 760px) {
+  .election-voter-heading {
+    padding: 28px 0 4px;
+  }
+
+  .election-voter-heading h1 {
+    font-size: 32px;
+  }
+
+  .election-detail-header {
+    padding: 22px 0 26px;
+  }
+
+  .election-title-row {
+    align-items: start;
+    gap: 10px 14px;
+  }
+
+  .election-title-row h1 {
+    font-size: 36px;
+  }
+
+  .election-position {
+    font-size: 15px;
+  }
+
+  .election-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+    margin-top: 24px;
+  }
+
+  .election-detail-aside {
+    padding: 22px 0 0;
+    border-top: 1px solid var(--ink);
+    border-left: 0;
+  }
+
+  .election-detail .candidate-list {
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: 0;
+  }
+
+  .election-detail .cand-dir .drow {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+
+  .election-detail .cand-dir .cdesc {
+    display: none;
+  }
+
+  .election-admin-panel .bconfirm {
+    align-items: stretch;
+  }
+
+  .election-admin-panel .bconfirm .warn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 900px) {
+  .election-detail .bbar .bs {
+    display: none;
+  }
+}

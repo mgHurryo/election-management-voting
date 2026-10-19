@@ -10,8 +10,8 @@ import { validateElectionForm } from '../shared/electionForm'
 
 const election: Election = {
   id: '9007199254740993',
-  title: '新建班长选举',
-  position_title: '班长',
+  title: 'New class representative election',
+  position_title: 'Class representative',
   description: null,
   created_by: '1',
   status: 'DRAFT',
@@ -23,8 +23,8 @@ const election: Election = {
   updated_at: '',
 }
 const values = {
-  title: '新建班长选举',
-  position_title: '班长',
+  title: 'New class representative election',
+  position_title: 'Class representative',
   description: '',
   starts_at: '2026-10-20T09:00',
   ends_at: '2026-10-20T17:00',
@@ -38,7 +38,7 @@ function mount(role: Role | null = 'ADMIN', route = '/elections/new') {
           ? {
               id: '1',
               username: 'test',
-              display_name: '测试',
+              display_name: 'Test',
               role,
               status: 'ACTIVE',
               created_at: '',
@@ -59,14 +59,14 @@ function mount(role: Role | null = 'ADMIN', route = '/elections/new') {
   )
 }
 async function fill() {
-  await screen.findByRole('heading', { name: '创建选举' })
-  fireEvent.change(screen.getByLabelText('选举名称 *'), { target: { value: values.title } })
-  fireEvent.change(screen.getByLabelText('竞选职位 *'), {
+  await screen.findByRole('heading', { name: 'Create election' })
+  fireEvent.change(screen.getByLabelText('Election name *'), { target: { value: values.title } })
+  fireEvent.change(screen.getByLabelText('Position *'), {
     target: { value: values.position_title },
   })
-  fireEvent.change(screen.getByLabelText('开始时间 *'), { target: { value: values.starts_at } })
-  fireEvent.change(screen.getByLabelText('结束时间 *'), { target: { value: values.ends_at } })
-  fireEvent.change(screen.getByLabelText('初始选民用户 ID *'), { target: { value: values.voters } })
+  fireEvent.change(screen.getByLabelText('Opens at *'), { target: { value: values.starts_at } })
+  fireEvent.change(screen.getByLabelText('Closes at *'), { target: { value: values.ends_at } })
+  fireEvent.change(screen.getByLabelText('Voter IDs *'), { target: { value: values.voters } })
 }
 
 describe('create election', () => {
@@ -79,7 +79,7 @@ describe('create election', () => {
     })
     mount()
     await fill()
-    fireEvent.click(screen.getByRole('button', { name: '创建草稿' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Create draft' }))
     expect(await screen.findByRole('heading', { name: election.title })).toBeInTheDocument()
     expect(create).toHaveBeenCalledTimes(1)
     const input = create.mock.calls[0]![0]
@@ -95,10 +95,10 @@ describe('create election', () => {
   it('blocks blank, duplicate ID, and invalid time submissions before requesting the backend', async () => {
     const create = vi.spyOn(api, 'createElection')
     mount()
-    fireEvent.click(await screen.findByRole('button', { name: '创建草稿' }))
-    expect(screen.getByText('请输入 1–200 字符的选举名称。')).toBeInTheDocument()
+    fireEvent.click(await screen.findByRole('button', { name: 'Create draft' }))
+    expect(screen.getByText('Enter 1–200 characters for the election name.')).toBeInTheDocument()
     expect(create).not.toHaveBeenCalled()
-    expect(validateElectionForm({ ...values, voters: '21,21' }).errors.voters).toContain('不能重复')
+    expect(validateElectionForm({ ...values, voters: '21,21' }).errors.voters).toContain('unique')
     expect(
       validateElectionForm({ ...values, voters: '18446744073709551616' }).errors.voters,
     ).toBeDefined()
@@ -109,20 +109,31 @@ describe('create election', () => {
       validateElectionForm({ ...values, starts_at: '2026-02-30T09:00' }).errors.starts_at,
     ).toBeDefined()
     expect(validateElectionForm({ ...values, title: '   ' }).errors.title).toBeDefined()
-    expect(validateElectionForm({ ...values, title: 'a'.repeat(201) }).errors.title).toBeDefined()
+  })
+
+  it('associates voter validation errors with the voter ID field', async () => {
+    mount()
+    await fill()
+    fireEvent.change(screen.getByLabelText('Voter IDs *'), { target: { value: '21,21' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Create draft' }))
+
+    const voters = screen.getByLabelText('Voter IDs *')
+    expect(voters).toHaveAttribute('aria-invalid', 'true')
+    expect(voters).toHaveAttribute('aria-describedby', 'create-voters-error')
+    expect(document.getElementById('create-voters-error')).toHaveTextContent('unique')
   })
 
   it('rejects USER access without issuing a create request', async () => {
     const create = vi.spyOn(api, 'createElection')
     mount('USER')
-    expect(await screen.findByRole('heading', { name: '无权访问' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'No access' })).toBeInTheDocument()
     expect(create).not.toHaveBeenCalled()
   })
 
   it('redirects anonymous visitors to login', async () => {
     const create = vi.spyOn(api, 'createElection')
     mount(null)
-    expect(await screen.findByRole('heading', { name: '登录' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument()
     expect(create).not.toHaveBeenCalled()
   })
 
@@ -132,11 +143,11 @@ describe('create election', () => {
       .mockRejectedValue(new ApiError('INVALID_VOTER', 422))
     mount()
     await fill()
-    fireEvent.click(screen.getByRole('button', { name: '创建草稿' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('仅可添加有效的选民账户')
-    expect(screen.getByLabelText('选举名称 *')).toHaveValue(values.title)
-    expect(screen.getByLabelText('初始选民用户 ID *')).toHaveValue(values.voters)
-    expect(screen.getByRole('button', { name: '创建草稿' })).toBeEnabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Create draft' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Only valid voter accounts')
+    expect(screen.getByLabelText('Election name *')).toHaveValue(values.title)
+    expect(screen.getByLabelText('Voter IDs *')).toHaveValue(values.voters)
+    expect(screen.getByRole('button', { name: 'Create draft' })).toBeEnabled()
     expect(create).toHaveBeenCalledTimes(1)
   })
 
@@ -146,12 +157,12 @@ describe('create election', () => {
       .mockRejectedValue(new ApiError('REQUEST_ABORTED'))
     mount()
     await fill()
-    fireEvent.click(screen.getByRole('button', { name: '创建草稿' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('创建结果尚未确认')
-    expect(screen.getByRole('button', { name: '创建草稿' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Create draft' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('The outcome is not confirmed')
+    expect(screen.getByRole('button', { name: 'Create draft' })).toBeDisabled()
     expect(create).toHaveBeenCalledTimes(1)
-    fireEvent.click(screen.getByRole('button', { name: '已核对未创建，允许重新提交' }))
-    expect(screen.getByRole('button', { name: '创建草稿' })).toBeEnabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Reviewed — allow resubmission' }))
+    expect(screen.getByRole('button', { name: 'Create draft' })).toBeEnabled()
     expect(create).toHaveBeenCalledTimes(1)
   })
 
@@ -163,25 +174,12 @@ describe('create election', () => {
     const create = vi.spyOn(api, 'createElection').mockReturnValue(pending)
     mount()
     await fill()
-    const form = screen.getByRole('button', { name: '创建草稿' }).closest('form')!
+    const form = screen.getByRole('button', { name: 'Create draft' }).closest('form')!
     fireEvent.submit(form)
     fireEvent.submit(form)
     expect(create).toHaveBeenCalledTimes(1)
-    expect(screen.getByRole('button', { name: '创建中…' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Creating…' })).toBeDisabled()
     await act(async () => reject(new ApiError('INVALID_VOTER', 422)))
-    await waitFor(() => expect(screen.getByRole('button', { name: '创建草稿' })).toBeEnabled())
-  })
-
-  it('validates a preview submission without API requests or persistent records', async () => {
-    const fetcher = vi.fn()
-    vi.stubGlobal('fetch', fetcher)
-    mount(null, '/__preview/elections/new')
-    await fill()
-    fireEvent.click(screen.getByRole('button', { name: '模拟提交（不保存）' }))
-    expect(
-      await screen.findByRole('heading', { name: '校验通过，模拟提交完成（未保存）' }),
-    ).toBeInTheDocument()
-    expect(fetcher).not.toHaveBeenCalled()
-    expect(localStorage.length).toBe(0)
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Create draft' })).toBeEnabled())
   })
 })

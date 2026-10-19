@@ -1,16 +1,22 @@
 import { errorMessage } from '../shared/errors'
+
 export function LoadingState() {
   return (
-    <p role="status" className="state">
-      正在加载…
+    <p className="state" role="status">
+      Loading…
     </p>
   )
 }
+
 export function ErrorState({ error, retry }: { error: unknown; retry?: () => void }) {
   return (
-    <div className="state error" role="alert">
+    <div className="state" role="alert">
       <p>{errorMessage(error)}</p>
-      {retry && <button onClick={retry}>重试</button>}
+      {retry && (
+        <button type="button" onClick={retry}>
+          Retry
+        </button>
+      )}
     </div>
   )
 }

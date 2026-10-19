@@ -2,7 +2,7 @@
 
 React + TypeScript + Vite frontend scaffold for the election management and voting system.
 
-**Scope:** this branch implements the shared frontend foundation, login, election list/detail with read-only candidate profiles, creation, and draft editing. Candidate management, voter-roll management, voting, and results routes remain placeholders. The editorial redesign and candidate-management/ballot UI implementation are proposed separately in PR #28; this documentation PR does not implement those screens or tokens. See [Frontend design constraints](../docs/frontend/FRONTEND_CONSTRAINTS.md) for the approved product and visual direction and the requirements for future ballot, accessibility, and responsive work. UI tests use mocked API responses; complete live integration is not verified.
+**Scope:** the shared frontend foundation, login, election list/detail, election creation and draft editing, candidate management, and the in-page ballot UI are implemented. The list uses the existing `api.elections` wrapper, server-side status filtering and pagination (20 per page), localized times, admin-only create navigation, and loading/empty/error/retry states. The ballot UI supports candidate selection, review, and confirmation, but the backend does not yet provide the ballot and vote-submission routes required to complete a real vote. Voter-roll and result routes remain placeholders. There are no fake login accounts or demo rows in the real election list. A development-only preview is described below. API wrappers target the **draft** contract in `../API.md`; complete live integration is not verified. See [Frontend design constraints](../docs/frontend/FRONTEND_CONSTRAINTS.md) for the approved product and visual direction.
 
 ## Quick start
 
@@ -23,6 +23,7 @@ Default API prefix: `/api/v1`. During development, Vite proxies `/api` to `http:
 npm run typecheck
 npm run lint
 npm test
+npm run test:e2e
 npx playwright install chromium
 npm run test:design-reference
 npm run build
@@ -34,7 +35,7 @@ npm run preview
 ```text
 src/
   routes/       Route tree, authentication and role guards
-  pages/        Landing page, login, election list/detail/create/edit and remaining placeholders
+  pages/        Landing page, login, election list/detail/create/edit, candidate management and remaining placeholders
   components/   Base layout, async states, render error boundary
   hooks/        Shared auth hook
   store/        Auth context/provider and access-token storage
@@ -78,11 +79,13 @@ The result route is only a placeholder; the backend must enforce CLOSED state fo
 
 ## Verification and remaining implementation
 
+The All filter uses one unfiltered server-paginated request and includes every visible election state. Open, Draft, and Closed filters use the existing status query. Closed elections remain reachable through Details, with the existing results entry shown according to publication state and role; the results page itself is still a placeholder.
+
 Election list tests use mocked API responses and cover authentication redirects, role-based create navigation, detail links with BIGINT string IDs, pagination/filter reset, failure versus empty results, manual retry, and stale response handling. These are not live backend integration tests.
 
 `npm run test:design-reference` opens the standalone design HTML in headless Chromium at 1280, 768, 390, and 320px. It checks horizontal overflow and election-row reading order, and writes screenshots to the ignored `test-results/design-reference/` directory. This verifies the reference layout, not application implementation or backend integration.
 
-Replace the remaining placeholders one module at a time. Election list, detail, creation and draft editing are implemented. Candidate management, voter-roll, voting and result destinations remain placeholders and belong to their own tasks. Reconcile draft API changes and verify the list against real backend data when election endpoints are available.
+Voter-roll and result destinations remain placeholders. The in-page ballot UI supports candidate selection, review, and confirmation, but real vote submission requires backend ballot and vote-submission routes. Reconcile draft API changes and verify live behavior as backend endpoints become available.
 
 ## Local election list preview
 
@@ -108,11 +111,13 @@ Permission/time rejections explain the restriction rather than reporting an empt
 candidate list. Route changes discard old responses and reset candidate pagination.
 
 Admin DRAFT actions link to edit/candidate/voter pages and confirm opening. OPEN
-admins can confirm closing; CLOSED admins can enter the result page. User voting
-navigation appears for OPEN elections but does not claim eligibility. Closed users
-only see result navigation after publication. Status writes run once per explicit
-confirmation and refresh server state; failures offer a read refresh, not automatic
-write retries. No candidate editing, vote submission or result publishing is added.
+admins can confirm closing; CLOSED admins can enter the result page. For OPEN
+elections, users can select a candidate, review the selection, and confirm the
+one-way ballot in the detail page. Closed users only see result navigation after
+publication. Status writes run once per explicit confirmation and refresh server
+state; failures offer a read refresh, not automatic write retries. Candidate
+management and ballot UI are implemented, but real vote submission and result
+publishing remain unavailable until the backend routes are implemented.
 
 During npm run dev, /__preview/elections/:id shares this same detail view and shows
 three explicitly fictional profiles in the administrator view. Return navigation
@@ -120,9 +125,9 @@ works; state confirmations and unfinished links only show a preview explanation.
 No credentials are created and no real election reads/writes are sent by the preview.
 The example module and preview routes are absent from production bundles.
 
-FE-02 is a separate local branch from the latest master with FE-01 commits carried
-forward as an unmerged dependency. Backend integration is still pending; mocked
-tests and local preview do not establish that the real election APIs are ready.
+The frontend screens use the current API wrappers, but mocked tests and local
+previews do not establish that the real election APIs are ready. Live backend
+integration remains unverified.
 
 ## Election creation and frontend handoff
 
@@ -139,8 +144,7 @@ It is reachable via the preview list's create link and is excluded from producti
 
 See [A frontend delivery and teammate handoff (Chinese)](HANDOFF_CN.md) for page boundaries, route parameters,
 existing API helpers and reusable components. This is a working handoff document;
-live integration and the other business modules remain pending. The current FE-04
-branch includes FE-01, FE-02 and FE-03 as unmerged dependencies. No branch has been pushed by this work.
+live integration and the other business modules remain pending.
 
 ## Draft election editing
 
@@ -155,5 +159,5 @@ or uncertain write blocks saving until explicit reload of authoritative data.
 Development /__preview/elections/1001/edit reuses the same form with fictional data
 and a simulated patch summary only. Details link to it; simulated edits do not
 persist or alter the list/detail fixtures. The production build excludes this route.
-The A UI scope (list/detail/create/edit) is implemented, not live-integration verified.
+The list/detail/create/edit UI is implemented, not live-integration verified.
 See HANDOFF_CN.md for teammate boundaries and remaining work.

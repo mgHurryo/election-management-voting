@@ -7,11 +7,9 @@ export default function PlaceholderPage({
   description: string
 }) {
   return (
-    <section className="placeholder">
-      <span className="eyebrow">MODULE PLACEHOLDER</span>
+    <section className="placeholder state">
       <h1>{title}</h1>
       <p>{description}</p>
-      <p className="hint">当前仅完成工程、路由与基础设施；此页面未实现业务功能。</p>
     </section>
   )
 }

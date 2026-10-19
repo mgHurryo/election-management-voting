@@ -42,9 +42,9 @@ export const api = {
     request<Envelope<Election>>(`${electionPath(id)}/open`, { method: 'POST' }),
   closeElection: (id: ID) =>
     request<Envelope<Election>>(`${electionPath(id)}/close`, { method: 'POST' }),
-  candidates: (id: ID, page = 1) =>
+  candidates: (id: ID, page = 1, pageSize = 20) =>
     request<Paginated<Candidate>>(
-      `${electionPath(id)}/candidates${query({ page, page_size: 20 })}`,
+      `${electionPath(id)}/candidates${query({ page, page_size: pageSize })}`,
     ),
   addCandidate: (id: ID, body: CandidateInput) =>
     request<Envelope<Candidate>>(`${electionPath(id)}/candidates`, { method: 'POST', body }),
