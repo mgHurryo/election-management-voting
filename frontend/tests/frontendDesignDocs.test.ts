@@ -27,6 +27,33 @@ describe('frontend design references', () => {
     const receiptExample = designDocument.getElementById('receipt-example')
     expect(receiptExample).not.toBeNull()
     expect(receiptExample?.textContent).toContain('Anonymous ballot')
-    expect(receiptExample?.textContent).not.toContain('Lin Zhixia')
+    const candidateNames = [
+      ...designDocument.querySelectorAll(
+        '.candidate-profiles h3, .candidate-grid h3, .candidate-directory h3',
+      ),
+    ]
+      .map((heading) => heading.textContent?.trim())
+      .filter((name): name is string => Boolean(name))
+    expect(candidateNames.length).toBeGreaterThan(1)
+    for (const name of candidateNames) {
+      expect(receiptExample?.textContent).not.toContain(name)
+    }
+    // Allow only submission acknowledgement and election context, never a choice field.
+    expect(receiptExample?.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+      [
+        'Ballot cast.',
+        'VOTING RECEIPT · ANONYMOUS',
+        'Community Representative Election',
+        'Anonymous ballot · recorded',
+        'RECEIVED',
+        'Your ballot is stored separately from your identity — no one, including administrators, can link the two.',
+      ].join(' '),
+    )
+    const attributes = [...receiptExample!.querySelectorAll('*')]
+      .flatMap((element) =>
+        [...element.attributes].map((attribute) => `${attribute.name}=${attribute.value}`),
+      )
+      .join(' ')
+    expect(attributes).not.toMatch(/candidate|choice|selected/i)
   })
 })

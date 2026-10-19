@@ -2,7 +2,7 @@
 
 React + TypeScript + Vite frontend scaffold for the election management and voting system.
 
-**Scope:** the shared frontend foundation, login, election list/detail, creation, draft editing, and candidate management are implemented. The interface follows the editorial election direction with paper, charcoal, vermilion, serif display typography, and responsive, keyboard-accessible controls. Election and candidate pages use the existing API client, server-side filtering/pagination and explicit loading, empty, error and retry states. Voter eligibility, ballot submission, and results remain dependent on backend endpoints and must not be inferred from frontend routes. Browser E2E tests use intercepted API contract responses; see [Frontend design constraints](../docs/frontend/FRONTEND_CONSTRAINTS.md) for product, visual, ballot, and accessibility requirements.
+**Scope:** this branch implements the shared frontend foundation, login, election list/detail with read-only candidate profiles, creation, and draft editing. Candidate management, voter-roll management, voting, and results routes remain placeholders. The editorial redesign and candidate-management/ballot UI implementation are proposed separately in PR #28; this documentation PR does not implement those screens or tokens. See [Frontend design constraints](../docs/frontend/FRONTEND_CONSTRAINTS.md) for the approved product and visual direction and the requirements for future ballot, accessibility, and responsive work. UI tests use mocked API responses; complete live integration is not verified.
 
 ## Quick start
 
@@ -23,6 +23,8 @@ Default API prefix: `/api/v1`. During development, Vite proxies `/api` to `http:
 npm run typecheck
 npm run lint
 npm test
+npx playwright install chromium
+npm run test:design-reference
 npm run build
 npm run preview
 ```
@@ -77,6 +79,8 @@ The result route is only a placeholder; the backend must enforce CLOSED state fo
 ## Verification and remaining implementation
 
 Election list tests use mocked API responses and cover authentication redirects, role-based create navigation, detail links with BIGINT string IDs, pagination/filter reset, failure versus empty results, manual retry, and stale response handling. These are not live backend integration tests.
+
+`npm run test:design-reference` opens the standalone design HTML in headless Chromium at 1280, 768, 390, and 320px. It checks horizontal overflow and election-row reading order, and writes screenshots to the ignored `test-results/design-reference/` directory. This verifies the reference layout, not application implementation or backend integration.
 
 Replace the remaining placeholders one module at a time. Election list, detail, creation and draft editing are implemented. Candidate management, voter-roll, voting and result destinations remain placeholders and belong to their own tasks. Reconcile draft API changes and verify the list against real backend data when election endpoints are available.
 
