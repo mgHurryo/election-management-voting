@@ -33,5 +33,9 @@ jobs:
         run: npm run lint
       - name: Test framework contracts
         run: npm test
+      - name: Install browser for design reference regression
+        run: npx playwright install --with-deps chromium
+      - name: Check design reference at desktop and mobile widths
+        run: npm run test:design-reference
       - name: Build framework
         run: npm run build

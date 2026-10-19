@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Civic — Design System Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700;8..60,900&family=Inter:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --paper: #f7f3eb; --panel: #ffffff; --bone: #e8e0d4;
+  --ink: #24221f; --soft: #5b564c;
+  --hair: rgba(36,34,31,.14); --line: rgba(36,34,31,.24);
+  --verm: #c9473a; --verm-deep: #a8382d;
+  --serif: 'Source Serif 4', Georgia, serif;
+  --sans: 'Inter', system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.7; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 40px; }
+h1 { font-family: var(--serif); font-size: 36px; font-weight: 900; margin: 0; }
+h2 { font-size: 13px; font-weight: 700; letter-spacing: .28em; text-transform: uppercase; color: var(--soft); border-bottom: 2px solid var(--ink); padding-bottom: 10px; margin: 56px 0 20px; }
+h3 { font-family: var(--serif); font-size: 20px; font-weight: 700; margin: 0 0 12px; }
+.sect { margin-top: 56px; }
+.mut { color: var(--soft); }
+.sw-row { display: flex; gap: 14px; flex-wrap: wrap; margin: 18px 0; }
+.sw { width: 128px; border: 1px solid var(--hair); }
+.sw .chip { height: 56px; }
+.sw .lab { padding: 8px 10px; font-size: 12px; line-height: 1.5; color: var(--soft); }
+.sw .lab b { display: block; color: var(--ink); font-size: 12px; }
+.typ { border-top: 1px solid var(--hair); }
+.typ td { padding: 12px 14px 12px 0; vertical-align: baseline; border-bottom: 1px solid var(--hair); font-size: 14px; }
+.typ td:first-child { color: var(--soft); font-size: 12px; width: 220px; }
+.demo { border: 1px solid var(--hair); padding: 26px 28px; margin: 16px 0 8px; background: #fff; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.note { font-size: 12px; color: var(--soft); margin: 6px 0 0; }
+.election-row { display:grid; grid-template-columns:minmax(0,1fr) 300px 150px; gap:24px; align-items:center; padding:22px 0; }
+.candidate-profiles { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 26px; }
+.candidate-profile { display:grid; grid-template-columns:96px minmax(0,1fr); gap:16px; padding:14px; }
+.candidate-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:22px; }
+.login-layout { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); min-height:320px; }
+.login-panel { padding:36px 44px; }
+.login-form-panel { padding:40px; }
+.login-form { width:320px; max-width:100%; }
+.reference-filters, .reference-pager { display:flex; flex-wrap:wrap; }
+.receipt-copy { flex:1; min-width:0; }
+.receipt-stamp { width:110px; flex-shrink:0; }
+@media (max-width: 900px) {
+  .election-row { grid-template-columns:minmax(0,1fr); gap:10px; }
+  .candidate-profiles, .grid2, .login-layout { grid-template-columns:minmax(0,1fr); }
+  .candidate-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 600px) {
+  .wrap { padding:24px 16px; overflow-wrap:anywhere; }
+  h1 { font-size:30px; }
+  .demo { padding:20px 16px; }
+  .demo > *, .grid2 > * { min-width:0; }
+  .candidate-profile { grid-template-columns:minmax(0,1fr); }
+  .login-panel, .login-form-panel { padding:24px; }
+  .login-brand { flex-wrap:wrap; }
+  .typ { width:100%; }
+  .typ tr { display:grid; grid-template-columns:minmax(0,1fr); }
+  .typ td:first-child { width:auto; }
+  .receipt-stub { flex-direction:column; }
+  .receipt-copy { border-right:0 !important; border-bottom:2px dashed var(--ink); }
+  .receipt-stamp { width:100%; padding:18px; }
+  .form-value { min-height:42px; height:auto !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Civic — Design System Reference</h1>
+<p class="mut">Editorial Election Experience · notice-tone English · illustrative design reference for the proposed redesign. These standalone examples do not establish that the application implements the styles or behavior shown.</p>
+
+<h2 class="sect">1 · Color</h2>
+<div class="sw-row">
+  <div class="sw"><div class="chip" style="background:#f7f3eb"></div><div class="lab"><b>Paper</b>#F7F3EB · page bg</div></div>
+  <div class="sw"><div class="chip" style="background:#e8e0d4"></div><div class="lab"><b>Bone</b>#E8E0D4 · secondary / photo fallback</div></div>
+  <div class="sw"><div class="chip" style="background:#24221f"></div><div class="lab"><b>Ink</b>#24221F · text / panels</div></div>
+  <div class="sw"><div class="chip" style="background:#5b564c"></div><div class="lab"><b>Soft</b>#5B564C · secondary text</div></div>
+  <div class="sw"><div class="chip" style="background:#c9473a"></div><div class="lab"><b>Vermilion</b>#C9473A · primary actions (large)</div></div>
+  <div class="sw"><div class="chip" style="background:#a8382d"></div><div class="lab"><b>Vermilion deep</b>#A8382D · links / inline alerts (5.8:1)</div></div>
+</div>
+<p class="note">Vermilion is reserved for primary actions, selected states and the dot accent. Status colors never use corporate blue/green.</p>
+
+<h2 class="sect">2 · Typography</h2>
+<table class="typ">
+  <tr><td>Display / 60px / Serif 700</td><td style="font-family:var(--serif);font-size:44px;font-weight:700;line-height:1.15">Elections</td></tr>
+  <tr><td>Page title / 40px / Serif 900</td><td style="font-family:var(--serif);font-size:36px;font-weight:900">Candidate List</td></tr>
+  <tr><td>Card title / 21px / Serif 700</td><td style="font-family:var(--serif);font-size:21px;font-weight:700">Community Representative Election</td></tr>
+  <tr><td>Body / 15px / Sans 400</td><td>Notice-tone copy. Factual, no slogans, no time bounds, no blanket rules.</td></tr>
+  <tr><td>Meta / 13px / Sans 400 · tabular</td><td class="num" style="font-variant-numeric:tabular-nums">Closes 2026/11/05 18:00</td></tr>
+  <tr><td>Section label / 12.5px / 700 / .28em caps</td><td style="font-size:12.5px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:var(--soft)">Candidates</td></tr>
+</table>
+<p class="note">Display font: Source Serif 4 (600/700/900). Body: Inter + system fallback. All numerals tabular.</p>
+
+<h2 class="sect">3 · Buttons</h2>
+<div class="demo" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+  <button style="background:#c9473a;color:#fff;font-weight:700;font-size:14px;padding:12px 28px;border:0;cursor:pointer">Primary action</button>
+  <button style="border:1.5px solid #24221f;font-weight:700;font-size:14px;padding:12px 28px;cursor:pointer;background:transparent">Ghost</button>
+  <button style="font-size:13px;color:#5b564c;border-bottom:1px solid var(--hair);padding-bottom:2px;background:none;cursor:pointer">Quiet link</button>
+  <button disabled style="background:#c9473a;color:#fff;font-weight:700;font-size:14px;padding:12px 28px;border:0;opacity:.5;cursor:default">Disabled</button>
+</div>
+<p class="note">Primary = vermilion solid. Ghost = ink border. Quiet = underline hairline. Disabled = 50% opacity, no cursor change.</p>
+
+<h2 class="sect">4 · Status Dots</h2>
+<div class="demo" style="display:flex;gap:24px;align-items:center;flex-wrap:wrap">
+  <span style="display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;letter-spacing:.14em;color:#a8382d"><i style="width:7px;height:7px;border-radius:50%;background:#c9473a"></i>Open</span>
+  <span style="display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;letter-spacing:.14em;color:#5b564c"><i style="width:7px;height:7px;border-radius:50%;background:#e8e0d4;border:1px solid rgba(36,34,31,.24)"></i>Draft</span>
+  <span style="display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;letter-spacing:.14em;color:#5b564c"><i style="width:7px;height:7px;border-radius:50%;background:#5b564c"></i>Closed</span>
+</div>
+<p class="note">Dot + word, never color alone. Open = vermilion, Draft = bone outline, Closed = soft gray.</p>
+
+<h2 class="sect">5 · Election Row</h2>
+<div class="demo">
+  <div class="election-row" style="border-bottom:1px solid rgba(36,34,31,.14)">
+    <h3 style="font-family:var(--serif);font-size:21px;font-weight:700;margin:0">Community Representative Election</h3>
+    <p style="margin:0;font-size:13px;color:#5b564c"><span style="display:inline-block;min-width:7ch">Closes</span><span style="font-variant-numeric:tabular-nums">2026/11/05 18:00</span></p>
+    <div style="display:flex;gap:20px;align-items:center">
+      <span style="display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;letter-spacing:.14em;color:#a8382d"><i style="width:7px;height:7px;border-radius:50%;background:#c9473a"></i>Open</span>
+      <a style="font-size:14px;font-weight:700;color:#a8382d;border-bottom:2px solid #c9473a;padding-bottom:2px;text-decoration:none">Vote</a>
+    </div>
+  </div>
+  <div class="election-row">
+    <h3 style="font-family:var(--serif);font-size:21px;font-weight:700;margin:0;color:#5b564c">Association Board Election</h3>
+    <p style="margin:0;font-size:13px;color:#5b564c"><span style="display:inline-block;min-width:7ch">Opens</span><span style="font-variant-numeric:tabular-nums">2026/10/19 20:00</span></p>
+    <div style="display:flex;gap:20px;align-items:center">
+      <span style="display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;letter-spacing:.14em;color:#5b564c"><i style="width:7px;height:7px;border-radius:50%;background:#e8e0d4;border:1px solid rgba(36,34,31,.24)"></i>Draft</span>
+    </div>
+  </div>
+</div>
+<p class="note">Desktop columns align the times across rows; narrow screens stack the title, time, and actions in reading order. Closed elections remain discoverable through All and Closed filters, with result navigation governed by publication state and authorization.</p>
+
+<h2 class="sect">6 · Filter Segmented Control + Pager</h2>
+<div class="demo">
+  <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap">
+    <div class="reference-filters" style="border:1px solid rgba(36,34,31,.24);border-radius:2px">
+      <button style="padding:7px 18px;font-size:13px;background:#24221f;color:#f7f3eb;font-weight:700;border:0;cursor:pointer">All 6</button>
+      <button style="padding:7px 18px;font-size:13px;color:#5b564c;border-left:1px solid rgba(36,34,31,.24);border:0;border-left:1px solid rgba(36,34,31,.24);cursor:pointer;background:none">Open 3</button>
+      <button style="padding:7px 18px;font-size:13px;color:#5b564c;border-left:1px solid rgba(36,34,31,.24);cursor:pointer;background:none">Draft 2</button>
+      <button style="padding:7px 18px;font-size:13px;color:#5b564c;border-left:1px solid rgba(36,34,31,.24);cursor:pointer;background:none">Closed 1</button>
+    </div>
+  </div>
+  <div class="reference-pager" style="align-items:center;gap:18px;font-size:13px;color:#5b564c">
+    <button style="border:1px solid rgba(36,34,31,.24);border-radius:2px;padding:8px 18px;font-size:13px;background:#f7f3eb;cursor:pointer">Previous</button>
+    <span style="font-variant-numeric:tabular-nums">Page 1 of 2</span>
+    <button style="border:1px solid rgba(36,34,31,.24);border-radius:2px;padding:8px 18px;font-size:13px;background:#f7f3eb;cursor:pointer">Next</button>
+  </div>
+</div>
+<p class="note">Counts are illustrative. The active filter uses the server's total; All includes every server-visible state, including closed elections.</p>
+
+<h2 class="sect">7 · Candidate Cards — Three Display Modes</h2>
+<p class="note">Selectable mode (voting): hidden radio on each card, vermilion border + Selected mark. Read-only mode (admin/closed): same layout without radio.</p>
+<div class="demo">
+  <div style="font-size:12.5px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:#5b564c;margin-bottom:14px">Profiles</div>
+  <div class="candidate-profiles">
+    <div class="candidate-profile" style="border:2px solid #c9473a;background:rgba(201,71,58,.05)">
+      <div style="background:#e8e0d4;height:110px;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:38px;font-weight:700;color:#24221f">L</div>
+      <div><h3 style="margin:0 0 4px;font-family:var(--serif);font-size:20px">Lin Zhixia</h3><div style="font-size:12px;font-weight:700;letter-spacing:.14em;color:#a8382d;margin-bottom:6px">CANDIDATE · PRESIDENT</div><p style="margin:0;font-size:13px;color:#5b564c">Improves shared spaces and publishes progress openly.</p><div style="display:inline-flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;font-weight:700;color:#a8382d"><span style="width:20px;height:20px;border-radius:50%;border:1.5px solid #c9473a;background:#c9473a;display:inline-block"></span>Selected</div></div>
+    </div>
+    <div class="candidate-profile">
+      <div style="background:#e8e0d4;height:110px;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:38px;font-weight:700;color:#24221f">C</div>
+      <div><h3 style="margin:0 0 4px;font-family:var(--serif);font-size:20px">Chen Bo</h3><div style="font-size:12px;font-weight:700;letter-spacing:.14em;color:#a8382d;margin-bottom:6px">CANDIDATE · PRESIDENT</div><p style="margin:0;font-size:13px;color:#5b564c">Direct pipeline for owner proposals.</p><div style="display:inline-flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;font-weight:700;color:#5b564c"><span style="width:20px;height:20px;border-radius:50%;border:1.5px solid #24221f;display:inline-block"></span>Select</div></div>
+    </div>
+  </div>
+</div>
+<div class="demo" style="margin-top:14px">
+  <div style="font-size:12.5px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:#5b564c;margin-bottom:14px">Compact Grid</div>
+  <div class="candidate-grid">
+    <div style="text-align:center;border:2px solid #c9473a;background:rgba(201,71,58,.05);padding:8px 8px 12px;border-radius:2px"><div style="aspect-ratio:4/5;background:#e8e0d4;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:34px;font-weight:700;color:#24221f">L</div><h3 style="margin:10px 0 2px;font-family:var(--serif);font-size:16px">Lin Zhixia</h3><div style="font-size:12px;color:#5b564c;letter-spacing:.14em;margin-bottom:6px">CANDIDATE</div><div style="font-size:12px;font-weight:700;color:#a8382d">● Selected</div></div>
+    <div style="text-align:center;padding:8px 8px 12px;border:2px solid transparent"><div style="aspect-ratio:4/5;background:#e8e0d4;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:34px;font-weight:700;color:#24221f">C</div><h3 style="margin:10px 0 2px;font-family:var(--serif);font-size:16px">Chen Bo</h3><div style="font-size:12px;color:#5b564c;letter-spacing:.14em;margin-bottom:6px">CANDIDATE</div><div style="font-size:12px;font-weight:700;color:#5b564c">○ Select</div></div>
+    <div style="text-align:center;padding:8px 8px 12px;border:2px solid transparent"><div style="aspect-ratio:4/5;background:#e8e0d4;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:34px;font-weight:700;color:#24221f">Z</div><h3 style="margin:10px 0 2px;font-family:var(--serif);font-size:16px">Zhou Yu</h3><div style="font-size:12px;color:#5b564c;letter-spacing:.14em;margin-bottom:6px">CANDIDATE</div><div style="font-size:12px;font-weight:700;color:#5b564c">○ Select</div></div>
+    <div style="text-align:center;padding:8px 8px 12px;border:2px solid transparent"><div style="aspect-ratio:4/5;background:#e8e0d4;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:34px;font-weight:700;color:#24221f">W</div><h3 style="margin:10px 0 2px;font-family:var(--serif);font-size:16px">Wang Lu</h3><div style="font-size:12px;color:#5b564c;letter-spacing:.14em;margin-bottom:6px">CANDIDATE</div><div style="font-size:12px;font-weight:700;color:#5b564c">○ Select</div></div>
+  </div>
+</div>
+<div class="demo" style="margin-top:14px">
+  <div style="font-size:12.5px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:#5b564c;margin-bottom:14px">Directory</div>
+  <div class="candidate-directory" style="border-top:1px solid rgba(36,34,31,.14)">
+    <div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;padding:12px 10px;border-bottom:1px solid rgba(36,34,31,.14)"><h3 style="margin:0;font-family:var(--serif);font-size:17px">Lin Zhixia</h3><span style="font-size:12px;font-weight:700;color:#a8382d">● Selected</span></div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;padding:12px 10px"><h3 style="margin:0;font-family:var(--serif);font-size:17px">Chen Bo</h3><span style="font-size:12px;font-weight:700;color:#5b564c">○ Select</span></div>
+  </div>
+</div>
+
+<h2 class="sect">8 · Official Ballot Bar (persistent, two-step confirm)</h2>
+<div class="demo" style="background:#f1f0ed">
+<div style="background:#24221f;color:#f7f3eb;padding:14px 24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+  <span style="font-family:var(--serif);font-weight:700;font-size:15px;letter-spacing:.18em">OFFICIAL BALLOT</span>
+  <span style="font-size:12.5px;color:rgba(247,243,235,.66)">Anonymous · One choice · One vote per voter</span>
+  <span style="font-size:14px;margin-left:auto">You selected <b style="font-family:var(--serif);color:#f0c9c4">Lin Zhixia</b></span>
+  <button style="background:#c9473a;color:#fff;font-weight:700;font-size:13px;padding:10px 22px;border:0;cursor:pointer">Review and submit</button>
+</div>
+<div style="background:#24221f;color:#f7f3eb;padding:0 24px 16px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;border-top:1px solid rgba(247,243,235,.28)">
+  <span style="font-size:13px;font-weight:700;color:#f0c9c4;padding-top:12px">Once submitted, this ballot cannot be changed, withdrawn, or deleted.</span>
+  <button style="background:#c9473a;color:#fff;font-weight:700;font-size:13px;padding:10px 22px;border:0;cursor:pointer">Submit — irrevocable</button>
+  <button style="border:1.5px solid rgba(247,243,235,.5);color:#f7f3eb;font-size:13px;padding:9px 18px;background:none;cursor:pointer">Go back</button>
+</div>
+</div>
+<p class="note">Sticky bottom bar on the candidate showcase. Step 1 reviews the selection; step 2 requires the explicit irrevocable warning. Submit is disabled until a candidate is picked.</p>
+
+<h2 class="sect">9 · Voting Receipt</h2>
+<div class="demo" id="receipt-example" style="background:#f7f3eb;text-align:center;padding:30px 0">
+  <div style="font-family:var(--serif);font-size:44px;font-weight:900">Ballot cast.<span style="display:inline-block;width:.26em;height:.26em;background:#c9473a;border-radius:50%;margin-left:.1em"></span></div>
+  <div class="receipt-stub" style="width:400px;max-width:90%;margin:24px auto 0;background:#e8e0d4;border:2px solid #24221f;display:flex;text-align:left">
+    <div class="receipt-copy" style="padding:18px 22px;border-right:2px dashed #24221f">
+      <div style="font-size:12px;font-weight:700;letter-spacing:.26em;color:#5b564c">VOTING RECEIPT · ANONYMOUS</div>
+      <div style="font-family:var(--serif);font-size:19px;font-weight:900;margin-top:6px;color:#24221f">Community Representative Election</div>
+      <div style="font-size:12px;font-weight:700;margin-top:6px;color:#5b564c">Anonymous ballot · recorded</div>
+    </div>
+    <div class="receipt-stamp" style="display:flex;align-items:center;justify-content:center"><span style="border:3px solid #a8382d;color:#a8382d;border-radius:3px;padding:4px 10px;font-family:var(--serif);font-size:15px;font-weight:900;letter-spacing:.22em;transform:rotate(-7deg);display:inline-block">RECEIVED</span></div>
+  </div>
+  <p style="margin-top:18px;font-size:13px;color:#5b564c">Your ballot is stored separately from your identity — no one, including administrators, can link the two.</p>
+</div>
+
+<h2 class="sect">10 · Login (50/50 Split)</h2>
+<div class="demo" id="login-example" style="padding:0;background:#f1f0ed">
+  <div class="login-layout">
+    <div class="login-panel" style="background:#24221f;color:#f7f3eb;display:flex;flex-direction:column">
+      <div class="login-brand" style="display:flex;align-items:center;gap:14px"><b style="font-family:var(--serif);font-size:23px">Civic</b><span style="width:1px;height:20px;background:rgba(247,243,235,.35)"></span><span style="font-size:12px;color:rgba(247,243,235,.55)">Election Management &amp; Voting System</span></div>
+      <div style="margin:auto 0;padding:30px 0"><div style="font-family:var(--serif);font-size:54px;font-weight:700;letter-spacing:.08em;line-height:1">Sign in</div><p style="margin:16px 0 0;font-size:13.5px;color:rgba(247,243,235,.6)">Continue with your account.</p></div>
+    </div>
+    <div class="login-form-panel" style="background:#f1f0ed;position:relative;display:flex;align-items:center;justify-content:center">
+      <div class="login-form" style="border:1px solid #d9d7d2;padding:30px 28px 24px;background:transparent">
+        <div style="display:block;margin-bottom:16px"><span style="display:block;font-size:12.5px;color:#24221f;margin-bottom:6px">Username</span><div style="height:42px;border:1px solid #d5d3ce;border-radius:2px;background:#fffdfb;display:flex;align-items:center;padding:0 10px;font-size:13px;color:#5b564c">wangyutong</div></div>
+        <div style="display:block;margin-bottom:16px"><span style="display:block;font-size:12.5px;color:#24221f;margin-bottom:6px">Password</span><div style="height:42px;border:1px solid #d5d3ce;border-radius:2px;background:#fffdfb;display:flex;align-items:center;padding:0 10px;font-size:13px;color:#5b564c">••••••••</div></div>
+        <div style="width:100%;height:44px;background:#c9473a;color:#fff;font-weight:700;font-size:13px;letter-spacing:.42em;padding-left:10px;display:flex;align-items:center;justify-content:center">SIGN IN</div>
+        <p style="margin:12px 0 0;font-size:12px;color:#5b564c;text-align:center">Use a pre-seeded account; there is no self-registration.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2 class="sect">11 · Form Field &amp; States</h2>
+<div class="demo">
+  <div style="max-width:420px">
+    <div style="display:block;margin-bottom:16px"><span style="display:block;font-size:12.5px;color:#5b564c;margin-bottom:6px">Election name *</span><div class="form-value" style="height:42px;border:1px solid rgba(36,34,31,.24);border-radius:2px;background:#fff;display:flex;align-items:center;padding:0 12px;font-size:14px">Community Representative Election</div></div>
+    <div style="display:block;margin-bottom:16px"><span style="display:block;font-size:12.5px;color:#a8382d;margin-bottom:6px">Election name * — error</span><div style="height:42px;border:1px solid #c9473a;border-radius:2px;background:#fff;display:flex;align-items:center;padding:0 12px;font-size:14px;color:#24221f"></div><p style="margin:6px 0 0;font-size:12.5px;font-weight:700;color:#a8382d">Enter 1–200 characters for the election name.</p></div>
+  </div>
+</div>
+<p class="note">Focus: border turns vermilion. Error text is bold, below the field, role=alert. Loading state: "Loading…" with role=status. Empty state: "No elections to show." / "No candidates yet."</p>
+
+<h2 class="sect">12 · Empty &amp; Error States</h2>
+<div class="grid2">
+  <div class="demo">
+    <div style="font-size:12.5px;letter-spacing:.28em;text-transform:uppercase;color:#5b564c;margin-bottom:10px">EMPTY</div>
+    <p style="color:#5b564c">No elections to show.</p>
+    <p style="color:#5b564c">No candidates yet.</p>
+  </div>
+  <div class="demo">
+    <div style="font-size:12.5px;letter-spacing:.28em;text-transform:uppercase;color:#5b564c;margin-bottom:10px">ERROR</div>
+    <div style="padding:14px 0;color:#a8382d;font-weight:500"><p style="margin:0 0 10px">Unable to reach the server. Check your network or backend service.</p><button style="border:1px solid rgba(36,34,31,.24);border-radius:2px;padding:7px 16px;font-size:13px;background:#f7f3eb;cursor:pointer">Retry</button></div>
+  </div>
+</div>
+<p class="note">Errors always pair the message with a Retry action. A timeout never implies failure: "A timeout does not mean the operation failed."</p>
+
+<h2 class="sect">13 · Motion &amp; Accessibility Floor</h2>
+<p class="note" style="margin-bottom:0">
+View transitions: fade + 4px rise, 200ms ease-out — skipped under prefers-reduced-motion. Focus: 2px ink outline, offset 2px. Touch targets ≥ 44px. Radios are visually hidden but remain focusable and labelled. Links: underlined on hover, tab order follows DOM. All copy is notice-tone English; no slogans, no time bounds, no blanket voting rules.
+</p>
+
+</div>
+</body>
+</html>

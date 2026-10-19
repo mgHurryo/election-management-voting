@@ -2,7 +2,7 @@
 
 React + TypeScript + Vite frontend scaffold for the election management and voting system.
 
-**Scope:** the shared frontend foundation, M1 login form, M3 election list/detail, election creation and draft editing, candidate management, and the in-page ballot UI are implemented. The list uses the existing `api.elections` wrapper, server-side status filtering and pagination (20 per page), localized times, admin-only create navigation, and loading/empty/error/retry states. The ballot UI supports candidate selection, review, and confirmation, but the backend does not yet provide the ballot and vote-submission routes required to complete a real vote. Voter-roll and result routes remain placeholders. There are no fake login accounts or demo rows in the real election list. A development-only preview is described below. Election and voting endpoints are still pending in the backend master baseline; API wrappers target the **draft** contract in `../API.md`, and complete live integration is not verified.
+**Scope:** the shared frontend foundation, login, election list/detail, election creation and draft editing, candidate management, and the in-page ballot UI are implemented. The list uses the existing `api.elections` wrapper, server-side status filtering and pagination (20 per page), localized times, admin-only create navigation, and loading/empty/error/retry states. The ballot UI supports candidate selection, review, and confirmation, but the backend does not yet provide the ballot and vote-submission routes required to complete a real vote. Voter-roll and result routes remain placeholders. There are no fake login accounts or demo rows in the real election list. A development-only preview is described below. API wrappers target the **draft** contract in `../API.md`; complete live integration is not verified. See [Frontend design constraints](../docs/frontend/FRONTEND_CONSTRAINTS.md) for the approved product and visual direction.
 
 ## Quick start
 
@@ -23,6 +23,9 @@ Default API prefix: `/api/v1`. During development, Vite proxies `/api` to `http:
 npm run typecheck
 npm run lint
 npm test
+npm run test:e2e
+npx playwright install chromium
+npm run test:design-reference
 npm run build
 npm run preview
 ```
@@ -80,7 +83,9 @@ The All filter uses one unfiltered server-paginated request and includes every v
 
 Election list tests use mocked API responses and cover authentication redirects, role-based create navigation, detail links with BIGINT string IDs, pagination/filter reset, failure versus empty results, manual retry, and stale response handling. These are not live backend integration tests.
 
-Replace the remaining placeholders one module at a time. Election list, detail, creation, draft editing, candidate management, and the in-page ballot UI are implemented. The ballot UI cannot complete a real vote until the backend implements its ballot and vote-submission routes. Voter-roll and result destinations remain placeholders. Reconcile draft API changes and verify live behavior as backend endpoints become available.
+`npm run test:design-reference` opens the standalone design HTML in headless Chromium at 1280, 768, 390, and 320px. It checks horizontal overflow and election-row reading order, and writes screenshots to the ignored `test-results/design-reference/` directory. This verifies the reference layout, not application implementation or backend integration.
+
+Voter-roll and result destinations remain placeholders. The in-page ballot UI supports candidate selection, review, and confirmation, but real vote submission requires backend ballot and vote-submission routes. Reconcile draft API changes and verify live behavior as backend endpoints become available.
 
 ## Local election list preview
 
@@ -120,9 +125,9 @@ works; state confirmations and unfinished links only show a preview explanation.
 No credentials are created and no real election reads/writes are sent by the preview.
 The example module and preview routes are absent from production bundles.
 
-FE-02 is a separate local branch from the latest master with FE-01 commits carried
-forward as an unmerged dependency. Backend integration is still pending; mocked
-tests and local preview do not establish that the real election APIs are ready.
+The frontend screens use the current API wrappers, but mocked tests and local
+previews do not establish that the real election APIs are ready. Live backend
+integration remains unverified.
 
 ## Election creation and frontend handoff
 
@@ -139,8 +144,7 @@ It is reachable via the preview list's create link and is excluded from producti
 
 See [A frontend delivery and teammate handoff (Chinese)](HANDOFF_CN.md) for page boundaries, route parameters,
 existing API helpers and reusable components. This is a working handoff document;
-live integration and the other business modules remain pending. The current FE-04
-branch includes FE-01, FE-02 and FE-03 as unmerged dependencies. No branch has been pushed by this work.
+live integration and the other business modules remain pending.
 
 ## Draft election editing
 
@@ -155,5 +159,5 @@ or uncertain write blocks saving until explicit reload of authoritative data.
 Development /__preview/elections/1001/edit reuses the same form with fictional data
 and a simulated patch summary only. Details link to it; simulated edits do not
 persist or alter the list/detail fixtures. The production build excludes this route.
-The A UI scope (list/detail/create/edit) is implemented, not live-integration verified.
+The list/detail/create/edit UI is implemented, not live-integration verified.
 See HANDOFF_CN.md for teammate boundaries and remaining work.
