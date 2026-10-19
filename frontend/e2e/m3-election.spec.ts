@@ -206,6 +206,66 @@ test('election creation form stacks its sections on a mobile viewport', async ({
   expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth)
 })
 
+test('closed elections remain discoverable after closure, publication, navigation and reload', async ({
+  page,
+}, testInfo) => {
+  let current: Election = { ...election, status: 'OPEN' }
+  let closeRequests = 0
+  await page.route('**/api/v1/elections?**', (route) => {
+    const status = new URL(route.request().url()).searchParams.get('status')
+    const rows = !status || status === current.status ? [current] : []
+    return route.fulfill({
+      json: { data: rows, meta: { page: 1, page_size: 20, total: rows.length } },
+    })
+  })
+  await page.route('**/api/v1/elections/41', (route) => route.fulfill({ json: { data: current } }))
+  await page.route('**/api/v1/elections/41/candidates**', (route) =>
+    route.fulfill({
+      json: { data: [], meta: { page: 1, page_size: 20, total: 0 } },
+    }),
+  )
+  await page.route('**/api/v1/elections/41/close', (route) => {
+    closeRequests++
+    current = { ...current, status: 'CLOSED' }
+    return route.fulfill({ json: { data: current } })
+  })
+  await page.goto('/elections')
+  await page.getByRole('link', { name: 'Vote', exact: true }).click()
+  await page.getByRole('button', { name: 'Close voting', exact: true }).click()
+  await page.getByRole('button', { name: 'Confirm close', exact: true }).click()
+  await expect(page.getByText('Voting is closed.', { exact: true })).toBeVisible()
+  expect(closeRequests).toBe(1)
+  // Publication UI is still a placeholder; model a subsequent server-side publication.
+  current = { ...current, results_published_at: '2026-10-20T18:00:00Z' }
+  const voter: User = { ...admin, id: '2', username: 'voter', role: 'USER' }
+  await page.route('**/api/v1/auth/me', (route) => route.fulfill({ json: { data: voter } }))
+  for (const viewport of [
+    { width: 1280, height: 900 },
+    { width: 320, height: 812 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.goto('/elections')
+    await expect(page.getByRole('heading', { name: election.title })).toBeVisible()
+    await page.getByRole('button', { name: 'Closed', exact: true }).click()
+    await expect(page.getByRole('button', { name: 'Closed (1)' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await page.getByRole('link', { name: 'Details', exact: true }).click()
+    await expect(page.getByRole('link', { name: 'View results' })).toBeVisible()
+    await page.getByRole('link', { name: 'All elections' }).click()
+    await page.reload()
+    await expect(page.getByRole('heading', { name: election.title })).toBeVisible()
+    await page.screenshot({
+      path: testInfo.outputPath(`closed-elections-${viewport.width}.png`),
+      fullPage: true,
+    })
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true)
+  }
+})
+
 test('election list fits a mobile viewport without horizontal page overflow', async ({
   page,
 }, testInfo) => {

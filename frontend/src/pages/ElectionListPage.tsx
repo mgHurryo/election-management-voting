@@ -20,12 +20,13 @@ function when(value: string) {
 
 function Row({ election }: { election: Election }) {
   const open = election.status === 'OPEN'
+  const closed = election.status === 'CLOSED'
   return (
     <div className="trow">
       <h3>{election.title}</h3>
       <p className="m num">
-        <span className="mlab">{open ? 'Closes' : 'Opens'}</span>
-        {when(open ? election.ends_at : election.starts_at)}
+        <span className="mlab">{closed ? 'Ended' : open ? 'Closes' : 'Opens'}</span>
+        {when(open || closed ? election.ends_at : election.starts_at)}
       </p>
       <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
         <span className={`st ${election.status.toLowerCase()}`}>
@@ -53,6 +54,7 @@ export default function ElectionListPage() {
     { key: '' as const, label: 'All' },
     { key: 'OPEN' as const, label: 'Open' },
     { key: 'DRAFT' as const, label: 'Draft' },
+    { key: 'CLOSED' as const, label: 'Closed' },
   ]
   return (
     <div className="wrap">

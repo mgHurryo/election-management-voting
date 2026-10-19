@@ -60,17 +60,16 @@ function mount(role: Role | null = 'USER', path = '/elections') {
 }
 
 describe('elections home', () => {
-  it('composes OPEN and DRAFT results without losing BIGINT IDs or showing CLOSED', async () => {
-    const list = vi.spyOn(api, 'elections').mockImplementation(async (query) => {
-      if (query?.status === 'OPEN') return response(1, 1, [row('OPEN', '9007199254740993')])
-      if (query?.status === 'DRAFT') return response(1, 1, [row('DRAFT', '9007199254740994')])
-      return response(query?.page, 0, [])
-    })
-    vi.spyOn(api, 'election').mockResolvedValue({ data: election })
-    vi.spyOn(api, 'candidates').mockResolvedValue({
-      data: [],
-      meta: { page: 1, page_size: 20, total: 0 },
-    })
+  it('lists every server-visible state without losing BIGINT IDs or server ordering', async () => {
+    const list = vi
+      .spyOn(api, 'elections')
+      .mockResolvedValue(
+        response(1, 3, [
+          row('CLOSED', '9007199254740995'),
+          row('OPEN', '9007199254740993'),
+          row('DRAFT', '9007199254740994'),
+        ]),
+      )
     mount()
     expect(
       await screen.findByRole('heading', { name: 'OPEN election 9007199254740993' }),
@@ -82,9 +81,18 @@ describe('elections home', () => {
     expect(
       screen.getByRole('heading', { name: 'DRAFT election 9007199254740994' }),
     ).toBeInTheDocument()
-    expect(list).toHaveBeenCalledWith({ page: 1, page_size: 20, status: 'OPEN' })
-    expect(list).toHaveBeenCalledWith({ page: 1, page_size: 20, status: 'DRAFT' })
-    expect(screen.queryByText(/CLOSED election/)).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'CLOSED election 9007199254740995' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent),
+    ).toEqual([
+      'CLOSED election 9007199254740995',
+      'OPEN election 9007199254740993',
+      'DRAFT election 9007199254740994',
+    ])
+    expect(list).toHaveBeenCalledExactlyOnceWith({ page: 1, page_size: 20 })
+    expect(screen.getByRole('button', { name: 'All (3)' })).toBeInTheDocument()
   })
 
   it('shows the administrator create entry and navigates to the existing route', async () => {
@@ -93,6 +101,30 @@ describe('elections home', () => {
     await screen.findByRole('heading', { name: 'Elections' })
     fireEvent.click(screen.getByRole('link', { name: 'New election' }))
     expect(await screen.findByRole('heading', { name: 'Create election' })).toBeInTheDocument()
+  })
+
+  it('keeps published closed elections discoverable after navigation and a fresh mount', async () => {
+    const published: Election = {
+      ...election,
+      status: 'CLOSED',
+      results_published_at: '2026-10-20T10:00:00Z',
+    }
+    vi.spyOn(api, 'elections').mockResolvedValue(response(1, 1, [published]))
+    vi.spyOn(api, 'election').mockResolvedValue({ data: published })
+    const view = mount()
+    fireEvent.click(await screen.findByRole('link', { name: 'Details' }))
+    expect(await screen.findByRole('link', { name: 'View results' })).toHaveAttribute(
+      'href',
+      `/elections/${election.id}/results`,
+    )
+    fireEvent.click(screen.getByRole('link', { name: 'All elections' }))
+    await screen.findByRole('heading', { name: election.title })
+    view.unmount()
+    mount()
+    fireEvent.click(await screen.findByRole('button', { name: 'Closed' }))
+    fireEvent.click(await screen.findByRole('link', { name: 'Details' }))
+    fireEvent.click(await screen.findByRole('link', { name: 'View results' }))
+    expect(await screen.findByRole('heading', { name: 'Results' })).toBeInTheDocument()
   })
 
   it('redirects anonymous visitors to login without requesting elections', async () => {
@@ -117,28 +149,27 @@ describe('elections home', () => {
     expect(list).not.toHaveBeenCalled()
   })
 
-  it('paginates OPEN before DRAFT and resets to page one when filtering', async () => {
-    let openRequests = 0
+  it('uses server pagination for All and resets to page one for each status filter', async () => {
     const list = vi.spyOn(api, 'elections').mockImplementation(async (query) => {
-      if (query?.status === 'OPEN') {
-        openRequests += 1
-        if (query.page === 2) return response(2, 21, [row('OPEN', 'open-2')])
-        if (openRequests > 1) return response(1, 1, [row('OPEN', 'filtered-open')])
-        return response(query.page, 21, [row('OPEN', `open-${query.page}`)])
-      }
-      if (query?.status === 'DRAFT')
-        return response(query.page, 2, [row('DRAFT', `draft-${query.page}`)])
-      return response(query?.page, 1, [row('OPEN', 'filtered-open')])
+      if (query?.status) return response(query.page, 1, [row(query.status, 'filtered')])
+      return response(query?.page, 21, [row('CLOSED', `page-${query?.page}`)])
     })
     mount()
-    await screen.findByRole('heading', { name: 'OPEN election open-1' })
+    await screen.findByRole('heading', { name: 'CLOSED election page-1' })
     fireEvent.click(screen.getByRole('button', { name: 'Next' }))
-    await screen.findByRole('heading', { name: 'DRAFT election draft-1' })
-    expect(list).toHaveBeenCalledWith({ page: 1, page_size: 20, status: 'DRAFT' })
-    fireEvent.click(screen.getByRole('button', { name: /^Open/ }))
-    await screen.findByRole('heading', { name: 'OPEN election filtered-open' })
-    expect(list).toHaveBeenLastCalledWith({ page: 1, page_size: 20, status: 'OPEN' })
-    expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled()
+    await screen.findByRole('heading', { name: 'CLOSED election page-2' })
+    expect(list).toHaveBeenLastCalledWith({ page: 2, page_size: 20 })
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
+    for (const [label, status] of [
+      ['Open', 'OPEN'],
+      ['Draft', 'DRAFT'],
+      ['Closed', 'CLOSED'],
+    ]) {
+      fireEvent.click(screen.getByRole('button', { name: label }))
+      await screen.findByRole('heading', { name: `${status} election filtered` })
+      expect(list).toHaveBeenLastCalledWith({ page: 1, page_size: 20, status })
+      expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled()
+    }
   })
 
   it('distinguishes a failed request from an empty result and allows retry', async () => {
@@ -152,7 +183,7 @@ describe('elections home', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Unable to reach the server')
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
     expect(await screen.findByText('No elections to show.')).toBeInTheDocument()
-    expect(list).toHaveBeenCalledTimes(4)
+    expect(list).toHaveBeenCalledTimes(2)
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
@@ -161,14 +192,12 @@ describe('elections home', () => {
     const oldRequest = new Promise<Paginated<Election>>((resolve) => {
       finishOld = resolve
     })
-    let draftCalls = 0
     const list = vi.spyOn(api, 'elections').mockImplementation((query) => {
-      if (query?.status === 'OPEN' || (query?.status === 'DRAFT' && draftCalls++ === 0))
-        return oldRequest
+      if (!query?.status) return oldRequest
       return Promise.resolve(response(1, 0, []))
     })
     mount()
-    await waitFor(() => expect(list).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(list).toHaveBeenCalledTimes(1))
     expect(screen.getByText('Loading…')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Draft' }))
     expect(await screen.findByText('No elections to show.')).toBeInTheDocument()

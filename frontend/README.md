@@ -76,6 +76,8 @@ The result route is only a placeholder; the backend must enforce CLOSED state fo
 
 ## Verification and remaining implementation
 
+The All filter uses one unfiltered server-paginated request and includes every visible election state. Open, Draft, and Closed filters use the existing status query. Closed elections remain reachable through Details, with the existing results entry shown according to publication state and role; the results page itself is still a placeholder.
+
 Election list tests use mocked API responses and cover authentication redirects, role-based create navigation, detail links with BIGINT string IDs, pagination/filter reset, failure versus empty results, manual retry, and stale response handling. These are not live backend integration tests.
 
 Replace the remaining placeholders one module at a time. Election list, detail, creation, draft editing, candidate management, and the in-page ballot UI are implemented. The ballot UI cannot complete a real vote until the backend implements its ballot and vote-submission routes. Voter-roll and result destinations remain placeholders. Reconcile draft API changes and verify live behavior as backend endpoints become available.
