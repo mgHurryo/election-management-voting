@@ -14,7 +14,13 @@ RESULTS = "/api/v1/elections/{election_id}/results"
 A, B, C, D = 5011, 5012, 5013, 5014
 
 
-def seed_candidates(engine, counts: dict[int, int], display_orders: dict[int, int]) -> None:
+def seed_candidates(
+    engine,
+    counts: dict[int, int],
+    display_orders: dict[int, int],
+    *,
+    election_id: int = CLOSED_ELECTION,
+) -> None:
     """Close-election candidates plus the ballot count each one should show."""
     created = datetime(2026, 10, 1)
     with engine.begin() as connection:
@@ -23,7 +29,7 @@ def seed_candidates(engine, counts: dict[int, int], display_orders: dict[int, in
             [
                 dict(
                     id=candidate_id,
-                    election_id=CLOSED_ELECTION,
+                    election_id=election_id,
                     name=f"Candidate {candidate_id}",
                     description="A fictional introduction.",
                     photo_url=None,
@@ -37,7 +43,7 @@ def seed_candidates(engine, counts: dict[int, int], display_orders: dict[int, in
     for sequence, candidate_id in enumerate(
         [candidate for candidate, votes in counts.items() for _ in range(votes)], start=1
     ):
-        seed_vote(engine, CLOSED_ELECTION, 21, candidate_id, vote_sequence=sequence)
+        seed_vote(engine, election_id, 21, candidate_id, vote_sequence=sequence)
 
 
 def test_admin_previews_recomputed_tally(client, admin_headers, engine):

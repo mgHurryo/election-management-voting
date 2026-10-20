@@ -1,4 +1,6 @@
 
+from datetime import UTC, datetime
+
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -112,6 +114,13 @@ class SqlAlchemyVotingRepository:
             CandidateTally(candidate_id=row[0], name=row[1], vote_count=int(row[2]))
             for row in rows
         ]
+
+    def mark_published(self, election_id: int, published_at: datetime) -> None:
+        """Stamp the server-determined publish time; the caller holds the row lock."""
+        row = self._session.get(Election, election_id)
+        row.results_published_at = published_at.astimezone(UTC).replace(tzinfo=None)
+        row.updated_at = datetime.now(UTC).replace(tzinfo=None, microsecond=0)
+        self._session.flush()
 
     def record_vote(
         self, election_id: int, user_id: int, vote_sequence: int, candidate_id: int
