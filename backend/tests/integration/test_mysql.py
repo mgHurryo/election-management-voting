@@ -7,7 +7,7 @@ from threading import Event
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, delete, event, insert, inspect, select, text, update
+from sqlalchemy import create_engine, delete, event, func, insert, inspect, select, text, update
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import IntegrityError, OperationalError
 
@@ -15,11 +15,23 @@ from app.core.errors import AppError
 from app.db.session import create_session_factory
 from app.db.unit_of_work import SqlAlchemyUnitOfWork
 from app.main import create_app
-from app.models import Base, Election, ElectionCandidate, ElectionVoter, User
+from app.models import (
+    Ballot,
+    BallotChoice,
+    Base,
+    Election,
+    ElectionCandidate,
+    ElectionVoter,
+    User,
+    VoteParticipation,
+)
+from app.models.identity import UserIdentity
 from app.repositories.elections import SqlAlchemyElectionsRepository
 from app.repositories.roster import SqlAlchemyRosterRepository
+from app.repositories.voting import SqlAlchemyVotingRepository
 from app.services.elections import ElectionsService
 from app.services.roster import RosterService
+from app.services.voting import VotingService
 
 pytestmark = pytest.mark.mysql
 
@@ -319,3 +331,139 @@ def test_mysql_open_waits_for_candidate_edit_commit(mysql_engine, mysql_election
 
     opened = mysql_elections.open_election(20)
     assert opened.status == "OPEN"
+
+
+@pytest.fixture
+def mysql_ballot(mysql_engine, password_hash):
+    """One OPEN election (30) with candidate 3001 and roster voter 71, per test."""
+    now = datetime.now(UTC).replace(tzinfo=None, microsecond=0)
+    with mysql_engine.begin() as connection:
+        connection.execute(
+            insert(User).values(
+                id=71,
+                username="ballot_voter",
+                password_hash=password_hash,
+                display_name="Voter",
+                role="USER",
+                status="ACTIVE",
+            )
+        )
+        connection.execute(
+            insert(Election).values(
+                id=30,
+                title="Ballot lock test",
+                position_title="Chair",
+                created_by=71,
+                status="OPEN",
+                privacy_mode="FORCED_ANONYMOUS",
+                starts_at=now - timedelta(hours=1),
+                ends_at=now + timedelta(hours=1),
+            )
+        )
+        connection.execute(
+            insert(ElectionCandidate).values(
+                id=3001,
+                election_id=30,
+                name="Only Candidate",
+                description="Sole candidate for the vote transaction.",
+                display_order=0,
+            )
+        )
+        connection.execute(insert(ElectionVoter).values(election_id=30, user_id=71, vote_quota=1))
+    factory = create_session_factory(mysql_engine)
+    voter = UserIdentity(
+        id=71,
+        username="ballot_voter",
+        display_name="Voter",
+        role="USER",
+        status="ACTIVE",
+        created_at=now,
+        updated_at=now,
+    )
+    yield VotingService(lambda: SqlAlchemyUnitOfWork(factory)), voter
+    with mysql_engine.begin() as connection:
+        connection.execute(delete(BallotChoice).where(BallotChoice.election_id == 30))
+        connection.execute(delete(Ballot).where(Ballot.election_id == 30))
+        connection.execute(delete(VoteParticipation).where(VoteParticipation.election_id == 30))
+        connection.execute(delete(ElectionCandidate).where(ElectionCandidate.election_id == 30))
+        connection.execute(delete(ElectionVoter).where(ElectionVoter.election_id == 30))
+        connection.execute(delete(Election).where(Election.id == 30))
+        connection.execute(delete(User).where(User.id == 71))
+
+
+def test_mysql_close_waits_for_inflight_vote_commit(mysql_engine, mysql_ballot, monkeypatch):
+    voting, voter = mysql_ballot
+    locked, release = Event(), Event()
+    original = SqlAlchemyVotingRepository.election
+
+    def pause_after_share_lock(repository, election_id, *, for_update=False, for_share=False):
+        election = original(repository, election_id, for_update=for_update, for_share=for_share)
+        if for_share:
+            locked.set()
+            assert release.wait(10), "Vote test did not release the shared election lock"
+        return election
+
+    monkeypatch.setattr(SqlAlchemyVotingRepository, "election", pause_after_share_lock)
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(voting.cast_vote, 30, voter, 3001)
+        try:
+            assert locked.wait(5), "Vote transaction did not take the shared election lock"
+            # The close transition must block until the in-flight vote commits (ADR-007).
+            with pytest.raises(OperationalError) as error, mysql_engine.begin() as connection:
+                connection.execute(text("SET SESSION innodb_lock_wait_timeout = 1"))
+                connection.execute(
+                    update(Election).where(Election.id == 30).values(status="CLOSED")
+                )
+            assert error.value.orig.args[0] == 1205
+        finally:
+            release.set()
+        accepted = future.result(timeout=5)
+    assert accepted.accepted is True
+
+    with mysql_engine.begin() as connection:
+        connection.execute(update(Election).where(Election.id == 30).values(status="CLOSED"))
+    with pytest.raises(AppError) as error:
+        voting.cast_vote(30, voter, 3001)
+    assert error.value.code == "ELECTION_NOT_OPEN"
+
+
+def test_mysql_concurrent_votes_allow_single_ballot(mysql_engine, mysql_ballot):
+    voting, voter = mysql_ballot
+    start = Event()
+
+    def submit():
+        assert start.wait(5), "Concurrent vote test did not start"
+        try:
+            return ("accepted", voting.cast_vote(30, voter, 3001))
+        except AppError as error:
+            return (error.code, None)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [executor.submit(submit) for _ in range(2)]
+        start.set()
+        outcomes = sorted(future.result(timeout=10)[0] for future in futures)
+
+    # FR-10/AC-04: the roster row lock serializes the quota recount, so exactly
+    # one request commits the only ballot and the loser reports an exhausted quota.
+    assert outcomes == ["VOTE_QUOTA_EXHAUSTED", "accepted"]
+    with mysql_engine.connect() as connection:
+        assert (
+            connection.scalar(
+                select(func.count()).select_from(Ballot).where(Ballot.election_id == 30)
+            )
+            == 1
+        )
+        assert (
+            connection.scalar(
+                select(func.count())
+                .select_from(VoteParticipation)
+                .where(VoteParticipation.election_id == 30)
+            )
+            == 1
+        )
+        assert (
+            connection.scalar(
+                select(func.count()).select_from(BallotChoice).where(BallotChoice.election_id == 30)
+            )
+            == 1
+        )

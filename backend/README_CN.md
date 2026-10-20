@@ -2,7 +2,7 @@
 
 [English](README.md) / 简体中文
 
-后端已实现架构 v0.2 / SRS v0.1 的 M1 身份认证、M2 选民名册管理和 M3 选举/候选人管理；**尚不是完整投票 MVP**。选票、参与状态、投票和结果接口仍未注册。
+后端已实现架构 v0.2 / SRS v0.1 的 M1 身份认证、M2 选民名册管理、M3 选举/候选人管理、M4 选票/参与/投票以及 M6/M7 计票与结果发布：API v0.1 的全部 20 个操作均已注册。
 
 ## 已完成
 
@@ -28,7 +28,11 @@
 | `GET /api/v1/elections/{id}/voters` | ADMIN | 已实现 |
 | `POST /api/v1/elections/{id}/voters` | ADMIN；DRAFT、ACTIVE USER、额度 1 | 已实现 |
 | `DELETE /api/v1/elections/{id}/voters/{user_id}` | ADMIN；DRAFT、没有参与记录 | 已实现 |
-| 选票、参与状态、投票和结果操作（5 个） | 尚未注册 | 后续实现 |
+| `GET /api/v1/elections/{id}/ballot` | 合资格 USER；OPEN 且处于时间窗 | 已实现 |
+| `GET /api/v1/elections/{id}/participation` | USER；任意状态下查询本人资格 | 已实现 |
+| `POST /api/v1/elections/{id}/votes` | 合资格 USER；单张匿名选票（ADR-007） | 已实现 |
+| `GET /api/v1/elections/{id}/results` | ADMIN 预览；USER 需已发布 | 已实现 |
+| `POST /api/v1/elections/{id}/results/publish` | ADMIN；仅 CLOSED，服务端复算 | 已实现 |
 
 健康检查是 `/api/v1` 之外的运维扩展。ready 只验证数据库连接，不能证明表结构、迁移或投票可用。
 数据库不可用时返回脱敏的 `503 SERVICE_UNAVAILABLE`。

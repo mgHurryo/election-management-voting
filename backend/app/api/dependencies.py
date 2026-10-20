@@ -9,6 +9,7 @@ from app.services.elections import ElectionsService
 from app.services.health import HealthService
 from app.services.identity import IdentityService
 from app.services.roster import RosterService
+from app.services.voting import VotingService
 
 bearer = HTTPBearer(auto_error=False)
 
@@ -29,10 +30,15 @@ def elections_service(request: Request) -> ElectionsService:
     return request.app.state.container.elections
 
 
+def voting_service(request: Request) -> VotingService:
+    return request.app.state.container.voting
+
+
 IdentityServiceDep = Annotated[IdentityService, Depends(identity_service)]
 HealthServiceDep = Annotated[HealthService, Depends(health_service)]
 RosterServiceDep = Annotated[RosterService, Depends(roster_service)]
 ElectionsServiceDep = Annotated[ElectionsService, Depends(elections_service)]
+VotingServiceDep = Annotated[VotingService, Depends(voting_service)]
 
 
 def current_user(
@@ -52,3 +58,11 @@ def admin_user(user: CurrentUser, service: IdentityServiceDep) -> UserIdentity:
 
 
 AdminUser = Annotated[UserIdentity, Depends(admin_user)]
+
+
+def voter_user(user: CurrentUser, service: IdentityServiceDep) -> UserIdentity:
+    # ADMIN has no v1 voting role; ballot and vote operations are USER-only.
+    return service.require_role(user, "USER")
+
+
+VoterUser = Annotated[UserIdentity, Depends(voter_user)]

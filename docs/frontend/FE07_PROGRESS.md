@@ -77,3 +77,25 @@ See `FE07_PR_DESCRIPTION.md` for the ready-to-use review description. Required f
 Final local validation on 2026-10-20: 126 unit/component tests and 14 Chromium workflow tests passed; reference HTML passed overflow/reading-order checks at all four widths; typecheck, lint with zero warnings, formatting and production build passed. These checks validate intercepted frontend behavior. CI/Qodana and live backend end-to-end integration are unverified.
 
 Delivery files stay in `C:\Data\Project\election-management-voting`; the frontend-only commit targets `feature/FE07-roster-results-ui` from the audited master. The concurrent backend agent switched the shared checkout to `feature/M4-ballot-voting` during implementation. To preserve its checkout and staging area, the frontend uses a temporary separate Git index and creates its own branch commit without changing the shared HEAD or index. Frontend files may consequently still appear as working-tree differences on the backend branch until the team coordinates integration. No backend file is included in the frontend commit. Rollback targets only that frontend commit. No protected-branch modification, remote history rewrite, deployment or release is part of this change. This adds compatible UI capability: MINOR release scope; no package version or tag is assigned before the normal release gates.
+
+## Follow-up: original M7 takeover and stacked publication
+
+The owner clarified that original M7 contributions must be acknowledged and its
+work is now taken over. [M7_TAKEOVER.md](M7_TAKEOVER.md) records the original
+authors/commits, replacement implementation and conflict resolutions. The original
+M7 tip `0121e94` is retained as a merge parent before frontend integration; the
+maintained backend snapshot is PR #31 at `df0c56a`. This supersedes the earlier
+frontend-only publication scope, while preserving the historical audit above.
+
+PR #32 (`feature/FE07-roster-results-pr`) is stacked on PR #31. Its backend
+dependency must pass CI and enter master before final frontend integration. No
+shared backend file, checkout or staging area is changed by this takeover.
+Backend MySQL concurrency remains a release blocker; the previously passing
+frontend-only PR checks do not establish success for the combined snapshot.
+
+A follow-up browser smoke passed against the real FastAPI routes at `df0c56a`
+with disposable SQLite fixtures: login, draft roster read/add/remove, preview
+including a zero-vote candidate, confirmed publication, and published results for
+an active nonmember. All observed API responses succeeded, with zero browser
+runtime errors. This replaces the earlier lack of any real API/browser check;
+MySQL concurrency, production data and deployment remain unverified.
