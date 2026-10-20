@@ -1,0 +1,78 @@
+from collections.abc import Callable
+from datetime import UTC, datetime
+
+from app.core.errors import AppError
+from app.models.elections import ElectionDetails
+from app.models.identity import UserIdentity
+from app.models.voting import BallotView, ParticipationStatus
+from app.services.ports import UnitOfWork
+
+
+def election_not_found() -> AppError:
+    return AppError("ELECTION_NOT_FOUND", "Election absent, or detail outside visibility.", 404)
+
+
+def utcnow() -> datetime:
+    return datetime.now(UTC).replace(microsecond=0)
+
+
+class VotingService:
+    """M4 ballot, participation and voting workflows (API.md 4.16–4.18).
+
+    Each public method owns one transaction; the API layer enforces the USER
+    role, while eligibility, state and time window are rechecked here.
+    """
+
+    def __init__(
+        self,
+        uow_factory: Callable[[], UnitOfWork],
+        clock: Callable[[], datetime] = utcnow,
+    ) -> None:
+        self._uow_factory = uow_factory
+        self._clock = clock
+
+    def get_ballot(self, election_id: int, user: UserIdentity) -> BallotView:
+        """Serve the full ballot only to an eligible voter of an open election."""
+        with self._uow_factory() as uow:
+            election = uow.voting.election(election_id)
+            if election is None:
+                raise election_not_found()
+            participation = self._participation(uow, election_id, user.id)
+            if not participation.eligible:
+                raise AppError("NOT_ELIGIBLE", "User is not on this election's voter roll.", 403)
+            self._require_voting_window(election)
+            return BallotView(
+                election=election,
+                candidates=uow.voting.all_candidates(election_id),
+                participation=participation,
+            )
+
+    def _require_voting_window(self, election: ElectionDetails) -> None:
+        if election.status != "OPEN":
+            raise AppError("ELECTION_NOT_OPEN", "Ballot access requires OPEN status.", 409)
+        now = self._clock()
+        if now < election.starts_at:
+            raise AppError("VOTING_NOT_STARTED", "Voting time window has not started.", 409)
+        if now > election.ends_at:
+            raise AppError("VOTING_ENDED", "Voting time window has ended.", 409)
+
+    @staticmethod
+    def _participation(uow: UnitOfWork, election_id: int, user_id: int) -> ParticipationStatus:
+        """Own status only: quota from the roster row, usage from participation."""
+        quota = uow.voting.vote_quota(election_id, user_id)
+        if quota is None:
+            return ParticipationStatus(
+                election_id=election_id,
+                eligible=False,
+                vote_quota=0,
+                used_votes=0,
+                remaining_votes=0,
+            )
+        used_votes, _ = uow.voting.participation_usage(election_id, user_id)
+        return ParticipationStatus(
+            election_id=election_id,
+            eligible=True,
+            vote_quota=quota,
+            used_votes=used_votes,
+            remaining_votes=max(quota - used_votes, 0),
+        )
