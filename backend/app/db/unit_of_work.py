@@ -7,6 +7,7 @@ from app.repositories.elections import SqlAlchemyElectionsRepository
 from app.repositories.health import SqlAlchemyHealthRepository
 from app.repositories.identity import SqlAlchemyIdentityRepository
 from app.repositories.roster import SqlAlchemyRosterRepository
+from app.repositories.voting import SqlAlchemyVotingRepository
 
 
 class SqlAlchemyUnitOfWork:
@@ -26,6 +27,7 @@ class SqlAlchemyUnitOfWork:
         self.health = SqlAlchemyHealthRepository(self._session)
         self.roster = SqlAlchemyRosterRepository(self._session)
         self.elections = SqlAlchemyElectionsRepository(self._session)
+        self.voting = SqlAlchemyVotingRepository(self._session)
         return self
 
     def commit(self) -> None:

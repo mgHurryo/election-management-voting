@@ -77,11 +77,27 @@ class ElectionsRepository(Protocol):
     def has_voter(self, election_id: int, user_id: int) -> bool: ...
 
 
+class VotingRepository(Protocol):
+    def election(
+        self, election_id: int, *, for_update: bool = False, for_share: bool = False
+    ) -> ElectionDetails | None: ...
+    def vote_quota(self, election_id: int, user_id: int) -> int | None: ...
+    def locked_vote_quota(self, election_id: int, user_id: int) -> int | None: ...
+    def participation_usage(
+        self, election_id: int, user_id: int, *, for_update: bool = False
+    ) -> tuple[int, int]: ...
+    def all_candidates(self, election_id: int) -> list[CandidateDetails]: ...
+    def record_vote(
+        self, election_id: int, user_id: int, vote_sequence: int, candidate_id: int
+    ) -> None: ...
+
+
 class UnitOfWork(Protocol):
     users: IdentityRepository
     health: HealthRepository
     roster: RosterRepository
     elections: ElectionsRepository
+    voting: VotingRepository
 
     def __enter__(self) -> Self: ...
     def __exit__(

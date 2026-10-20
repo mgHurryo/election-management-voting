@@ -8,6 +8,7 @@ from app.services.elections import ElectionsService
 from app.services.health import HealthService
 from app.services.identity import IdentityService
 from app.services.roster import RosterService
+from app.services.voting import VotingService
 
 
 class Container:
@@ -20,6 +21,7 @@ class Container:
         self.health = HealthService(self.unit_of_work)
         self.roster = RosterService(self.unit_of_work)
         self.elections = ElectionsService(self.unit_of_work)
+        self.voting = VotingService(self.unit_of_work)
         self._owns_engine = engine is None
 
     def unit_of_work(self) -> SqlAlchemyUnitOfWork:
