@@ -1,3 +1,4 @@
+
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -10,6 +11,7 @@ from app.models import (
     VoteParticipation,
 )
 from app.models.elections import CandidateDetails, ElectionDetails
+from app.models.voting import CandidateTally
 from app.repositories.elections import SqlAlchemyElectionsRepository
 
 
@@ -75,6 +77,41 @@ class SqlAlchemyVotingRepository:
             .order_by(ElectionCandidate.display_order, ElectionCandidate.id)
         ).all()
         return [SqlAlchemyElectionsRepository._candidate(row[0], row[1]) for row in rows]
+
+    def tally(self, election_id: int) -> list[CandidateTally]:
+        """Aggregate every candidate's count from ballot_choices, zero votes included.
+
+        Ordering follows the contract: vote_count descending, then display_order
+        and numeric id ascending.
+        """
+        rows = self._session.execute(
+            select(
+                ElectionCandidate.id,
+                ElectionCandidate.name,
+                func.count(BallotChoice.id),
+                ElectionCandidate.display_order,
+            )
+            .outerjoin(
+                BallotChoice,
+                (BallotChoice.election_id == ElectionCandidate.election_id)
+                & (BallotChoice.candidate_id == ElectionCandidate.id),
+            )
+            .where(ElectionCandidate.election_id == election_id)
+            .group_by(
+                ElectionCandidate.id,
+                ElectionCandidate.name,
+                ElectionCandidate.display_order,
+            )
+            .order_by(
+                func.count(BallotChoice.id).desc(),
+                ElectionCandidate.display_order,
+                ElectionCandidate.id,
+            )
+        ).all()
+        return [
+            CandidateTally(candidate_id=row[0], name=row[1], vote_count=int(row[2]))
+            for row in rows
+        ]
 
     def record_vote(
         self, election_id: int, user_id: int, vote_sequence: int, candidate_id: int

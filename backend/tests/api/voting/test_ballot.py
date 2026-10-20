@@ -11,12 +11,16 @@ from tests.api.voting.conftest import (
 BALLOT = "/api/v1/elections/{election_id}/ballot"
 
 
-def seed_vote(engine, election_id: int, user_id: int, candidate_id: int) -> None:
+def seed_vote(
+    engine, election_id: int, user_id: int, candidate_id: int, *, vote_sequence: int = 1
+) -> None:
     """Insert one committed vote the way the endpoint itself would."""
     with engine.begin() as connection:
         connection.execute(
             VoteParticipation.__table__.insert().values(
-                election_id=election_id, user_id=user_id, vote_sequence=1
+                election_id=election_id,
+                user_id=user_id,
+                vote_sequence=vote_sequence,
             )
         )
         result = connection.execute(

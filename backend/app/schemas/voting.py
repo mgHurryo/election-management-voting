@@ -3,9 +3,14 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field, StrictBool
 
-from app.models.voting import BallotView, ParticipationStatus, VoteAccepted
-from app.schemas.common import ID, RequestModel
-from app.schemas.elections import CandidateResponse, ElectionResponse
+from app.models.voting import (
+    BallotView,
+    ParticipationStatus,
+    ResultDetails,
+    VoteAccepted,
+)
+from app.schemas.common import ID, RequestModel, Timestamp
+from app.schemas.elections import CandidateName, CandidateResponse, ElectionResponse
 
 
 class VoteCreateRequest(RequestModel):
@@ -46,4 +51,41 @@ class BallotViewResponse(BaseModel):
             election=ElectionResponse.from_election(view.election),
             candidates=[CandidateResponse.from_candidate(row) for row in view.candidates],
             participation=ParticipationResponse.from_status(view.participation),
+        )
+
+
+class CandidateTallyResponse(BaseModel):
+    candidate_id: ID
+    name: CandidateName
+    vote_count: Annotated[int, Field(ge=0)]
+
+
+class ResultResponse(BaseModel):
+    election_id: ID
+    position_title: Annotated[str, Field(min_length=1, max_length=100)]
+    results_published_at: Timestamp | None
+    total_votes: Annotated[int, Field(ge=0)]
+    candidates: list[CandidateTallyResponse]
+    winner_candidate_id: ID | None
+
+    @classmethod
+    def from_result(cls, result: ResultDetails) -> "ResultResponse":
+        return cls(
+            election_id=str(result.election_id),
+            position_title=result.position_title,
+            results_published_at=result.results_published_at,
+            total_votes=result.total_votes,
+            candidates=[
+                CandidateTallyResponse(
+                    candidate_id=str(row.candidate_id),
+                    name=row.name,
+                    vote_count=row.vote_count,
+                )
+                for row in result.candidates
+            ],
+            winner_candidate_id=(
+                str(result.winner_candidate_id)
+                if result.winner_candidate_id is not None
+                else None
+            ),
         )
