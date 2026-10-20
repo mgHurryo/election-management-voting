@@ -1,0 +1,281 @@
+.election-workflow {
+  overflow-wrap: anywhere;
+}
+
+.election-workflow .workflow-back {
+  margin-top: 24px;
+}
+
+.election-workflow .workflow-heading {
+  margin: 22px 0 28px;
+}
+
+.election-workflow .workflow-heading h1 {
+  font: 900 clamp(2rem, 5vw, 2.75rem) / 1.2 var(--serif);
+}
+
+.election-workflow .workflow-heading p {
+  margin-top: 12px;
+  max-width: 70ch;
+  color: var(--soft);
+}
+
+.election-workflow .workflow-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  padding: 14px 0;
+  border-block: 1px solid var(--hair);
+  color: var(--soft);
+  font-size: 13px;
+}
+
+.election-workflow .workflow-meta button {
+  margin-left: auto;
+  min-height: 36px;
+}
+
+.election-workflow h2:not(.sect) {
+  font: 700 25px / 1.3 var(--serif);
+}
+
+.election-workflow .workflow-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 260px) auto;
+  align-items: end;
+  gap: 18px 24px;
+  padding: 30px 0 18px;
+}
+
+.election-workflow .workflow-add p {
+  margin-top: 8px;
+  max-width: 45ch;
+  color: var(--soft);
+  font-size: 13px;
+}
+
+.election-workflow .workflow-add .field {
+  margin: 0;
+  min-width: 0;
+}
+
+.election-workflow .workflow-add .form-error {
+  grid-column: 1 / -1;
+  max-width: none;
+  margin: 0;
+  color: var(--verm-deep);
+}
+
+.election-workflow .workflow-feedback {
+  min-height: 30px;
+  padding-top: 8px;
+  font-size: 13px;
+}
+
+.election-workflow .workflow-confirmation {
+  padding: 24px;
+  margin: 20px 0;
+  border: 1px solid var(--ink);
+  background: var(--bone);
+}
+
+.election-workflow .workflow-confirmation h2:focus {
+  outline: none;
+}
+
+.election-workflow .workflow-confirmation p {
+  margin: 10px 0 22px;
+  max-width: 70ch;
+}
+
+.election-workflow .workflow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.election-workflow button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.election-workflow .workflow-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 14px;
+}
+
+.election-workflow .workflow-table caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.election-workflow .workflow-table th,
+.election-workflow .workflow-table td {
+  text-align: left;
+  padding: 18px 16px 18px 0;
+  border-bottom: 1px solid var(--hair);
+}
+
+.election-workflow .workflow-table thead th {
+  padding-block: 12px;
+  color: var(--soft);
+  font-size: 12px;
+}
+
+.election-workflow .workflow-table tbody th {
+  font-weight: 500;
+}
+
+.election-workflow .workflow-table th:last-child,
+.election-workflow .workflow-table td:last-child {
+  text-align: right;
+  padding-right: 0;
+}
+
+.election-workflow .workflow-table button {
+  min-height: 36px;
+}
+
+.election-workflow .workflow-note {
+  margin-top: 24px;
+  max-width: 70ch;
+  color: var(--soft);
+  font-size: 13px;
+}
+
+.election-workflow .pager {
+  flex-wrap: wrap;
+}
+
+.election-workflow .result-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding-top: 30px;
+}
+
+.election-workflow .result-summary p {
+  margin-top: 8px;
+  max-width: 70ch;
+  color: var(--soft);
+  font-size: 13px;
+}
+
+.election-workflow .result-outcome {
+  margin-top: 22px;
+  padding: 24px 0;
+  border-block: 1px solid var(--line);
+}
+
+.election-workflow .result-outcome h2 {
+  font-size: 32px;
+}
+
+.election-workflow .result-outcome p {
+  margin-top: 8px;
+  max-width: 70ch;
+  color: var(--soft);
+}
+
+.election-workflow .result-table th:first-child {
+  width: 60%;
+}
+
+.election-workflow .sect {
+  flex-wrap: wrap;
+}
+
+.election-workflow .sect > span {
+  margin-left: auto;
+  font-size: 12px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+@media (max-width: 800px) {
+  .election-workflow .workflow-add {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .election-workflow .workflow-add > div {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 480px) {
+  .election-workflow .workflow-add {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .election-workflow .workflow-meta button {
+    margin-left: 0;
+  }
+
+  .election-workflow .workflow-table {
+    font-size: 12px;
+  }
+
+  .election-workflow .voter-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .election-workflow .voter-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 16px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--hair);
+  }
+
+  .election-workflow .voter-table tbody th,
+  .election-workflow .voter-table tbody td {
+    grid-column: 1;
+    padding: 0;
+    border: 0;
+    text-align: left;
+  }
+
+  .election-workflow .voter-table tbody th {
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .election-workflow .voter-table td:nth-child(2)::before {
+    content: 'ID ';
+    color: var(--soft);
+  }
+
+  .election-workflow .voter-table td:nth-child(3)::before {
+    content: 'Vote quota ';
+    color: var(--soft);
+  }
+
+  .election-workflow .voter-table td:nth-child(4) {
+    grid-column: 2;
+    grid-row: 1 / 4;
+    align-self: center;
+  }
+
+  .election-workflow .voter-table button {
+    font-size: 12px;
+  }
+
+  .election-workflow .workflow-confirmation {
+    padding: 18px;
+  }
+}

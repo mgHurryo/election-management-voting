@@ -2,7 +2,7 @@
 
 React + TypeScript + Vite frontend scaffold for the election management and voting system.
 
-**Scope:** the shared frontend foundation, login, election list/detail, election creation and draft editing, candidate management, and the in-page ballot UI are implemented. The list uses the existing `api.elections` wrapper, server-side status filtering and pagination (20 per page), localized times, admin-only create navigation, and loading/empty/error/retry states. The ballot UI supports candidate selection, review, and confirmation, but the backend does not yet provide the ballot and vote-submission routes required to complete a real vote. Voter-roll and result routes remain placeholders. There are no fake login accounts or demo rows in the real election list. A development-only preview is described below. API wrappers target the **draft** contract in `../API.md`; complete live integration is not verified. See [Frontend design constraints](../docs/frontend/FRONTEND_CONSTRAINTS.md) for the approved product and visual direction.
+**Scope:** the shared frontend foundation, login, election list/detail, election creation and draft editing, candidate management, in-page ballot, voter-roll management, and results/publication UI are implemented. The list uses the existing `api.elections` wrapper, server-side status filtering and pagination (20 per page), localized times, admin-only create navigation, and loading/empty/error/retry states. There are no fake login accounts or demo rows in normal routes. API wrappers target the **draft** contract in `../API.md`; complete live integration, including ballot submission and result publication, is not verified. See [Frontend design constraints](../docs/frontend/FRONTEND_CONSTRAINTS.md) for the visual direction and [FE07 progress and branch audit](../docs/frontend/FE07_PROGRESS.md) for implementation coverage and backend handoff.
 
 ## Quick start
 
@@ -15,7 +15,7 @@ Copy-Item .env.example .env.local
 npm run dev
 ```
 
-Open the URL printed by Vite. `/` displays the framework shell without a backend. Protected routes redirect to the existing `/login` form. A working identity backend and pre-seeded account are required to reach `/elections`; without a working election endpoint the list shows an error, not demo rows.
+Open the URL printed by Vite. `/` redirects to `/elections`; protected routes redirect unauthenticated visitors to `/login`. A working identity backend and pre-seeded account are required to reach `/elections`; without a working election endpoint the list shows an error, not demo rows.
 
 Default API prefix: `/api/v1`. During development, Vite proxies `/api` to `http://127.0.0.1:8000`. Configure `API_PROXY_TARGET` in `.env.local` to change it. `VITE_API_BASE_URL` changes the public API base URL. Never place secrets in `VITE_*` variables. Local environment files must not be committed.
 
@@ -35,7 +35,7 @@ npm run preview
 ```text
 src/
   routes/       Route tree, authentication and role guards
-  pages/        Landing page, login, election list/detail/create/edit, candidate management and remaining placeholders
+  pages/        Login, election list/detail/create/edit, candidates, voter roll, results and access/error pages
   components/   Base layout, async states, render error boundary
   hooks/        Shared auth hook
   store/        Auth context/provider and access-token storage
@@ -62,7 +62,7 @@ Dependency direction: **pages/components → hooks/context → api → HTTP**. N
 | `/forbidden`                            | Public        | Access denied    |
 | Unknown route                           | Public        | 404              |
 
-The result route is only a placeholder; the backend must enforce CLOSED state for admins and publication rules for users. Route guards provide navigation UX, **not authorization**.
+The result route reads counts only after CLOSED, provides ADMIN preview/publication, and shows published results to USER. The backend must enforce state, role and publication visibility. Route guards provide navigation UX, **not authorization**.
 
 ## Contract and security conventions
 
@@ -79,15 +79,17 @@ The result route is only a placeholder; the backend must enforce CLOSED state fo
 
 ## Verification and remaining implementation
 
-The All filter uses one unfiltered server-paginated request and includes every visible election state. Open, Draft, and Closed filters use the existing status query. Closed elections remain reachable through Details, with the existing results entry shown according to publication state and role; the results page itself is still a placeholder.
+The All filter uses one unfiltered server-paginated request and includes every visible election state. Open, Draft, and Closed filters use the existing status query. Closed elections remain reachable through Details, with the results entry shown according to publication state and role.
 
 Election list tests use mocked API responses and cover authentication redirects, role-based create navigation, detail links with BIGINT string IDs, pagination/filter reset, failure versus empty results, manual retry, and stale response handling. These are not live backend integration tests.
 
 `npm run test:design-reference` opens the standalone design HTML in headless Chromium at 1280, 768, 390, and 320px. It checks horizontal overflow and election-row reading order, and writes screenshots to the ignored `test-results/design-reference/` directory. This verifies the reference layout, not application implementation or backend integration.
 
-Voter-roll and result destinations remain placeholders. The in-page ballot UI supports candidate selection, review, and confirmation, but real vote submission requires backend ballot and vote-submission routes. Reconcile draft API changes and verify live behavior as backend endpoints become available.
+The voter roll and results destinations use the existing typed API wrappers. Intercepted browser tests cover the new workflows at 1280, 768, 390 and 320px alongside existing flows. Real vote submission requires backend ballot/participation/vote routes; real publication requires a compatible results service. Reconcile draft API changes and verify live behavior independently as backend work lands.
 
 ## Local election list preview
+
+**Historical FE-04 notes:** the current route tree does not register the `/__preview` routes described below. Use the intercepted Playwright tests for deterministic local UI verification; these older preview instructions describe a previous branch snapshot.
 
 With npm run dev, open /__preview/elections on the printed local origin.
 This development-only route reuses the real list view with clearly labeled fictional
@@ -116,8 +118,8 @@ elections, users can select a candidate, review the selection, and confirm the
 one-way ballot in the detail page. Closed users only see result navigation after
 publication. Status writes run once per explicit confirmation and refresh server
 state; failures offer a read refresh, not automatic write retries. Candidate
-management and ballot UI are implemented, but real vote submission and result
-publishing remain unavailable until the backend routes are implemented.
+management, ballot UI and result/publication UI are implemented. Real submission
+and publication still require compatible backend routes and separate live verification.
 
 During npm run dev, /__preview/elections/:id shares this same detail view and shows
 three explicitly fictional profiles in the administrator view. Return navigation
