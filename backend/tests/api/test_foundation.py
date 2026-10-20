@@ -99,6 +99,7 @@ def test_openapi_documents_only_implemented_operations(client):
         "/api/v1/elections/{election_id}/voters/{user_id}",
         "/api/v1/elections/{election_id}/ballot",
         "/api/v1/elections/{election_id}/participation",
+        "/api/v1/elections/{election_id}/votes",
         "/health/live",
         "/health/ready",
     }

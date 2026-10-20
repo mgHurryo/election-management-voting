@@ -26,7 +26,10 @@ class SqlAlchemyVotingRepository:
         if for_update:
             statement = statement.with_for_update().execution_options(populate_existing=True)
         elif for_share:
-            statement = statement.with_for_update(share=True).execution_options(
+            # ADR-007: shared elections-row lock; concurrent voters coexist while
+            # close waits. Rendered as FOR SHARE / LOCK IN SHARE MODE on MySQL and
+            # silently dropped by the SQLite test adapter.
+            statement = statement.with_for_update(read=True).execution_options(
                 populate_existing=True
             )
         row = self._session.scalar(statement)

@@ -21,3 +21,11 @@ class BallotView:
     election: ElectionDetails
     candidates: list[CandidateDetails]
     participation: ParticipationStatus
+
+
+@dataclass(frozen=True)
+class VoteAccepted:
+    """Deliberately minimal: acceptance never identifies the stored ballot."""
+
+    election_id: int
+    accepted: bool

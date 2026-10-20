@@ -3,13 +3,22 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field, StrictBool
 
-from app.models.voting import BallotView, ParticipationStatus
+from app.models.voting import BallotView, ParticipationStatus, VoteAccepted
 from app.schemas.common import ID, RequestModel
 from app.schemas.elections import CandidateResponse, ElectionResponse
 
 
 class VoteCreateRequest(RequestModel):
     candidate_id: ID
+
+
+class VoteAcceptedResponse(BaseModel):
+    election_id: ID
+    accepted: StrictBool
+
+    @classmethod
+    def from_accepted(cls, accepted: VoteAccepted) -> "VoteAcceptedResponse":
+        return cls(election_id=str(accepted.election_id), accepted=accepted.accepted)
 
 
 class ParticipationResponse(BaseModel):

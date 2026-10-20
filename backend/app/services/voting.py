@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from app.core.errors import AppError
 from app.models.elections import ElectionDetails
 from app.models.identity import UserIdentity
-from app.models.voting import BallotView, ParticipationStatus
+from app.models.voting import BallotView, ParticipationStatus, VoteAccepted
 from app.services.ports import UnitOfWork
 
 
@@ -57,6 +57,39 @@ class VotingService:
             if uow.voting.election(election_id) is None:
                 raise election_not_found()
             return self._participation(uow, election_id, user.id)
+
+    def cast_vote(self, election_id: int, user: UserIdentity, candidate_id: int) -> VoteAccepted:
+        """Record one anonymous single-choice ballot inside the ADR-007 transaction.
+
+        Lock order is elections -> election_voters. The shared election lock makes
+        a concurrent close wait; eligibility, state, time window, candidate and
+        quota are all (re)checked under it, so a committed ballot is final.
+        """
+        with self._uow_factory() as uow:
+            election = uow.voting.election(election_id, for_share=True)
+            if election is None:
+                raise election_not_found()
+            quota = uow.voting.vote_quota(election_id, user.id)
+            if quota is None:
+                raise AppError("NOT_ELIGIBLE", "User is not on this election's voter roll.", 403)
+            self._require_voting_window(election)
+            if uow.elections.candidate(election_id, candidate_id) is None:
+                raise AppError(
+                    "INVALID_CANDIDATE",
+                    "Candidate does not exist in this election.",
+                    400,
+                )
+            locked_quota = uow.voting.locked_vote_quota(election_id, user.id)
+            if locked_quota is None:  # pragma: no cover - roster rows outlive OPEN
+                raise AppError(
+                    "NOT_ELIGIBLE", "User is not on this election's voter roll.", 403
+                )
+            used_votes, last_sequence = uow.voting.participation_usage(election_id, user.id)
+            if used_votes >= locked_quota:
+                raise AppError("VOTE_QUOTA_EXHAUSTED", "No remaining vote quota.", 409)
+            uow.voting.record_vote(election_id, user.id, last_sequence + 1, candidate_id)
+            uow.commit()
+        return VoteAccepted(election_id=election_id, accepted=True)
 
     def _require_voting_window(self, election: ElectionDetails) -> None:
         if election.status != "OPEN":
