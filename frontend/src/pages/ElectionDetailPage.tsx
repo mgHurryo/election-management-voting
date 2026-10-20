@@ -493,9 +493,7 @@ function DetailContent({ id }: { id: string }) {
           {blocked ? (
             <div className="ballot-error" role="status">
               Submission is blocked. Check your voting status before taking further action.
-              {reconcileError ? (
-                <p role="alert">{errorMessage(reconcileError)}</p>
-              ) : null}
+              {reconcileError ? <p role="alert">{errorMessage(reconcileError)}</p> : null}
               <button
                 className="ghost"
                 type="button"
