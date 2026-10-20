@@ -20,17 +20,11 @@ def vote_payload(**changes):
 
 def count(engine, table, **filters) -> int:
     with engine.connect() as connection:
-        return int(
-            connection.scalar(
-                select(func.count()).select_from(table).filter_by(**filters)
-            )
-        )
+        return int(connection.scalar(select(func.count()).select_from(table).filter_by(**filters)))
 
 
 class TestCastVote:
-    def test_accepts_one_anonymous_ballot_and_consumes_quota(
-        self, client, voter_headers, engine
-    ):
+    def test_accepts_one_anonymous_ballot_and_consumes_quota(self, client, voter_headers, engine):
         response = client.post(
             VOTES.format(election_id=OPEN_ELECTION), json=vote_payload(), headers=voter_headers
         )

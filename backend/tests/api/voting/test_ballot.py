@@ -1,4 +1,3 @@
-
 from app.models import Ballot, BallotChoice, VoteParticipation
 from tests.api.voting.conftest import (
     CLOSED_ELECTION,

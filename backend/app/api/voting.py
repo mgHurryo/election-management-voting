@@ -29,9 +29,7 @@ def get_ballot(
     return DataResponse(data=BallotViewResponse.from_view(view))
 
 
-@router.get(
-    "/{election_id}/participation", response_model=DataResponse[ParticipationResponse]
-)
+@router.get("/{election_id}/participation", response_model=DataResponse[ParticipationResponse])
 def get_participation(
     election_id: ID,
     service: VotingServiceDep,
