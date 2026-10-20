@@ -83,3 +83,13 @@ remain unverified. No real election or publication is modified by these tests.
 Rollback can revert the frontend feature commit independently. If the history
 integration must also be undone, revert its merge using the appropriate first
 parent after inspecting the resulting diff; no database migration is introduced.
+
+## Backend follow-up synchronized
+
+After the takeover merge, the backend owner published `3f4017e` to fix the MySQL
+quota recount with a locking read under REPEATABLE READ. PR #31 includes it at
+`6c5bd58`. The frontend delivery merges that committed backend update as well;
+the original takeover snapshot and M7 ancestry remain intact. New backend CI is
+pending. The SQLite browser smoke above verifies `df0c56a`; the later change is
+in the voting path, outside that smoke's roster/result operations. No claim of
+MySQL concurrency success is made until the new backend gate finishes.

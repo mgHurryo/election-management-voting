@@ -1,8 +1,10 @@
 from datetime import UTC, datetime
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.errors import AppError
 from app.models import (
     Ballot,
     BallotChoice,
@@ -21,6 +23,10 @@ class SqlAlchemyVotingRepository:
 
     def __init__(self, session: Session) -> None:
         self._session = session
+
+    @staticmethod
+    def _quota_exhausted() -> AppError:
+        return AppError("VOTE_QUOTA_EXHAUSTED", "No remaining vote quota.", 409)
 
     def election(
         self, election_id: int, *, for_update: bool = False, for_share: bool = False
@@ -58,16 +64,26 @@ class SqlAlchemyVotingRepository:
             .with_for_update()
         )
 
-    def participation_usage(self, election_id: int, user_id: int) -> tuple[int, int]:
-        """Return (used_votes, last_vote_sequence) for one roster member."""
-        row = self._session.execute(
+    def participation_usage(
+        self, election_id: int, user_id: int, *, for_update: bool = False
+    ) -> tuple[int, int]:
+        """Return (used_votes, last_vote_sequence) for one roster member.
+
+        The quota recheck inside the vote transaction must be a locking read:
+        under REPEATABLE READ a plain SELECT would keep reporting this
+        transaction's snapshot and miss a concurrent voter's committed row.
+        """
+        statement = (
             select(func.count(), func.coalesce(func.max(VoteParticipation.vote_sequence), 0))
             .select_from(VoteParticipation)
             .where(
                 VoteParticipation.election_id == election_id,
                 VoteParticipation.user_id == user_id,
             )
-        ).one()
+        )
+        if for_update:
+            statement = statement.with_for_update()
+        row = self._session.execute(statement).one()
         return int(row[0]), int(row[1])
 
     def all_candidates(self, election_id: int) -> list[CandidateDetails]:
@@ -128,21 +144,26 @@ class SqlAlchemyVotingRepository:
         v1 forces ballots.voter_id to NULL (FR-11): the participation row is the
         only identity-linked record and never references the ballot.
         """
-        self._session.add(
-            VoteParticipation(
-                election_id=election_id,
-                user_id=user_id,
-                vote_sequence=vote_sequence,
+        try:
+            self._session.add(
+                VoteParticipation(
+                    election_id=election_id,
+                    user_id=user_id,
+                    vote_sequence=vote_sequence,
+                )
             )
-        )
-        ballot = Ballot(election_id=election_id, voter_id=None, is_anonymous=True)
-        self._session.add(ballot)
-        self._session.flush()
-        self._session.add(
-            BallotChoice(
-                election_id=election_id,
-                ballot_id=ballot.id,
-                candidate_id=candidate_id,
+            ballot = Ballot(election_id=election_id, voter_id=None, is_anonymous=True)
+            self._session.add(ballot)
+            self._session.flush()
+            self._session.add(
+                BallotChoice(
+                    election_id=election_id,
+                    ballot_id=ballot.id,
+                    candidate_id=candidate_id,
+                )
             )
-        )
-        self._session.flush()
+            self._session.flush()
+        except IntegrityError as error:
+            # The participation sequence unique key backstops the quota recount
+            # if two transactions ever slip past the roster-row lock (FR-10).
+            raise self._quota_exhausted() from error

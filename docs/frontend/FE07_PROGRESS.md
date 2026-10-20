@@ -99,3 +99,8 @@ including a zero-vote candidate, confirmed publication, and published results fo
 an active nonmember. All observed API responses succeeded, with zero browser
 runtime errors. This replaces the earlier lack of any real API/browser check;
 MySQL concurrency, production data and deployment remain unverified.
+
+The backend owner subsequently published quota-recount fix `3f4017e`, included
+in PR #31 at `6c5bd58`. The frontend branch synchronizes that committed update;
+CI must validate the updated combined head. Original M7 takeover ancestry and
+unchanged frontend source are preserved.
