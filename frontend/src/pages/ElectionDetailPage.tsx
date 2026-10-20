@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router'
 import './ElectionDetailPage.css'
 import { api } from '../api'
 import { ApiError } from '../api/client'
-import type { Candidate, Election } from '../api/types'
+import type { Candidate, Election, Participation } from '../api/types'
 import { ErrorState, LoadingState } from '../components/AsyncState'
 import { useAuth } from '../hooks/useAuth'
 import { useBallot, useElectionDetail, useElectionStatusAction } from '../hooks/useElectionDetail'
@@ -41,6 +41,9 @@ function DetailContent({ id }: { id: string }) {
   const ballot = useBallot(id, user?.role === 'USER' && detail.election?.status === 'OPEN')
   const [voteError, setVoteError] = useState<unknown>(null)
   const [blocked, setBlocked] = useState(false)
+  const [reconciled, setReconciled] = useState<Participation | null>(null)
+  const [reconciling, setReconciling] = useState(false)
+  const [reconcileError, setReconcileError] = useState<unknown>(null)
   const busy = useRef(false)
   const [mode, setMode] = useState<CandidateMode>('profiles')
   const [modePage, setModePage] = useState(1)
@@ -54,7 +57,9 @@ function DetailContent({ id }: { id: string }) {
   const voterBallotView = !!user && !isAdmin && open
   const rows = ballot.data?.data.candidates ?? detail.candidates.data?.data ?? []
   const selected = rows.find((candidate) => candidate.id === pick)
-  const participation = ballot.data?.data.participation
+  // An explicit status check outranks the ballot copy: only /participation stays
+  // readable after closure, so it is the freshest authority for quota state.
+  const participation = reconciled ?? ballot.data?.data.participation
   const candidateCount = ballot.data?.data.candidates.length ?? detail.candidates.data?.meta.total
   const canVote =
     !!user &&
@@ -109,6 +114,35 @@ function DetailContent({ id }: { id: string }) {
     } finally {
       busy.current = false
       setSubmitting(false)
+    }
+  }
+
+  // GET /participation works in every election state, so it can settle a ballot
+  // whose outcome is unknown — including after the election has closed. The
+  // non-idempotent POST /votes is never repeated here.
+  async function refreshStatus() {
+    if (reconciling) return
+    setReconciling(true)
+    setReconcileError(null)
+    try {
+      const { data } = await api.participation(id)
+      if (!data || data.election_id !== id) throw new ApiError('INVALID_RESPONSE')
+      setReconciled(data)
+      if (data.eligible && data.remaining_votes > 0) {
+        // Reopen the ballot path only while the server still has the window open.
+        const current = await api.election(id)
+        detail.reload()
+        if (current.data?.status === 'OPEN') {
+          setBlocked(false)
+          setVoteError(null)
+          setConfirming(false)
+          ballot.retry()
+        }
+      }
+    } catch (reason) {
+      setReconcileError(reason)
+    } finally {
+      setReconciling(false)
     }
   }
 
@@ -395,6 +429,36 @@ function DetailContent({ id }: { id: string }) {
 
             {closed && (
               <section className="election-results-panel" aria-label="Election results">
+                {!isAdmin && (voteError !== null || blocked || reconciled !== null) && (
+                  <div className="election-voting-status">
+                    <h2 id="election-voting-status-heading">Voting status</h2>
+                    {reconcileError ? (
+                      <p className="ballot-error" role="alert">
+                        {errorMessage(reconcileError)}
+                      </p>
+                    ) : reconciled ? (
+                      <p className="noticeline" role="status">
+                        {reconciled.remaining_votes <= 0
+                          ? 'Your ballot was accepted before voting closed. The tally stays anonymous.'
+                          : `Voting has closed. You used ${reconciled.used_votes} of ${reconciled.vote_quota} allowed votes.`}
+                      </p>
+                    ) : (
+                      <p className="noticeline">
+                        Your latest ballot submission may not have been recorded.
+                      </p>
+                    )}
+                    {!reconciled || reconcileError ? (
+                      <button
+                        className="ghost"
+                        type="button"
+                        disabled={reconciling}
+                        onClick={() => void refreshStatus()}
+                      >
+                        {reconciling ? 'Checking…' : 'Refresh voting status'}
+                      </button>
+                    ) : null}
+                  </div>
+                )}
                 {election.results_published_at || isAdmin ? (
                   <Link className="lnk hot" to={`/elections/${encodeURIComponent(id)}/results`}>
                     View results
@@ -429,8 +493,14 @@ function DetailContent({ id }: { id: string }) {
           {blocked ? (
             <div className="ballot-error" role="status">
               Submission is blocked. Check your voting status before taking further action.
-              <button className="ghost" type="button" onClick={ballot.retry}>
-                Refresh voting status
+              {reconcileError ? <p role="alert">{errorMessage(reconcileError)}</p> : null}
+              <button
+                className="ghost"
+                type="button"
+                disabled={reconciling}
+                onClick={() => void refreshStatus()}
+              >
+                {reconciling ? 'Checking…' : 'Refresh voting status'}
               </button>
             </div>
           ) : null}
