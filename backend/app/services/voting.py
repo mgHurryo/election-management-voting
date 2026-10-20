@@ -82,7 +82,9 @@ class VotingService:
             locked_quota = uow.voting.locked_vote_quota(election_id, user.id)
             if locked_quota is None:  # pragma: no cover - roster rows outlive OPEN
                 raise AppError("NOT_ELIGIBLE", "User is not on this election's voter roll.", 403)
-            used_votes, last_sequence = uow.voting.participation_usage(election_id, user.id)
+            used_votes, last_sequence = uow.voting.participation_usage(
+                election_id, user.id, for_update=True
+            )
             if used_votes >= locked_quota:
                 raise AppError("VOTE_QUOTA_EXHAUSTED", "No remaining vote quota.", 409)
             uow.voting.record_vote(election_id, user.id, last_sequence + 1, candidate_id)
