@@ -6,7 +6,7 @@
 > 基线：SRS v0.1、架构 v0.2、Git `b74cd1647a3e85796f3b1c9ae5c1cdac677c62bf`。
 > **设计契约，待评审与实现，不是运行中服务的实测文档。** 基线仅包含数据库初始化代码，尚无 FastAPI 路由、请求 / 响应模型、应用入口和 API 测试。在该历史基线中，下列所有接口均待实现。
 
-> **实现进展（2026-10-20）：** API v0.1 的全部 20 个操作均已实现并注册，另提供运维健康检查。选举、名册修改、投票与结果发布通过选举行锁协调（ADR-007）；MySQL 测试覆盖草稿编辑与开启状态写入的竞态、投票与关闭互斥以及并发单票约束。计票在读取时从 ballot_choices 复算，不保存快照；发布由服务端在排他锁下设定时间，重复发布保留原时间，平票或零票拒绝发布（D-06 草案保护）。参阅 [后端启动与验证范围](../../backend/README_CN.md)。开发环境生成的 OpenAPI 仅描述已注册操作。bcrypt、默认 60 分钟令牌与密码策略遵循 ADR-009，相关决定优先于下方 D-08 的旧表述。
+> **实现进展（2026-10-20）：** API v0.1 的全部 20 个操作均已实现并注册，另提供运维健康检查。选举、名册修改、投票与结果发布通过选举行锁协调（ADR-007）；MySQL 测试覆盖草稿编辑与开启状态写入的竞态、投票与关闭互斥以及并发单票约束。计票在读取时从 ballot_choices 复算，不保存快照；发布由服务端在排他锁下设定时间，重复发布保留原时间，平票或零票照常发布且 winner=null，不裁决（D-06 已于 2026-10-20 评审）。参阅 [后端启动与验证范围](../../backend/README_CN.md)。开发环境生成的 OpenAPI 仅描述已注册操作。bcrypt、默认 60 分钟令牌与密码策略遵循 ADR-009，相关决定优先于下方 D-08 的旧表述。
 
 > **阅读方式：** 先从接口导航找到目标接口，再从上到下阅读该接口。每处集中列出认证、参数、完整请求 / 响应示例、字段表、错误和规则；公共约定统一说明后，在接口处按需重复，不要求来回翻模型字典。本次仅调整已有契约的阅读结构，不改变 API 行为。
 
@@ -1042,7 +1042,7 @@ Authorization: Bearer <access-token>
 - 检查与状态流转须原子完成；重复 open 和重开 CLOSED 均返回 `INVALID_STATE_TRANSITION`。不引入定时调度器。
 - 错误：`ELECTION_NOT_FOUND`、`INVALID_STATE_TRANSITION`、`ELECTION_NOT_READY`、`VOTING_NOT_STARTED`、`VOTING_ENDED`。
 
-- 重复 open / close 返回 409，先 GET 选举确认状态。重复发布按草案返回原时间，不覆盖。
+- 重复 open / close 返回 409，先 GET 选举确认状态。重复发布返回原时间，不覆盖。
 
 [返回接口导航](#api-index)
 
@@ -1168,7 +1168,7 @@ Authorization: Bearer <access-token>
 - 对选举行取排他锁，等待在途投票事务后提交 CLOSED，commit 后才响应成功。到期后即使状态仍为 OPEN，也必须停止接受投票。
 - 错误：`ELECTION_NOT_FOUND`、`INVALID_STATE_TRANSITION`。
 
-- 重复 open / close 返回 409，先 GET 选举确认状态。重复发布按草案返回原时间，不覆盖。
+- 重复 open / close 返回 409，先 GET 选举确认状态。重复发布返回原时间，不覆盖。
 
 [返回接口导航](#api-index)
 
@@ -2649,7 +2649,7 @@ Authorization: Bearer <access-token>
 | 完整路径 | `/api/v1/elections/{election_id}/results/publish` |
 | 认证 | 必需：`Authorization: Bearer <access-token>`；账户须持续为 ACTIVE。 |
 | 权限 | ADMIN |
-| 选举状态 | CLOSED；无明确赢家时的发布保护仍为草案决定。 |
+| 选举状态 | CLOSED；平票 / 零票照常发布，winner=null（D-06 已评审）。 |
 | 成功状态 | 200 |
 | 请求格式 | HTTPS；无请求体，无需 Content-Type。 |
 
@@ -2734,7 +2734,6 @@ Authorization: Bearer <access-token>
 | 403 | `PERMISSION_DENIED` | 已认证但角色无权执行操作。 |
 | 404 | `ELECTION_NOT_FOUND` | 选举不存在，或详情超出可见范围。 |
 | 409 | `ELECTION_NOT_CLOSED` | 计票 / 发布要求 CLOSED。 |
-| 409 | `RESULT_NOT_DECIDED` | 没有唯一正票数赢家；草案保护，待 D-06。 |
 | 422 | `VALIDATION_ERROR` | JSON 损坏、类型 / 字段 / 路径 / query 不合法、未知字段、空 PATCH。 |
 | 500 | `INTERNAL_ERROR` | 非预期内部错误；不得披露 SQL、凭据或堆栈。 |
 
@@ -2749,8 +2748,8 @@ Authorization: Bearer <access-token>
 ```json
 {
   "error": {
-    "code": "RESULT_NOT_DECIDED",
-    "message": "No unique positive-vote winner; draft safeguard pending D-06."
+    "code": "ELECTION_NOT_CLOSED",
+    "message": "Counting / publication requires CLOSED."
   }
 }
 ```
@@ -2759,11 +2758,11 @@ Authorization: Bearer <access-token>
 
 - ADMIN；仅 CLOSED；无 body / query；成功 200 Result。客户端不能提交票数、赢家或发布时间。
 - 在事务内复算并以服务器时间设置 results_published_at，不新增 PUBLISHED 状态或 results 表。
-- 草案重试约定：对选举行取排他锁后在事务内判断发布状态；已发布时返回原结果及原发布时间，不覆盖时间，并发请求不得重复发布。
-- 草案异常保护：没有唯一正票数赢家时 `409 RESULT_NOT_DECIDED`，保持未发布；**须完成 D-06 评审**，不是已批准的平票裁决或自动重投规则。
+- 重试约定：对选举行取排他锁后在事务内判断发布状态；已发布时返回原结果及原发布时间，不覆盖时间，并发请求不得重复发布。
+- 已评审决定（D-06，2026-10-20）：平票或零票结果照常发布，winner_candidate_id=null；系统只报告事实票数，不进行裁决，平票处置在线下完成，不新增手动指定赢家或重投 API。
 - 其他错误：`ELECTION_NOT_FOUND`、`ELECTION_NOT_CLOSED`。
 
-- 重复 open / close 返回 409，先 GET 选举确认状态。重复发布按草案返回原时间，不覆盖。
+- 重复 open / close 返回 409，先 GET 选举确认状态。重复发布返回原时间，不覆盖。
 
 [返回接口导航](#api-index)
 
@@ -2798,7 +2797,6 @@ Authorization: Bearer <access-token>
 | 409 | `RESOURCE_CONFLICT` | 存在引用或不可变记录，不能安全修改。 |
 | 409 | `ELECTION_NOT_CLOSED` | 计票 / 发布要求 CLOSED。 |
 | 409 | `RESULTS_NOT_PUBLISHED` | USER 请求未发布结果。 |
-| 409 | `RESULT_NOT_DECIDED` | 没有唯一正票数赢家；草案保护，待 D-06。 |
 | 422 | `VALIDATION_ERROR` | JSON 损坏、类型 / 字段 / 路径 / query 不合法、未知字段、空 PATCH。 |
 | 422 | `INVALID_TIME_RANGE` | 合并后的 starts_at 不早于 ends_at。 |
 | 422 | `INVALID_VOTER` | 已有账户非 ACTIVE 或非 USER。 |
@@ -2845,7 +2843,7 @@ curl --fail-with-body --request POST \
 - used_votes=0 不证明原请求以后不会成功。保留“结果待确认”，不要自动再次投票；若用户稍后明确重试，仍由一票额度及事务保证最多一张有效票。
 - `VOTE_QUOTA_EXHAUSTED` 是 409 失败，不是原请求成功的重放；不返回原选票。
 - 创建选举 / 候选人不承诺严格幂等，超时先查询核对；名册重复新增 409。重复删除可 404，但不产生第二次删除效果。
-- 重复 open / close 返回 409，先 GET 选举确认状态。重复发布按草案返回原时间，不覆盖。
+- 重复 open / close 返回 409，先 GET 选举确认状态。重复发布返回原时间，不覆盖。
 - 轮询和重试必须有超时及次数上限，不引入无限循环；具体时长由实现配置，不伪造性能承诺。
 
 ### 6.3 服务端事务
@@ -2905,7 +2903,7 @@ curl --fail-with-body --request POST \
 | D-03 | 创建时 voter_ids 非空并原子建名册；开启至少一个合法候选人和有效选民。 | FR-01 要求资格范围，架构可分步配置；请求组合由本文提出。Seed 必须提供合法账户 ID，不新增用户管理 API。 |
 | D-04 | 候选人简介必填，职位继承选举，照片可选且只接受 HTTPS。 | FR-03 与可空数据库列的契约收敛；不重复存职位，不引入上传或照片必填政策。 |
 | D-05 | ADMIN 不投票，仅 ACTIVE USER 加名册；DRAFT 写入与开启协调。 | 架构 10.2 / ADR-007；Service 及测试须落实并发锁、有效账户检查。 |
-| D-06 | CLOSED 的 ADMIN 可预览；重复发布 200 保持时间；平票 / 零票 winner=null 且暂拒发布。 | FW-10 不定义裁决，架构仅提线下 / 人工处理。拒绝异常发布是**待确认的安全建议**，不是既定业务需求；不新增手动指定赢家或重投 API。 |
+| D-06（已评审 2026-10-20） | CLOSED 的 ADMIN 可预览；重复发布 200 保持时间；平票 / 零票 winner=null 且照常发布（早先“暂拒发布”的草案保护未采纳）。 | FW-10 不定义裁决，架构仅提线下 / 人工处理；发布只报告事实票数，平票处置在线下完成，不新增手动指定赢家或重投 API。 |
 | D-07 | 不承诺重放幂等、不开放多票；直接身份解耦不等于不可关联匿名。 | 架构 11.5 / 15；确认超时 UX、日志脱敏、威胁模型与 FR-11 / NFR-2 验收口径。 |
 | D-08 | Seed、CORS、客户端超时、限流、部署地址待定；哈希算法、JWT 有效期、Token 保存已由架构 ADR-009 确定。 | 其余配置项仍继承架构 Open Issues，示例不是批准配置；没有量化性能验收门槛。 |
 
@@ -2919,3 +2917,4 @@ curl --fail-with-body --request POST \
 | --- | --- | --- |
 | 2026-10-01 | API v0.1 draft | 建立 20 个待实现接口的中英文契约，含模型、错误、隐私、追踪与验收；新增决策明确待评审。 |
 | 2026-10-01 | API v0.1 draft — 阅读结构调整 | 重组为 20 份可独立阅读的接口说明，集中参数 / 响应 / 错误字段、完整示例及跳转导航；不改变路径、字段或业务规则。 |
+| 2026-10-20 | API v0.1 draft — D-06 评审 | 平票 / 零票结果改为照常发布（winner=null），移除 RESULT_NOT_DECIDED；与后端实现同步，行为变化见 4.20。 |

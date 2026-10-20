@@ -2,7 +2,7 @@ from sqlalchemy import select
 
 from app.models import Election
 from tests.api.voting.conftest import CLOSED_ELECTION, OPEN_ELECTION
-from tests.api.voting.test_results import RESULTS, A, B, seed_candidates
+from tests.api.voting.test_results import A, B, seed_candidates
 
 PUBLISH = "/api/v1/elections/{election_id}/results/publish"
 
@@ -44,21 +44,24 @@ class TestPublishResults:
         assert second.json()["data"]["results_published_at"] == original
         assert published_at_of(engine, CLOSED_ELECTION).isoformat() + "Z" == original
 
-    def test_tie_keeps_result_unpublished(self, client, admin_headers, engine):
+    def test_tie_publishes_with_undecided_winner(self, client, admin_headers, engine):
         seed_candidates(engine, {A: 1, B: 1}, {A: 0, B: 1})
         response = client.post(PUBLISH.format(election_id=CLOSED_ELECTION), headers=admin_headers)
-        assert response.status_code == 409
-        assert response.json()["error"]["code"] == "RESULT_NOT_DECIDED"
-        assert published_at_of(engine, CLOSED_ELECTION) is None
-        preview = client.get(RESULTS.format(election_id=CLOSED_ELECTION), headers=admin_headers)
-        assert preview.json()["data"]["results_published_at"] is None
+        assert response.status_code == 200
+        data = response.json()["data"]
+        assert data["winner_candidate_id"] is None  # the system never adjudicates (FW-10)
+        assert data["total_votes"] == 2
+        assert data["results_published_at"] is not None
+        assert published_at_of(engine, CLOSED_ELECTION) is not None
 
-    def test_zero_votes_keep_result_unpublished(self, client, admin_headers, engine):
+    def test_zero_votes_publish_with_zero_total(self, client, admin_headers, engine):
         seed_candidates(engine, {A: 0}, {A: 0})
         response = client.post(PUBLISH.format(election_id=CLOSED_ELECTION), headers=admin_headers)
-        assert response.status_code == 409
-        assert response.json()["error"]["code"] == "RESULT_NOT_DECIDED"
-        assert published_at_of(engine, CLOSED_ELECTION) is None
+        assert response.status_code == 200
+        data = response.json()["data"]
+        assert data["total_votes"] == 0
+        assert data["winner_candidate_id"] is None
+        assert published_at_of(engine, CLOSED_ELECTION) is not None
 
     def test_publish_requires_closed_status(self, client, admin_headers, engine):
         seed_candidates(engine, {A: 1}, {A: 0}, election_id=OPEN_ELECTION)

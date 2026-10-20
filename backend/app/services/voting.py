@@ -117,8 +117,10 @@ class VotingService:
     def publish_results(self, election_id: int) -> ResultDetails:
         """Publish the recomputed result with the elections row held exclusively.
 
-        Republishing returns the original result with the original timestamp; a
-        tie or an all-zero tally keeps the election unpublished (draft D-06).
+        Republishing returns the original result with the original timestamp.
+        Per the recorded D-06 decision (2026-10-20) a tie or an all-zero tally
+        publishes with winner_candidate_id=null: the system reports the factual
+        counts and never adjudicates (FW-10).
         """
         with self._uow_factory() as uow:
             election = uow.voting.election(election_id, for_update=True)
@@ -126,18 +128,10 @@ class VotingService:
                 raise election_not_found()
             if election.status != "CLOSED":
                 raise AppError("ELECTION_NOT_CLOSED", "Results require CLOSED status.", 409)
-            tally = uow.voting.tally(election_id)
-            if election.results_published_at is not None:
-                return self._result(election, tally)
-            if self._winner(tally) is None:
-                raise AppError(
-                    "RESULT_NOT_DECIDED",
-                    "No unique positive-vote winner; publish rejected.",
-                    409,
-                )
-            uow.voting.mark_published(election_id, self._clock())
-            uow.commit()
-            return self._result(uow.voting.election(election_id), tally)
+            if election.results_published_at is None:
+                uow.voting.mark_published(election_id, self._clock())
+                uow.commit()
+            return self._result(uow.voting.election(election_id), uow.voting.tally(election_id))
 
     @staticmethod
     def _winner(tally: list[CandidateTally]) -> int | None:
