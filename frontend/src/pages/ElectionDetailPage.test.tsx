@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { Link, MemoryRouter } from 'react-router'
 import { api } from '../api'
 import { ApiError } from '../api/client'
-import type { Ballot, Candidate, Election, Role, Paginated } from '../api/types'
+import type { Ballot, Candidate, Election, Participation, Role, Paginated } from '../api/types'
 import { AuthContext } from '../store/auth-context'
 import { AppRoutes } from '../routes/AppRoutes'
 
@@ -325,6 +325,15 @@ describe('voting failure recovery', () => {
     vi.spyOn(api, 'candidates').mockResolvedValue(profiles())
     return vi.spyOn(api, 'ballot').mockResolvedValue({ data: value })
   }
+  function participation(used: number, quota = 1): Participation {
+    return {
+      election_id: election.id,
+      eligible: true,
+      vote_quota: quota,
+      used_votes: used,
+      remaining_votes: quota - used,
+    }
+  }
   async function confirm() {
     fireEvent.click(await screen.findByRole('radio', { name: 'Candidate A' }))
     fireEvent.click(screen.getByRole('button', { name: 'Review and submit' }))
@@ -405,12 +414,77 @@ describe('voting failure recovery', () => {
     await confirm()
     expect(await screen.findByRole('alert')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Submit — irrevocable' })).toBeDisabled()
-    fireEvent.click(screen.getByRole('button', { name: 'Refresh voting status' }))
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Submit — irrevocable' })).toBeDisabled(),
-    )
+    expect(screen.getByRole('button', { name: 'Refresh voting status' })).toBeInTheDocument()
     expect(vote).toHaveBeenCalledTimes(1)
     expect(screen.queryByRole('heading', { name: 'Ballot cast.' })).not.toBeInTheDocument()
+  })
+
+  it('reconciles an accepted ballot through the participation endpoint', async () => {
+    prepare()
+    const detailRead = vi.spyOn(api, 'election')
+    const vote = vi.spyOn(api, 'vote').mockRejectedValue(new ApiError('REQUEST_ABORTED'))
+    const status = vi.spyOn(api, 'participation').mockResolvedValue({ data: participation(1) })
+    mount('USER')
+    await confirm()
+    fireEvent.click(await screen.findByRole('button', { name: 'Refresh voting status' }))
+    expect(
+      await screen.findByText('You have already voted and cannot vote again.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Submit/ })).not.toBeInTheDocument()
+    expect(status).toHaveBeenCalledTimes(1)
+    expect(detailRead).toHaveBeenCalledTimes(1)
+    expect(vote).toHaveBeenCalledTimes(1)
+  })
+
+  it('restores the ballot when votes remain and the window is still open', async () => {
+    const ballotRead = prepare()
+    const vote = vi.spyOn(api, 'vote').mockRejectedValue(new ApiError('REQUEST_FAILED', 500))
+    vi.spyOn(api, 'participation').mockResolvedValue({ data: participation(0) })
+    mount('USER')
+    await confirm()
+    fireEvent.click(await screen.findByRole('button', { name: 'Refresh voting status' }))
+    await waitFor(() => expect(screen.getByRole('radio', { name: 'Candidate A' })).toBeEnabled())
+    expect(screen.getByRole('button', { name: 'Review and submit' })).toBeEnabled()
+    expect(ballotRead).toHaveBeenCalledTimes(2)
+    expect(vote).toHaveBeenCalledTimes(1)
+  })
+
+  it('explains a closed election instead of restoring the ballot', async () => {
+    vi.spyOn(api, 'election')
+      .mockResolvedValueOnce({ data: { ...election, status: 'OPEN' } })
+      .mockResolvedValue({ data: { ...election, status: 'CLOSED' } })
+    vi.spyOn(api, 'candidates').mockResolvedValue(profiles())
+    const ballotRead = vi.spyOn(api, 'ballot').mockResolvedValue({ data: ballot() })
+    const vote = vi.spyOn(api, 'vote').mockRejectedValue(new ApiError('REQUEST_ABORTED'))
+    vi.spyOn(api, 'participation').mockResolvedValue({ data: participation(0) })
+    mount('USER')
+    await confirm()
+    fireEvent.click(await screen.findByRole('button', { name: 'Refresh voting status' }))
+    expect(
+      await screen.findByText('Voting has closed. You used 0 of 1 allowed votes.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument()
+    expect(ballotRead).toHaveBeenCalledTimes(1)
+    expect(vote).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the status check retryable when the participation request itself fails', async () => {
+    prepare()
+    vi.spyOn(api, 'vote').mockRejectedValue(new ApiError('REQUEST_ABORTED'))
+    const status = vi
+      .spyOn(api, 'participation')
+      .mockRejectedValueOnce(new ApiError('REQUEST_FAILED', 500))
+      .mockResolvedValue({ data: participation(1) })
+    mount('USER')
+    await confirm()
+    fireEvent.click(await screen.findByRole('button', { name: 'Refresh voting status' }))
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh voting status' }))
+    expect(
+      await screen.findByText('You have already voted and cannot vote again.'),
+    ).toBeInTheDocument()
+    expect(status).toHaveBeenCalledTimes(2)
   })
 
   it('does not show a receipt for an invalid success payload', async () => {
