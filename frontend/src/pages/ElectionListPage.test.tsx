@@ -111,6 +111,16 @@ describe('elections home', () => {
     }
     vi.spyOn(api, 'elections').mockResolvedValue(response(1, 1, [published]))
     vi.spyOn(api, 'election').mockResolvedValue({ data: published })
+    vi.spyOn(api, 'results').mockResolvedValue({
+      data: {
+        election_id: election.id,
+        position_title: election.position_title,
+        results_published_at: published.results_published_at,
+        total_votes: 0,
+        candidates: [],
+        winner_candidate_id: null,
+      },
+    })
     const view = mount()
     fireEvent.click(await screen.findByRole('link', { name: 'Details' }))
     expect(await screen.findByRole('link', { name: 'View results' })).toHaveAttribute(
@@ -124,7 +134,7 @@ describe('elections home', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Closed' }))
     fireEvent.click(await screen.findByRole('link', { name: 'Details' }))
     fireEvent.click(await screen.findByRole('link', { name: 'View results' }))
-    expect(await screen.findByRole('heading', { name: 'Results' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Published result' })).toBeInTheDocument()
   })
 
   it('redirects anonymous visitors to login without requesting elections', async () => {

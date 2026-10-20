@@ -4,7 +4,13 @@ from datetime import UTC, datetime
 from app.core.errors import AppError
 from app.models.elections import ElectionDetails
 from app.models.identity import UserIdentity
-from app.models.voting import BallotView, ParticipationStatus, VoteAccepted
+from app.models.voting import (
+    BallotView,
+    CandidateTally,
+    ParticipationStatus,
+    ResultDetails,
+    VoteAccepted,
+)
 from app.services.ports import UnitOfWork
 
 
@@ -90,6 +96,62 @@ class VotingService:
             uow.voting.record_vote(election_id, user.id, last_sequence + 1, candidate_id)
             uow.commit()
         return VoteAccepted(election_id=election_id, accepted=True)
+
+    def get_results(self, election_id: int, user: UserIdentity) -> ResultDetails:
+        """Recompute the tally for a closed election; USER reads require publish.
+
+        The USER check is deliberately uniform (API.md 4.19): an unpublished
+        result never reveals whether the election is closed or still running.
+        """
+        with self._uow_factory() as uow:
+            election = uow.voting.election(election_id)
+            if election is None:
+                raise election_not_found()
+            if user.role != "ADMIN":
+                if election.results_published_at is None:
+                    raise AppError("RESULTS_NOT_PUBLISHED", "Results are not published yet.", 409)
+            elif election.status != "CLOSED":
+                raise AppError("ELECTION_NOT_CLOSED", "Results require CLOSED status.", 409)
+            return self._result(election, uow.voting.tally(election_id))
+
+    def publish_results(self, election_id: int) -> ResultDetails:
+        """Publish the recomputed result with the elections row held exclusively.
+
+        Republishing returns the original result with the original timestamp.
+        Per the recorded D-06 decision (2026-10-20) a tie or an all-zero tally
+        publishes with winner_candidate_id=null: the system reports the factual
+        counts and never adjudicates (FW-10).
+        """
+        with self._uow_factory() as uow:
+            election = uow.voting.election(election_id, for_update=True)
+            if election is None:
+                raise election_not_found()
+            if election.status != "CLOSED":
+                raise AppError("ELECTION_NOT_CLOSED", "Results require CLOSED status.", 409)
+            if election.results_published_at is None:
+                uow.voting.mark_published(election_id, self._clock())
+                uow.commit()
+            return self._result(uow.voting.election(election_id), uow.voting.tally(election_id))
+
+    @staticmethod
+    def _winner(tally: list[CandidateTally]) -> int | None:
+        """Only a unique strictly positive leader wins; ties and zeros stay open."""
+        if not tally or tally[0].vote_count == 0:
+            return None
+        if len(tally) > 1 and tally[1].vote_count == tally[0].vote_count:
+            return None
+        return tally[0].candidate_id
+
+    @staticmethod
+    def _result(election, tally: list[CandidateTally]) -> ResultDetails:
+        return ResultDetails(
+            election_id=election.id,
+            position_title=election.position_title,
+            results_published_at=election.results_published_at,
+            total_votes=sum(row.vote_count for row in tally),
+            candidates=tally,
+            winner_candidate_id=VotingService._winner(tally),
+        )
 
     def _require_voting_window(self, election: ElectionDetails) -> None:
         if election.status != "OPEN":

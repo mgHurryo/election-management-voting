@@ -6,7 +6,7 @@ English / [简体中文](docs/api/API_CN.md)
 > Baseline: SRS v0.1, Architecture v0.2, Git `b74cd1647a3e85796f3b1c9ae5c1cdac677c62bf`.
 > **A design contract awaiting review and implementation, not verified documentation of a running service.** The baseline contains database bootstrap code but no FastAPI routes, request/response models, application entry point or API tests. At that historical baseline, every operation below was planned.
 
-> **Implementation update (2026-10-20):** The backend implements identity (sections 4.1–4.2), election and candidate management (4.3–4.12), ADMIN voter-roster list/add/remove (4.13–4.15), and the ballot, participation and anonymous voting operations (4.16–4.18), plus operational health probes. The two result counting and publishing operations (4.19–4.20) remain planned. Election, roster mutations and voting serialize through the election-row lock (ADR-007); MySQL tests cover draft edits racing with opening, vote/close mutual exclusion and the concurrent single-ballot constraint. See [backend setup and verification scope](backend/README.md). Generated development OpenAPI describes only registered operations. ADR-009 governs bcrypt, the default 60-minute token lifetime and password policy; the older D-08 wording below is superseded for those decisions.
+> **Implementation update (2026-10-20):** All twenty operations of API v0.1 are implemented and registered, plus operational health probes. Election, roster mutations, voting and result publication serialize through the election-row lock (ADR-007); MySQL tests cover draft edits racing with opening, vote/close mutual exclusion and the concurrent single-ballot constraint. Results are recomputed from ballot_choices at read time and never stored as snapshots; publication stamps the server time under an exclusive lock, republishing preserves the original timestamp, and ties or zero votes publish with an undecided winner (D-06, reviewed 2026-10-20). See [backend setup and verification scope](backend/README.md). Generated development OpenAPI describes only registered operations. ADR-009 governs bcrypt, the default 60-minute token lifetime and password policy; the older D-08 wording below is superseded for those decisions.
 
 > **How to read this reference:** go to the operation index, then read one endpoint from top to bottom. Each endpoint repeats its authentication, parameters, complete request/response examples, field tables, errors and rules. Shared conventions are summarized once and repeated where needed, so no schema-dictionary lookup is required. This revision reorganizes the existing contract; it does not change API behavior.
 
@@ -2649,7 +2649,7 @@ Publish a closed election's computed result without accepting client totals.
 | Full path | `/api/v1/elections/{election_id}/results/publish` |
 | Authentication | Required: `Authorization: Bearer <access-token>`; account must remain ACTIVE. |
 | Permission | ADMIN |
-| Election state | CLOSED; unresolved-winner guard remains a draft decision. |
+| Election state | CLOSED; ties / zero votes publish with winner=null (D-06 reviewed). |
 | Success status | 200 |
 | Request format | HTTPS; no request body and no Content-Type needed. |
 
@@ -2734,7 +2734,6 @@ The hostname, IDs and credentials are illustrative, not a running-service test.
 | 403 | `PERMISSION_DENIED` | Authenticated caller has the wrong role. |
 | 404 | `ELECTION_NOT_FOUND` | Election absent, or detail outside visibility. |
 | 409 | `ELECTION_NOT_CLOSED` | Counting/publication requires CLOSED. |
-| 409 | `RESULT_NOT_DECIDED` | No unique positive-vote winner; draft safeguard pending D-06. |
 | 422 | `VALIDATION_ERROR` | Malformed JSON, invalid types/fields/paths/query, unknown fields or empty PATCH. |
 | 500 | `INTERNAL_ERROR` | Unexpected internal failure; disclose no SQL, credentials or traces. |
 
@@ -2749,8 +2748,8 @@ Error responses also use Cache-Control: no-store.
 ```json
 {
   "error": {
-    "code": "RESULT_NOT_DECIDED",
-    "message": "No unique positive-vote winner; draft safeguard pending D-06."
+    "code": "ELECTION_NOT_CLOSED",
+    "message": "Counting / publication requires CLOSED."
   }
 }
 ```
@@ -2759,8 +2758,8 @@ Error responses also use Cache-Control: no-store.
 
 - ADMIN; CLOSED only; no body/query; success 200 Result. Clients cannot supply totals, winners or publication timestamps.
 - Recompute and set results_published_at using server time within the transaction. No PUBLISHED state or results table.
-- Draft retry convention: lock the election row exclusively and check publication in that transaction. If already published, return the original result/publication time without overwriting the timestamp; concurrent requests must not publish twice.
-- Draft safeguard: without a unique positive-vote winner, return `409 RESULT_NOT_DECIDED` and leave unpublished. **Requires D-06 review**, not an approved tie-break or automatic runoff.
+- Retry convention: lock the election row exclusively and check publication in that transaction. If already published, return the original result/publication time without overwriting the timestamp; concurrent requests must not publish twice.
+- Reviewed decision (D-06, 2026-10-20): tied or all-zero results publish with winner_candidate_id=null; the system reports the factual counts, never adjudicates, and tie handling stays offline with no winner-designation or runoff API.
 - Other errors: `ELECTION_NOT_FOUND`, `ELECTION_NOT_CLOSED`.
 
 - Repeated open/close returns 409; GET the election to reconcile. Repeated publication returns the original timestamp without overwriting it.
@@ -2798,7 +2797,6 @@ Error responses also use Cache-Control: no-store.
 | 409 | `RESOURCE_CONFLICT` | Existing reference/immutable record prevents safe mutation. |
 | 409 | `ELECTION_NOT_CLOSED` | Counting/publication requires CLOSED. |
 | 409 | `RESULTS_NOT_PUBLISHED` | USER requests an unpublished result. |
-| 409 | `RESULT_NOT_DECIDED` | No unique positive-vote winner; draft safeguard pending D-06. |
 | 422 | `VALIDATION_ERROR` | Malformed JSON, invalid types/fields/paths/query, unknown fields or empty PATCH. |
 | 422 | `INVALID_TIME_RANGE` | Merged starts_at does not precede ends_at. |
 | 422 | `INVALID_VOTER` | Existing account is not ACTIVE or not USER. |
@@ -2905,7 +2903,7 @@ Additional boundaries: IDs above JavaScript safe integer but within BIGINT round
 | D-03 | Nonempty voter_ids atomically creates membership; open requires a valid candidate and active voter. | FR-01 requires eligible scope; architecture permits staged configuration. This payload composition is proposed here. Seed must provide valid account IDs; no account API. |
 | D-04 | Candidate introduction required, position inherited, photo optional and HTTPS-only. | FR-03 plus nullable database column; no duplicate position column, upload or mandatory-photo policy. |
 | D-05 | ADMIN does not vote; only ACTIVE USER enters roster; DRAFT writes coordinate with open. | Architecture 10.2/ADR-007; implement and test account checks and lock coordination. |
-| D-06 | CLOSED ADMIN preview; repeated publication preserves time; tie/zero winner=null and publication temporarily rejects. | FW-10 has no tie rule; architecture mentions offline/manual handling. This is a **safety proposal awaiting confirmation**, not an approved tie-break/runoff API. |
+| D-06 (reviewed 2026-10-20) | CLOSED ADMIN preview; repeated publication preserves time; tie/zero winner=null and results publish normally (the earlier "temporarily reject" safeguard was not adopted). | FW-10 has no tie rule; architecture mentions offline/manual handling. Publication reports factual counts only, tie handling stays offline, and no winner-designation/runoff API is added. |
 | D-07 | No strict replay idempotency or multiple votes; direct unlinking is not unlinkable anonymity. | Architecture 11.5/15; confirm uncertain-outcome UX, redacted logging and threat model against FR-11/NFR-2. |
 | D-08 | Hash algorithm, JWT lifetime, token storage, seed, CORS, client timeout, rate limiting and deployment URL remain undecided. | Inherits architecture Open Issues; examples are not approved configuration; no quantitative performance gate exists. |
 
@@ -2919,3 +2917,4 @@ Only actual API/integration tests can promote this from a design draft to implem
 | --- | --- | --- |
 | 2026-10-01 | API v0.1 draft | Established bilingual contracts for 20 planned operations, with models, errors, privacy, traceability and acceptance checks; marked new decisions for review. |
 | 2026-10-01 | API v0.1 draft — reading layout | Reorganize into 20 self-contained endpoint references with local parameter/response/error tables, complete examples and clickable navigation; no route, field or business-rule changes. |
+| 2026-10-20 | API v0.1 draft — D-06 review | Tied / all-zero results now publish normally (winner=null); RESULT_NOT_DECIDED removed and section 4.20 updated together with the backend. |

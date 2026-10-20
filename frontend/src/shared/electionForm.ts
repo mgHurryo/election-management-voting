@@ -1,4 +1,5 @@
 import type { ElectionInput } from '../api/types'
+import { isValidId } from './ids'
 
 export interface ElectionFieldValues {
   title: string
@@ -73,7 +74,7 @@ export function validateElectionForm(values: ElectionFormValues): {
     .split(/[\s,，、]+/)
     .filter(Boolean)
   if (!ids.length) errors.voters = 'Enter at least one existing voter ID.'
-  else if (ids.some((id) => !/^[1-9][0-9]*$/.test(id) || BigInt(id) > 18446744073709551615n))
+  else if (ids.some((id) => !isValidId(id)))
     errors.voters = 'Voter IDs must be positive integers no larger than 18446744073709551615.'
   else if (new Set(ids).size !== ids.length)
     errors.voters = 'Voter IDs must be unique. Remove duplicates.'

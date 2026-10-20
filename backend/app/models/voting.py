@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 
 from app.models.elections import CandidateDetails, ElectionDetails
 
@@ -29,3 +30,24 @@ class VoteAccepted:
 
     election_id: int
     accepted: bool
+
+
+@dataclass(frozen=True)
+class CandidateTally:
+    """One candidate's aggregated vote count from ballot_choices (FR-12)."""
+
+    candidate_id: int
+    name: str
+    vote_count: int
+
+
+@dataclass(frozen=True)
+class ResultDetails:
+    """Recomputed tally; never a stored snapshot, results stay publish-free."""
+
+    election_id: int
+    position_title: str
+    results_published_at: datetime | None
+    total_votes: int
+    candidates: list[CandidateTally]
+    winner_candidate_id: int | None
