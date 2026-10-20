@@ -47,6 +47,17 @@ class VotingService:
                 participation=participation,
             )
 
+    def get_participation(self, election_id: int, user: UserIdentity) -> ParticipationStatus:
+        """Report the caller's own eligibility for any existing election state.
+
+        Explicit visibility exception (API.md 4.17): a non-member of an existing
+        election learns only their own false status, never the roster.
+        """
+        with self._uow_factory() as uow:
+            if uow.voting.election(election_id) is None:
+                raise election_not_found()
+            return self._participation(uow, election_id, user.id)
+
     def _require_voting_window(self, election: ElectionDetails) -> None:
         if election.status != "OPEN":
             raise AppError("ELECTION_NOT_OPEN", "Ballot access requires OPEN status.", 409)
