@@ -10,6 +10,8 @@ const ElectionDetailPage = lazy(() => import('../pages/ElectionDetailPage'))
 const CreateElectionPage = lazy(() => import('../pages/CreateElectionPage'))
 const EditElectionPage = lazy(() => import('../pages/EditElectionPage'))
 const CandidateManagementPage = lazy(() => import('../pages/CandidateManagementPage'))
+const VoterRollPage = lazy(() => import('../pages/VoterRollPage'))
+const ElectionResultsPage = lazy(() => import('../pages/ElectionResultsPage'))
 const PlaceholderPage = lazy(() => import('../pages/PlaceholderPage'))
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage'))
 
@@ -34,25 +36,13 @@ export function AppRoutes() {
           <Route element={<RequireAuth />}>
             <Route path="elections" element={<ElectionListPage />} />
             <Route path="elections/:id" element={<ElectionDetailPage />} />
-            <Route
-              path="elections/:id/results"
-              element={placeholder(
-                'Results',
-                'Results appear here once the election is closed and published.',
-              )}
-            />
+            <Route path="elections/:id/results" element={<ElectionResultsPage />} />
             <Route path="elections/:id/vote" element={<LegacyVoteRedirect />} />
             <Route element={<RequireRole role="ADMIN" />}>
               <Route path="elections/new" element={<CreateElectionPage />} />
               <Route path="elections/:id/edit" element={<EditElectionPage />} />
               <Route path="elections/:id/candidates" element={<CandidateManagementPage />} />
-              <Route
-                path="elections/:id/voters"
-                element={placeholder(
-                  'Voter roll',
-                  'Voter roll management is not part of this release.',
-                )}
-              />
+              <Route path="elections/:id/voters" element={<VoterRollPage />} />
             </Route>
           </Route>
           <Route path="*" element={<NotFoundPage />} />
