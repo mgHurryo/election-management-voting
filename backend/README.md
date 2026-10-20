@@ -3,9 +3,9 @@
 English / [简体中文](README_CN.md)
 
 This backend implements M1 identity, M2 voter roster management, M3 election
-and candidate management and M4 ballot/participation/voting from Architecture
-v0.2 / SRS v0.1. It is **not the complete voting MVP**: the result counting and
-publish operations remain unregistered.
+and candidate management, M4 ballot/participation/voting and M6/M7 result
+counting and publication from Architecture v0.2 / SRS v0.1: all twenty
+operations of API v0.1 are registered.
 
 ## Implemented scope
 
@@ -39,7 +39,8 @@ publish operations remain unregistered.
 | `GET /api/v1/elections/{id}/ballot` | Eligible USER; OPEN and in window | Implemented |
 | `GET /api/v1/elections/{id}/participation` | USER; own eligibility for any state | Implemented |
 | `POST /api/v1/elections/{id}/votes` | Eligible USER; one anonymous ballot (ADR-007) | Implemented |
-| Results and publish operations (2) | Not registered | Planned |
+| `GET /api/v1/elections/{id}/results` | ADMIN preview; USER after publication | Implemented |
+| `POST /api/v1/elections/{id}/results/publish` | ADMIN; CLOSED only, server-computed | Implemented |
 
 Health routes are operational additions **outside `/api/v1`**. Readiness reports
 connectivity, not schema compatibility, migrations or voting readiness. An
