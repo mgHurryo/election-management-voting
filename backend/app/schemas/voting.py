@@ -84,8 +84,6 @@ class ResultResponse(BaseModel):
                 for row in result.candidates
             ],
             winner_candidate_id=(
-                str(result.winner_candidate_id)
-                if result.winner_candidate_id is not None
-                else None
+                str(result.winner_candidate_id) if result.winner_candidate_id is not None else None
             ),
         )

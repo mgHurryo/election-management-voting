@@ -107,9 +107,7 @@ class VotingService:
                 raise election_not_found()
             if user.role != "ADMIN":
                 if election.results_published_at is None:
-                    raise AppError(
-                        "RESULTS_NOT_PUBLISHED", "Results are not published yet.", 409
-                    )
+                    raise AppError("RESULTS_NOT_PUBLISHED", "Results are not published yet.", 409)
             elif election.status != "CLOSED":
                 raise AppError("ELECTION_NOT_CLOSED", "Results require CLOSED status.", 409)
             return self._result(election, uow.voting.tally(election_id))

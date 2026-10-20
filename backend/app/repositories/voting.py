@@ -1,4 +1,3 @@
-
 from datetime import UTC, datetime
 
 from sqlalchemy import func, select
@@ -111,8 +110,7 @@ class SqlAlchemyVotingRepository:
             )
         ).all()
         return [
-            CandidateTally(candidate_id=row[0], name=row[1], vote_count=int(row[2]))
-            for row in rows
+            CandidateTally(candidate_id=row[0], name=row[1], vote_count=int(row[2])) for row in rows
         ]
 
     def mark_published(self, election_id: int, published_at: datetime) -> None:
