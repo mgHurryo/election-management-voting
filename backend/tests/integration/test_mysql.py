@@ -447,9 +447,12 @@ def test_mysql_concurrent_votes_allow_single_ballot(mysql_engine, mysql_ballot):
     # one request commits the only ballot and the loser reports an exhausted quota.
     assert outcomes == ["VOTE_QUOTA_EXHAUSTED", "accepted"]
     with mysql_engine.connect() as connection:
-        assert connection.scalar(
-            select(func.count()).select_from(Ballot).where(Ballot.election_id == 30)
-        ) == 1
+        assert (
+            connection.scalar(
+                select(func.count()).select_from(Ballot).where(Ballot.election_id == 30)
+            )
+            == 1
+        )
         assert (
             connection.scalar(
                 select(func.count())
@@ -460,9 +463,7 @@ def test_mysql_concurrent_votes_allow_single_ballot(mysql_engine, mysql_ballot):
         )
         assert (
             connection.scalar(
-                select(func.count())
-                .select_from(BallotChoice)
-                .where(BallotChoice.election_id == 30)
+                select(func.count()).select_from(BallotChoice).where(BallotChoice.election_id == 30)
             )
             == 1
         )
