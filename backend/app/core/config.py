@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     jwt_secret: SecretStr
     jwt_expire_minutes: int = 60
     frontend_origin: str
+    # Wall-clock lifecycle: due DRAFT elections open and overdue elections close
+    # automatically. Disable only for exotic deployments that drive status by hand.
+    window_scheduler: bool = True
+    window_tick_seconds: float = 15.0
 
     @field_validator("db_host", "db_name", "db_user")
     @classmethod
@@ -68,6 +72,13 @@ class Settings(BaseSettings):
     @field_validator("jwt_expire_minutes")
     @classmethod
     def positive_lifetime(cls, value: int) -> int:
+        if value <= 0:
+            raise ValueError("must be positive")
+        return value
+
+    @field_validator("window_tick_seconds")
+    @classmethod
+    def positive_tick(cls, value: float) -> float:
         if value <= 0:
             raise ValueError("must be positive")
         return value

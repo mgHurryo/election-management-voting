@@ -1039,7 +1039,8 @@ Clients must branch on error.code, not message wording. Never return SQL, stack 
 
 - ADMIN; no body/query; only DRAFT → OPEN; success 200 Election.
 - Require the inclusive time window, at least one candidate with every candidate valid, and one ACTIVE USER member; every quota is 1 and privacy_mode is FORCED_ANONYMOUS.
-- Atomically validate and transition. Repeated open or reopening CLOSED returns `INVALID_STATE_TRANSITION`. No scheduler is introduced.
+- Atomically validate and transition. Repeated open or reopening CLOSED returns `INVALID_STATE_TRANSITION`.
+- Automatic window transitions (2026-10-22): the backend runs an in-process scheduler (default tick 15 s, `WINDOW_SCHEDULER=false` to disable) that opens a ready DRAFT whose window has started and closes an OPEN election past `ends_at` by reusing this operation's checks and row locks. Clients must treat `status` as eventually consistent with the wall clock within one tick; readiness-failing drafts stay DRAFT, and a draft whose whole window has passed is never auto-opened.
 - Errors: `ELECTION_NOT_FOUND`, `INVALID_STATE_TRANSITION`, `ELECTION_NOT_READY`, `VOTING_NOT_STARTED`, `VOTING_ENDED`.
 
 - Repeated open/close returns 409; GET the election to reconcile. Repeated publication returns the original timestamp without overwriting it.
@@ -1166,6 +1167,7 @@ Clients must branch on error.code, not message wording. Never return SQL, stack 
 - ADMIN; no body/query; only OPEN → CLOSED; success 200 Election.
 - Early close and close after ends_at are allowed, enabling counting/publication. Repeated close returns `INVALID_STATE_TRANSITION`.
 - Take the exclusive election lock, wait for in-flight voting, commit CLOSED, then return success. Even if stored state remains OPEN, elapsed elections must reject votes.
+- The window scheduler (see 4.7) closes OPEN elections automatically shortly after `ends_at`; manual closure remains available and both paths share the same lock.
 - Errors: `ELECTION_NOT_FOUND`, `INVALID_STATE_TRANSITION`.
 
 - Repeated open/close returns 409; GET the election to reconcile. Repeated publication returns the original timestamp without overwriting it.

@@ -1,5 +1,6 @@
+import asyncio
 import logging
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,18 +12,43 @@ from app.api.middleware import NoStoreMiddleware, SanitizedErrorMiddleware
 from app.api.router import router as api_router
 from app.core.config import Settings
 from app.core.container import Container
+from app.services.elections import utcnow
+from app.services.window import run_window_transitions
 
 
 def create_app(*, settings: Settings | None = None, engine: Engine | None = None) -> FastAPI:
     settings = settings if settings is not None else Settings()
     logging.getLogger("app").setLevel(settings.log_level)
     container = Container(settings, engine)
+    stop = asyncio.Event()
+
+    async def window_scheduler() -> None:
+        while not stop.is_set():
+            try:
+                await asyncio.to_thread(
+                    run_window_transitions,
+                    container.unit_of_work,
+                    container.elections,
+                    utcnow,
+                    stop.is_set,
+                )
+            except Exception:  # noqa: BLE001 - one failed tick must not stop the scheduler
+                logging.getLogger("app").exception("election window transition tick failed")
+            with suppress(TimeoutError):
+                await asyncio.wait_for(stop.wait(), timeout=settings.window_tick_seconds)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        scheduler = asyncio.create_task(window_scheduler()) if settings.window_scheduler else None
         try:
             yield
         finally:
+            # The runner checks stop between transitions, so this wait is bounded
+            # by the in-flight transaction (the database's own timeouts); the
+            # engine must not be disposed while that transaction still runs.
+            stop.set()
+            if scheduler is not None:
+                await scheduler
             container.close()
 
     app = FastAPI(
