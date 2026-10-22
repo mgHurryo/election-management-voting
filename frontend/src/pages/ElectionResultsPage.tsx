@@ -5,13 +5,13 @@ import { ErrorState, LoadingState } from '../components/AsyncState'
 import { WorkflowConfirmation } from '../components/elections/WorkflowConfirmation'
 import { useAuth } from '../hooks/useAuth'
 import { useElectionResults } from '../hooks/useElectionResults'
+import { useNow } from '../hooks/useNow'
 import { errorMessage } from '../shared/errors'
 import './ElectionDetailPage.css'
 import './ElectionWorkflow.css'
 import './ElectionResultsPage.css'
 
-// Captured once at load: reading the clock during render is impure, and the
-// page only needs to know whether the window was already over when it loaded.
+// The initial clock reading; useNow keeps it current for long-lived sessions.
 const pageLoadedAt = Date.now()
 
 export default function ElectionResultsPage() {
@@ -23,6 +23,7 @@ export default function ElectionResultsPage() {
 
 function ElectionResultsContent({ id, role }: { id: string; role: Role }) {
   const results = useElectionResults(id, role)
+  const now = useNow(pageLoadedAt)
   const [confirming, setConfirming] = useState(false)
   const confirmationTrigger = useRef<HTMLButtonElement | null>(null)
   const { election, result } = results
@@ -54,7 +55,7 @@ function ElectionResultsContent({ id, role }: { id: string; role: Role }) {
   // status is still OPEN; the empty state must not contradict it. A draft never
   // started, so its passed window is a scheduling problem, not an ended vote.
   const windowOver =
-    !!election && election.status === 'OPEN' && new Date(election.ends_at).getTime() <= pageLoadedAt
+    !!election && election.status === 'OPEN' && new Date(election.ends_at).getTime() <= now
   // A closed election redirects back here from its detail page for every role,
   // so the way out is the list. An over-window but still OPEN election keeps
   // pointing administrators at the detail page, where Close voting lives.

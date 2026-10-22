@@ -6,6 +6,7 @@ import { ApiError } from '../api/client'
 import type { Candidate, Election, Participation } from '../api/types'
 import { ErrorState, LoadingState } from '../components/AsyncState'
 import { useAuth } from '../hooks/useAuth'
+import { useNow } from '../hooks/useNow'
 import { useBallot, useElectionDetail, useElectionStatusAction } from '../hooks/useElectionDetail'
 import { errorMessage } from '../shared/errors'
 
@@ -40,6 +41,7 @@ export default function ElectionDetailPage() {
 function DetailContent({ id }: { id: string }) {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const now = useNow(pageLoadedAt)
   const detail = useElectionDetail(id, user?.role)
   const status = useElectionStatusAction(id, detail.reload, () =>
     navigate(`/elections/${encodeURIComponent(id)}/results`),
@@ -478,8 +480,7 @@ function DetailContent({ id }: { id: string }) {
                   key={election.status}
                   status={election.status}
                   windowElapsed={
-                    election.status === 'DRAFT' &&
-                    new Date(election.ends_at).getTime() <= pageLoadedAt
+                    election.status === 'DRAFT' && new Date(election.ends_at).getTime() <= now
                   }
                   pending={status.pending}
                   error={status.error}

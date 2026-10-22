@@ -159,6 +159,30 @@ describe('elections home', () => {
     expect(screen.queryByRole('link', { name: 'Results' })).not.toBeInTheDocument()
   })
 
+  it('flips an open row to Ended and Results once the clock crosses ends_at in the same session', async () => {
+    vi.useFakeTimers()
+    try {
+      const clock = vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-22T10:00:00Z'))
+      vi.spyOn(api, 'elections').mockResolvedValue(
+        response(1, 1, [{ ...election, status: 'OPEN', ends_at: '2026-10-22T11:00:00Z' }]),
+      )
+      mount('USER')
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0)
+      })
+      expect(screen.getByRole('link', { name: 'Vote' })).toBeInTheDocument()
+      clock.mockReturnValue(Date.parse('2026-10-22T11:00:01Z'))
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(30_000)
+      })
+      expect(screen.getByRole('link', { name: 'Results' })).toBeInTheDocument()
+      expect(screen.getByText('Closed', { selector: '.st' })).toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: 'Vote' })).not.toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('redirects anonymous visitors to login without requesting elections', async () => {
     const list = vi.spyOn(api, 'elections')
     mount(null)

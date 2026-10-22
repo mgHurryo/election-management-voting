@@ -1,11 +1,11 @@
 import { Link } from 'react-router'
 import { useElections } from '../hooks/useElections'
 import { useAuth } from '../hooks/useAuth'
+import { useNow } from '../hooks/useNow'
 import type { Election } from '../api/types'
 import { errorMessage } from '../shared/errors'
 
-// Captured once at load: render stays pure, and row labels reflect the page's
-// load-time view of each voting window.
+// The initial clock reading; useNow keeps it current for long-lived sessions.
 const pageLoadedAt = Date.now()
 
 function two(n: number) {
@@ -21,13 +21,13 @@ function when(value: string) {
   return Number.isNaN(d.getTime()) ? '—' : fmt(d)
 }
 
-function Row({ election, voter }: { election: Election; voter: boolean }) {
+function Row({ election, voter, now }: { election: Election; voter: boolean; now: number }) {
   const open = election.status === 'OPEN'
   const draft = election.status === 'DRAFT'
   // Status transitions land on the server within one scheduler tick; until then
   // a locally OPEN row can already be past its window, so judge by the clock.
   // A draft never started, so a passed window says nothing about it.
-  const over = election.status !== 'DRAFT' && new Date(election.ends_at).getTime() <= pageLoadedAt
+  const over = election.status !== 'DRAFT' && new Date(election.ends_at).getTime() <= now
   const ended = election.status === 'CLOSED' || over
   // A voter whose election is over belongs on the results page, never on a ballot.
   const toResults = voter && ended
@@ -60,6 +60,7 @@ export default function ElectionListPage() {
   const { page, status, data, loading, error, retry, setStatus, setPage } = useElections()
   const { user } = useAuth()
   const voter = user?.role === 'USER'
+  const now = useNow(pageLoadedAt)
   const pool = data?.data ?? []
   const total = data?.meta.total ?? 0
   const pageSize = data?.meta.page_size ?? 20
@@ -109,7 +110,9 @@ export default function ElectionListPage() {
               No elections to show.
             </p>
           ) : (
-            pool.map((election) => <Row key={election.id} election={election} voter={voter} />)
+            pool.map((election) => (
+              <Row key={election.id} election={election} voter={voter} now={now} />
+            ))
           )}
           <div className="pager">
             <button

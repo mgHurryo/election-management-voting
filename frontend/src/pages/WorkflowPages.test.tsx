@@ -289,6 +289,34 @@ describe('results and publication workflow', () => {
     expect(read).not.toHaveBeenCalled()
   })
 
+  it('flips the results empty state once the clock crosses ends_at in the same session', async () => {
+    vi.useFakeTimers()
+    try {
+      const clock = vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-22T10:00:00Z'))
+      const { read } = setupResults({
+        ...election,
+        status: 'OPEN',
+        ends_at: '2026-10-22T11:00:00Z',
+      })
+      mount('results')
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0)
+      })
+      expect(screen.getByRole('heading', { name: 'Voting has not closed' })).toBeInTheDocument()
+      clock.mockReturnValue(Date.parse('2026-10-22T11:00:01Z'))
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(30_000)
+      })
+      expect(screen.getByRole('heading', { name: 'Voting has ended' })).toBeInTheDocument()
+      expect(
+        screen.queryByRole('heading', { name: 'Voting has not closed' }),
+      ).not.toBeInTheDocument()
+      expect(read).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('keeps an unpublished count private from voters and does not request it', async () => {
     const { read } = setupResults()
     const publish = vi.spyOn(api, 'publishResults')
