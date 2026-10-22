@@ -227,6 +227,20 @@ describe('election detail', () => {
     expect(screen.getByRole('button', { name: 'Refresh election status' })).toBeInTheDocument()
   })
 
+  it('hands the administrator over to the results page after a confirmed close', async () => {
+    vi.spyOn(api, 'election').mockResolvedValue({ data: { ...election, status: 'OPEN' } })
+    vi.spyOn(api, 'candidates').mockResolvedValue(profiles())
+    vi.spyOn(api, 'ballot').mockRejectedValue(new ApiError('NOT_ELIGIBLE', 403))
+    const close = vi.spyOn(api, 'closeElection').mockResolvedValue({
+      data: { ...election, status: 'CLOSED' },
+    })
+    mount()
+    fireEvent.click(await screen.findByRole('button', { name: 'Close voting' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm close' }))
+    expect(close).toHaveBeenCalledTimes(1)
+    expect(await screen.findByRole('heading', { name: 'Voting has ended' })).toBeInTheDocument()
+  })
+
   it('sends USER elections with published results straight to the results page', async () => {
     vi.spyOn(api, 'election').mockResolvedValue({
       data: { ...election, status: 'CLOSED', results_published_at: '2026-10-20T10:00:00Z' },

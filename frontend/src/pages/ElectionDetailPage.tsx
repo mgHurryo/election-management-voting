@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router'
+import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import './ElectionDetailPage.css'
 import { api } from '../api'
 import { ApiError } from '../api/client'
@@ -35,8 +35,11 @@ export default function ElectionDetailPage() {
 
 function DetailContent({ id }: { id: string }) {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const detail = useElectionDetail(id, user?.role)
-  const status = useElectionStatusAction(id, detail.reload)
+  const status = useElectionStatusAction(id, detail.reload, () =>
+    navigate(`/elections/${encodeURIComponent(id)}/results`),
+  )
   const [votedAt, setVotedAt] = useState<Date | null>(null)
   const ballot = useBallot(id, user?.role === 'USER' && detail.election?.status === 'OPEN')
   const [voteError, setVoteError] = useState<unknown>(null)
@@ -504,15 +507,16 @@ function DetailContent({ id }: { id: string }) {
                       ) : null}
                     </div>
                   )}
-                  {isAdmin && !election.results_published_at ? (
+                  {isAdmin && !election.results_published_at && (
                     <p className="noticeline">
-                      Results will be published after counting completes.
+                      Voting has closed. Review the final count and publish the result.
                     </p>
-                  ) : election.results_published_at ? (
-                    <Link className="lnk hot" to={`/elections/${encodeURIComponent(id)}/results`}>
-                      View results
-                    </Link>
-                  ) : null}
+                  )}
+                  <Link className="lnk hot" to={`/elections/${encodeURIComponent(id)}/results`}>
+                    {isAdmin && !election.results_published_at
+                      ? 'Review and publish results'
+                      : 'View results'}
+                  </Link>
                 </section>
               )}
           </aside>
