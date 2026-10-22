@@ -1,3 +1,16 @@
+.election-create .election-back-link {
+  display: inline-block;
+  margin-top: 26px;
+}
+
+.election-create-sub {
+  margin: -16px 0 0;
+  max-width: 70ch;
+  color: var(--soft);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
 .election-create .formbox {
   width: 100%;
   max-width: none;
