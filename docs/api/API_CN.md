@@ -1039,8 +1039,9 @@ Authorization: Bearer <access-token>
 
 - ADMIN；无 body / query；仅 DRAFT → OPEN；成功 200 Election。
 - 要求处于含两端时间窗，至少一个候选人且全部候选人资料合法、至少一个 ACTIVE USER 名册成员；全部额度为 1，匿名模式为 FORCED_ANONYMOUS。
-- 检查与状态流转须原子完成；重复 open 和重开 CLOSED 均返回 `INVALID_STATE_TRANSITION`。不引入定时调度器。
-- 错误：`ELECTION_NOT_FOUND`、`INVALID_STATE_TRANSITION`、`ELECTION_NOT_READY`、`VOTING_NOT_STARTED`、`VOTING_ENDED`。
+- 检查与状态流转须原子完成；重复 open 和重开 CLOSED 均返回 `INVALID_STATE_TRANSITION`。
+- 自动时间窗流转(2026-10-22):后端进程内调度器(默认 15 秒一拍,`WINDOW_SCHEDULER=false` 可关闭)会复用本接口的校验与行锁,自动开启"窗口已开始"的就绪 DRAFT,并自动关闭越过 `ends_at` 的 OPEN 选举。客户端必须把 `status` 视为与真实时间在一个 tick 内最终一致;未就绪的 DRAFT 保持 DRAFT,整窗已过的 DRAFT 不会被自动开启。
+- 错误:`ELECTION_NOT_FOUND`、`INVALID_STATE_TRANSITION`、`ELECTION_NOT_READY`、`VOTING_NOT_STARTED`、`VOTING_ENDED`。
 
 - 重复 open / close 返回 409，先 GET 选举确认状态。重复发布返回原时间，不覆盖。
 
@@ -1166,6 +1167,7 @@ Authorization: Bearer <access-token>
 - ADMIN；无 body / query；仅 OPEN → CLOSED；成功 200 Election。
 - 可提前关闭，也可在 ends_at 后关闭以便计票发布。重复 close 返回 `INVALID_STATE_TRANSITION`。
 - 对选举行取排他锁，等待在途投票事务后提交 CLOSED，commit 后才响应成功。到期后即使状态仍为 OPEN，也必须停止接受投票。
+- 时间窗调度器(见 4.7)会在 `ends_at` 后很快自动关闭 OPEN 选举;手动关闭仍然可用,两条路径共用同一把行锁。
 - 错误：`ELECTION_NOT_FOUND`、`INVALID_STATE_TRANSITION`。
 
 - 重复 open / close 返回 409，先 GET 选举确认状态。重复发布返回原时间，不覆盖。
