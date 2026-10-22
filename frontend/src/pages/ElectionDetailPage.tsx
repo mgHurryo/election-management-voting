@@ -97,9 +97,13 @@ function DetailContent({ id }: { id: string }) {
       </div>
     )
   if (!election) return null
-  // A closed election IS its result page for a voter, whether the count is
-  // published yet or not — unless an uncertain ballot is being reconciled here.
-  if (!isAdmin && closed && (election.results_published_at || !voterStatusCheck)) {
+  // A published result IS the page: voters and administrators land on it
+  // directly. Voters of an unpublished closed election also go straight there
+  // — unless an uncertain ballot is being reconciled on this page.
+  if (closed && election.results_published_at && (isAdmin || !voterStatusCheck)) {
+    return <Navigate to={`/elections/${encodeURIComponent(id)}/results`} replace />
+  }
+  if (!isAdmin && closed && !voterStatusCheck) {
     return <Navigate to={`/elections/${encodeURIComponent(id)}/results`} replace />
   }
   // The vote view waits for the ballot verdict: an election the server calls
@@ -190,7 +194,13 @@ function DetailContent({ id }: { id: string }) {
       return (
         <div className="election-ended">
           <h2>Voting has ended.</h2>
-          <p>Results will be published after counting completes.</p>
+          <p>
+            {election.results_published_at
+              ? 'The final result has been published.'
+              : isAdmin
+                ? 'The final count is ready for review — publish it from the administration panel.'
+                : 'Results will be published after counting completes.'}
+          </p>
         </div>
       )
     }

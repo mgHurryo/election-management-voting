@@ -294,6 +294,25 @@ describe('election detail', () => {
     expect(candidates).not.toHaveBeenCalled()
   })
 
+  it('hands administrators of a published closed election to the results page too', async () => {
+    vi.spyOn(api, 'election').mockResolvedValue({
+      data: { ...election, status: 'CLOSED', results_published_at: '2026-10-20T10:00:00Z' },
+    })
+    vi.spyOn(api, 'results').mockResolvedValue({
+      data: {
+        election_id: election.id,
+        position_title: election.position_title,
+        results_published_at: '2026-10-20T10:00:00Z',
+        total_votes: 2,
+        candidates: [{ candidate_id: '9007199254740995', name: 'Candidate A', vote_count: 2 }],
+        winner_candidate_id: '9007199254740995',
+      },
+    })
+    mount('ADMIN')
+    expect(await screen.findByRole('heading', { name: 'Published result' })).toBeInTheDocument()
+    expect(screen.queryByText('Voting has ended.')).not.toBeInTheDocument()
+  })
+
   it('falls back when a candidate photo fails and treats the profile as plain text', async () => {
     vi.spyOn(api, 'election').mockResolvedValue({ data: election })
     vi.spyOn(api, 'candidates').mockResolvedValue(
