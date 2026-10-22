@@ -24,14 +24,22 @@ def run_window_transitions(
     uow_factory: Callable[[], UnitOfWork],
     elections: ElectionsService,
     now: Callable[[], datetime] = utcnow,
+    should_stop: Callable[[], bool] | None = None,
 ) -> tuple[int, int]:
-    """Apply due window transitions once and return (opened, closed) counts."""
+    """Apply due window transitions once and return (opened, closed) counts.
+
+    ``should_stop`` is consulted before every transition so shutdown can halt
+    the runner between elections; the in-flight transition itself is a short
+    transaction bounded by the database's own timeouts.
+    """
     with uow_factory() as uow:
         current = now()
         due_close = uow.elections.open_window_ended(current)
         due_open = uow.elections.drafts_window_started(current)
     closed = 0
     for election_id in due_close:
+        if should_stop is not None and should_stop():
+            break
         try:
             elections.close_election(election_id)
             closed += 1
@@ -40,6 +48,8 @@ def run_window_transitions(
             logger.debug("auto-close skipped election %s: %s", election_id, reason.code)
     opened = 0
     for election_id in due_open:
+        if should_stop is not None and should_stop():
+            break
         try:
             elections.open_election(election_id)
             opened += 1

@@ -12,6 +12,7 @@ from app.api.middleware import NoStoreMiddleware, SanitizedErrorMiddleware
 from app.api.router import router as api_router
 from app.core.config import Settings
 from app.core.container import Container
+from app.services.elections import utcnow
 from app.services.window import run_window_transitions
 
 
@@ -28,6 +29,8 @@ def create_app(*, settings: Settings | None = None, engine: Engine | None = None
                     run_window_transitions,
                     container.unit_of_work,
                     container.elections,
+                    utcnow,
+                    stop.is_set,
                 )
             except Exception:  # noqa: BLE001 - one failed tick must not stop the scheduler
                 logging.getLogger("app").exception("election window transition tick failed")
@@ -40,10 +43,12 @@ def create_app(*, settings: Settings | None = None, engine: Engine | None = None
         try:
             yield
         finally:
+            # The runner checks stop between transitions, so this wait is bounded
+            # by the in-flight transaction (the database's own timeouts); the
+            # engine must not be disposed while that transaction still runs.
             stop.set()
             if scheduler is not None:
-                with suppress(TimeoutError):
-                    await asyncio.wait_for(scheduler, timeout=10)
+                await scheduler
             container.close()
 
     app = FastAPI(

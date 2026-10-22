@@ -93,3 +93,19 @@ def test_leaves_unready_drafts_for_a_later_tick():
 
     assert (opened, closed) == (0, 0)
     assert elections.opened == []
+
+
+def test_stops_between_transitions_once_shutdown_is_requested():
+    elections = RecordingElectionsService()
+    uow = FakeUnitOfWork(FakeElectionsRepository(due_open=[7, 8], due_close=[4]))
+    polls = []
+
+    def stopping() -> bool:
+        polls.append(1)
+        return len(polls) > 1  # allow the first transition, halt before the next
+
+    opened, closed = run_window_transitions(lambda: uow, elections, lambda: NOW, stopping)
+
+    assert (opened, closed) == (0, 1)
+    assert elections.closed == [4]
+    assert elections.opened == []
