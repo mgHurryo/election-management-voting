@@ -1,74 +1,167 @@
-/* Reuse the election detail shell, type, section headings and publication aside. */
+/* The app shell stays shared; only the result composition changes by outcome. */
 .results-page {
   font-size: 16px;
+  line-height: 1.65;
 }
-.results-main,
-.results-aside {
+
+.results-page .election-detail-header {
+  max-width: none;
+  padding-bottom: 28px;
+  border-bottom: 0;
+}
+
+.results-page .election-title-row h1 {
+  font-size: clamp(2rem, 3vw, 2.5rem);
+  line-height: 1.2;
+}
+
+.results-page ::selection {
+  color: var(--paper);
+  background: var(--verm-deep);
+}
+
+.results-layout {
+  border-top: 2px solid var(--verm-deep);
+}
+
+.results-main {
   min-width: 0;
+  padding-top: 36px;
 }
+
+.results-main--tie {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  column-gap: 64px;
+  align-items: start;
+}
+
+.results-main--tie .results-outcome {
+  grid-column: 1;
+  grid-row: 1;
+  padding-top: 12px;
+}
+
+.results-main--tie .results-count {
+  grid-column: 2;
+  grid-row: 1;
+  margin-top: 0;
+}
+
+.results-main--tie > .workflow-feedback,
+.results-main--tie > .workflow-confirmation,
+.results-main--tie > .state {
+  grid-column: 1 / -1;
+}
+
 .results-page .results-outcome h2 {
-  font-size: 27px;
+  font: 700 clamp(2.125rem, 3.2vw, 2.875rem) / 1.12 var(--serif);
+  letter-spacing: -0.025em;
+  text-wrap: balance;
 }
-.results-page .results-outcome .results-winner-name {
-  font-size: 32px;
-}
+
 .results-outcome-note,
 .results-unavailable p {
-  margin-top: 18px;
-  max-width: 65ch;
-  font-size: 17px;
+  margin-top: 20px;
+  max-width: 55ch;
   color: var(--soft);
+  font-size: 18px;
+  line-height: 1.65;
 }
+
+.results-main--winner .results-outcome {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: 0 48px;
+  align-items: center;
+  padding-bottom: 36px;
+}
+
+.results-main--winner .results-outcome-heading {
+  grid-column: 1;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: start;
+  gap: 14px;
+}
+
+.results-page .results-outcome .results-winner-name {
+  font-size: clamp(2.5rem, 4.2vw, 3.5rem);
+}
+
 .results-elected {
   color: var(--verm-deep);
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
 }
+
 .results-winner-position {
-  margin-top: 14px;
+  grid-column: 1;
+  margin-top: 12px;
   color: var(--soft);
+  font-size: 18px;
 }
+
 .results-victory-summary {
+  grid-column: 2;
+  grid-row: 1 / 3;
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px 28px;
-  margin-top: 10px;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--soft);
+  font-size: 17px;
 }
+
 .results-victory-summary strong {
-  color: var(--verm-deep);
-  font-size: 20px;
-  font-weight: 700;
+  margin-right: 6px;
+  color: var(--ink);
+  font-size: 26px;
+  font-weight: 600;
 }
+
+.results-victory-summary > span:first-child strong {
+  color: var(--verm-deep);
+  font-size: 38px;
+}
+
 .results-page .workflow-feedback:empty {
   display: none;
 }
+
 .results-page .workflow-feedback {
   font-size: 16px;
 }
+
 .results-count {
-  margin-top: 34px;
+  margin-top: 24px;
 }
+
 .results-count-heading {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 8px 24px;
-  margin-bottom: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
 }
+
 .results-page .results-count-heading h2 {
-  font-size: 21px;
+  font: 700 23px / 1.3 var(--serif);
 }
+
 .results-count-heading p {
   color: var(--soft);
-  font-size: 15px;
+  font-size: 16px;
 }
+
 .results-table {
   width: 100%;
   table-layout: fixed;
   border-collapse: collapse;
   text-align: left;
 }
+
 .results-table caption {
   position: absolute;
   width: 1px;
@@ -76,36 +169,37 @@
   overflow: hidden;
   clip-path: inset(50%);
 }
+
 .results-table th,
 .results-table td {
-  padding: 20px 20px 20px 0;
-  border-bottom: 1px solid var(--hair);
+  padding: 24px 32px 24px 0;
   vertical-align: middle;
 }
+
 .results-table thead th {
-  padding-block: 12px;
+  padding-block: 16px 8px;
   color: var(--soft);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
 }
+
 .results-table thead th:first-child {
-  width: 47%;
+  width: 46%;
 }
 .results-table thead th:nth-child(2) {
-  width: 24%;
+  width: 34%;
 }
 .results-table tbody th {
-  font: 700 22px / 1.35 var(--serif);
+  font: 700 26px / 1.3 var(--serif);
 }
 .results-vote-cell strong {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 600;
 }
 .results-vote-cell > span {
-  display: block;
-  margin-top: 2px;
+  margin-left: 14px;
   color: var(--soft);
-  font-size: 16px;
+  font-size: 17px;
 }
 .results-table th:last-child,
 .results-table td:last-child {
@@ -113,47 +207,171 @@
   text-align: right;
 }
 .results-row-outcome {
-  font-size: 15px;
+  font-size: 16px;
   color: var(--soft);
 }
+.results-table .is-elected th,
 .results-table .is-elected .results-row-outcome {
   color: var(--verm-deep);
-  font-weight: 700;
 }
-.results-count-note,
-.results-privacy {
-  margin-top: 18px;
+
+.results-vote-cell > .results-vote-bar {
+  display: block;
+  height: 4px;
+  margin: 10px 0 0;
+  background: var(--bone);
+}
+.results-vote-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--soft);
+}
+.is-elected .results-vote-bar > span {
+  background: var(--verm-deep);
+}
+
+/* Equal standing uses one continuous candidate ledger, never separate cards. */
+.results-count--tie .results-table thead {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.results-count--tie .results-table tbody tr {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 128px;
+  gap: 6px 24px;
+  padding: 24px 0;
+}
+.results-count--tie .results-table th,
+.results-count--tie .results-table td {
+  padding: 0;
+}
+.results-count--tie .results-table tbody th {
+  grid-column: 1;
+  font-size: 26px;
+}
+.results-count--tie .results-vote-cell {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  align-self: center;
+  text-align: right;
+}
+.results-count--tie .results-vote-cell > .results-vote-word {
+  margin-left: 3px;
+  color: var(--ink);
+  font-size: 16px;
+}
+.results-count--tie .results-vote-cell > span:last-child {
+  display: block;
+  margin: 3px 0 0;
+}
+.results-count--tie .results-table .results-row-outcome {
+  grid-column: 1;
+  text-align: left;
+  color: var(--verm-deep);
+}
+
+.results-notes {
+  flex-basis: 100%;
   color: var(--soft);
-  font-size: 15px;
-  line-height: 1.7;
-}
-.results-privacy {
-  margin-top: 28px;
-  max-width: 70ch;
-}
-.results-page .results-aside .election-facts dt {
   font-size: 14px;
-  font-weight: 500;
-  letter-spacing: normal;
-  text-transform: none;
+  line-height: 1.55;
 }
-.results-page .results-aside .election-facts dd {
-  font-size: 15px;
+.results-notes p {
+  max-width: 85ch;
+}
+.results-notes p + p {
+  margin-top: 3px;
+}
+
+.results-publication {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+  margin-top: 24px;
+  padding-top: 22px;
+  border-top: 1px solid var(--hair);
+  font-size: 16px;
+}
+.results-publication-status {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+}
+.results-page .results-publication-status h2 {
+  font: 600 16px / 1.5 var(--sans);
+}
+.results-published-time {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: var(--soft);
+}
+.results-published-time time {
+  color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
 .results-preview {
-  font-size: 15px;
+  max-width: 65ch;
   color: var(--soft);
 }
+.results-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+}
 .results-actions > button.quiet {
-  display: inline-block;
   min-height: 44px;
-  font-size: 15px;
+  font-size: 16px;
 }
-.results-actions > .btn {
-  margin-top: 20px;
+
+@media (min-width: 761px) and (max-width: 1023px) {
+  .results-main--tie {
+    grid-template-columns: minmax(0, 4fr) minmax(0, 6fr);
+    column-gap: 32px;
+  }
+  .results-count--tie .results-table tbody tr {
+    grid-template-columns: minmax(0, 1fr) 100px;
+    gap: 6px 16px;
+  }
+  .results-count--tie .results-table tbody th {
+    font-size: 24px;
+  }
+  .results-victory-summary {
+    font-size: 16px;
+  }
 }
+
 @media (max-width: 760px) {
+  .results-main {
+    padding-top: 28px;
+  }
+  .results-main--tie {
+    display: block;
+  }
+  .results-main--tie .results-outcome {
+    padding-top: 0;
+  }
+  .results-main--tie .results-count {
+    margin-top: 32px;
+  }
+  .results-main--winner .results-outcome {
+    display: block;
+    padding-bottom: 8px;
+  }
+  .results-victory-summary {
+    margin-top: 22px;
+    gap: 6px;
+  }
+  .results-outcome-note {
+    font-size: 18px;
+  }
   .results-table thead {
     position: absolute;
     width: 1px;
@@ -165,26 +383,30 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) 110px;
     gap: 12px 20px;
-    padding-block: 20px;
-    border-bottom: 1px solid var(--hair);
+    padding-block: 22px;
   }
   .results-table tbody th {
     grid-column: 1 / -1;
-    font-size: 23px;
+    font-size: 25px;
   }
   .results-table tbody th,
   .results-table tbody td {
     padding: 0;
-    border: 0;
   }
-  .results-table tbody .results-row-outcome {
+  .results-table .results-row-outcome {
     align-self: center;
   }
   .results-vote-cell > span {
-    display: inline;
     margin-left: 12px;
   }
-  .results-aside {
-    margin-top: 8px;
+  .results-count--tie .results-table tbody tr {
+    grid-template-columns: minmax(0, 1fr) 100px;
+    gap: 6px 16px;
+  }
+  .results-count--tie .results-table tbody th {
+    font-size: 25px;
+  }
+  .results-publication {
+    margin-top: 22px;
   }
 }

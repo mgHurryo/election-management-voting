@@ -84,8 +84,10 @@ function ElectionResultsContent({ id, role }: { id: string; role: Role }) {
       {results.error ? (
         <ErrorState error={results.error} retry={results.reload} />
       ) : election ? (
-        <div className="election-detail-grid results-layout">
-          <div className="results-main">
+        <div className="results-layout">
+          <div
+            className={`results-main${tied ? ' results-main--tie' : ''}${winner ? ' results-main--winner' : ''}`}
+          >
             {!result ? (
               <section className="results-unavailable">
                 <h2>
@@ -102,7 +104,7 @@ function ElectionResultsContent({ id, role }: { id: string; role: Role }) {
             ) : (
               <>
                 <section className="results-outcome" aria-labelledby="result-outcome-heading">
-                  <div className="election-section-heading">
+                  <div className="results-outcome-heading">
                     <h2 id="result-outcome-heading" className={winner ? 'results-winner-name' : ''}>
                       {winner
                         ? winner.name
@@ -117,7 +119,7 @@ function ElectionResultsContent({ id, role }: { id: string; role: Role }) {
                   {winner ? (
                     <>
                       <p className="results-winner-position">{result.position_title}</p>
-                      <p className="results-victory-summary num">
+                      <div className="results-victory-summary num">
                         <span>
                           <strong>{winner.vote_count.toLocaleString()}</strong> votes received
                         </span>
@@ -125,7 +127,7 @@ function ElectionResultsContent({ id, role }: { id: string; role: Role }) {
                           <strong>{voteShare(winner.vote_count).toFixed(1)}%</strong> of all votes
                           counted
                         </span>
-                      </p>
+                      </div>
                     </>
                   ) : (
                     <p className="results-outcome-note">
@@ -159,7 +161,10 @@ function ElectionResultsContent({ id, role }: { id: string; role: Role }) {
                     }}
                   />
                 )}
-                <section className="results-count" aria-labelledby="results-count-heading">
+                <section
+                  className={`results-count${tied ? ' results-count--tie' : ''}`}
+                  aria-labelledby="results-count-heading"
+                >
                   <div className="results-count-heading">
                     <h2 id="results-count-heading">Final count</h2>
                     <p className="num">{result.total_votes.toLocaleString()} total votes</p>
@@ -186,7 +191,19 @@ function ElectionResultsContent({ id, role }: { id: string; role: Role }) {
                               <th scope="row">{candidate.name}</th>
                               <td className="results-vote-cell num">
                                 <strong>{candidate.vote_count.toLocaleString()}</strong>{' '}
+                                {tied && (
+                                  <span className="results-vote-word" aria-hidden="true">
+                                    {candidate.vote_count === 1 ? 'vote' : 'votes'}
+                                  </span>
+                                )}
                                 <span>{voteShare(candidate.vote_count).toFixed(1)}%</span>
+                                {!tied && result.total_votes > 0 && (
+                                  <span className="results-vote-bar" aria-hidden="true">
+                                    <span
+                                      style={{ width: `${voteShare(candidate.vote_count)}%` }}
+                                    />
+                                  </span>
+                                )}
                               </td>
                               <td className="results-row-outcome">
                                 {elected ? (
@@ -210,33 +227,22 @@ function ElectionResultsContent({ id, role }: { id: string; role: Role }) {
                   ) : (
                     <p className="empty">No candidate results are available.</p>
                   )}
-                  <p className="results-count-note">
-                    Percentages show each candidate’s share of all votes counted.
-                  </p>
                 </section>
-                <p className="results-privacy">
-                  Only aggregate counts are shown. Ballot choices cannot be traced to individual
-                  voters.
-                </p>
               </>
             )}
           </div>
-          <aside className="election-detail-aside results-aside" aria-label="Result publication">
-            <section className="election-facts-panel">
+          <footer className="results-publication" aria-label="Result publication">
+            <div className="results-publication-status">
               <h2 id="result-status-heading">
                 {result ? (published ? 'Published result' : 'Unpublished count') : 'Publication'}
               </h2>
               {published ? (
-                <dl className="election-facts">
-                  <div>
-                    <dt>Published at</dt>
-                    <dd>
-                      <time dateTime={result!.results_published_at!}>
-                        {new Date(result!.results_published_at!).toLocaleString()}
-                      </time>
-                    </dd>
-                  </div>
-                </dl>
+                <p className="results-published-time">
+                  <span>Published at</span>
+                  <time dateTime={result!.results_published_at!}>
+                    {new Date(result!.results_published_at!).toLocaleString()}
+                  </time>
+                </p>
               ) : (
                 <p className="results-preview">
                   {result && role === 'ADMIN'
@@ -244,32 +250,42 @@ function ElectionResultsContent({ id, role }: { id: string; role: Role }) {
                     : 'Results will be available after the final count is published.'}
                 </p>
               )}
-            </section>
-            <section className="election-admin-panel results-actions">
-              <h2>Result actions</h2>
-              <button
-                type="button"
-                className="quiet"
-                disabled={results.pending || confirming}
-                onClick={results.reload}
-              >
-                Refresh results
-              </button>
-              {result && role === 'ADMIN' && !published && (
+            </div>
+            {!published && (
+              <div className="results-actions" aria-label="Publication controls">
                 <button
                   type="button"
-                  className="btn main"
-                  disabled={results.pending || results.blocked || confirming}
-                  onClick={(event) => {
-                    confirmationTrigger.current = event.currentTarget
-                    setConfirming(true)
-                  }}
+                  className="quiet"
+                  disabled={results.pending || confirming}
+                  onClick={results.reload}
                 >
-                  Publish results
+                  Refresh results
                 </button>
-              )}
-            </section>
-          </aside>
+                {result && role === 'ADMIN' && !published && (
+                  <button
+                    type="button"
+                    className="btn main"
+                    disabled={results.pending || results.blocked || confirming}
+                    onClick={(event) => {
+                      confirmationTrigger.current = event.currentTarget
+                      setConfirming(true)
+                    }}
+                  >
+                    Publish results
+                  </button>
+                )}
+              </div>
+            )}
+            {result && (
+              <div className="results-notes">
+                <p>Vote share is based on all counted votes.</p>
+                <p>
+                  Only aggregate counts are shown. Ballot choices cannot be traced to individual
+                  voters.
+                </p>
+              </div>
+            )}
+          </footer>
         </div>
       ) : null}
     </div>

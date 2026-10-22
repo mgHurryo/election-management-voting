@@ -65,13 +65,11 @@ for (const width of [1440, 1024, 768, 390, 320]) {
       path: testInfo.outputPath(`results-editorial-${width}.png`),
       fullPage: true,
     })
-    const refresh = page.getByRole('button', { name: 'Refresh results' })
-    await refresh.focus()
-    await expect(refresh).toBeFocused()
-    const response = page.waitForResponse('**/api/v1/elections/42/results')
-    await page.keyboard.press('Enter')
-    await response
-    await expect(announcement).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Refresh results' })).toHaveCount(0)
+    await expect(page.getByRole('heading', { name: 'Result actions' })).toHaveCount(0)
+    const back = page.getByRole('link', { name: 'All elections', exact: true })
+    await back.focus()
+    await expect(back).toBeFocused()
   })
 
   test(`three-way tie bulletin at ${width}px`, async ({ page }, testInfo) => {
@@ -99,6 +97,9 @@ for (const width of [1440, 1024, 768, 390, 320]) {
     await expect(page.getByRole('table').getByRole('row')).toHaveCount(4)
     await expect(page.getByRole('cell', { name: '1 33.3%' })).toHaveCount(3)
     await expect(page.getByText('Tied for first')).toHaveCount(3)
+    await expect(page.locator('.results-main--tie')).toBeVisible()
+    await expect(page.locator('.results-victory-summary')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Refresh results' })).toHaveCount(0)
     await expect(page.locator('.results-large-count')).toHaveCount(0)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     await page.screenshot({ path: testInfo.outputPath(`results-tie-${width}.png`), fullPage: true })
@@ -125,6 +126,40 @@ test('long names and a long candidate list stay readable on mobile', async ({ pa
 })
 
 for (const width of [1440, 390]) {
+  test(`ten tied candidates use the actual tie size and vote shares at ${width}px`, async ({
+    page,
+  }, testInfo) => {
+    const candidates = Array.from({ length: 10 }, (_, index) => ({
+      candidate_id: String(index + 1),
+      name: `Candidate ${index + 1}`,
+      vote_count: 1,
+    }))
+    await page.route('**/api/v1/elections/42/results', (route) =>
+      route.fulfill({
+        json: { data: { ...result, total_votes: 10, candidates, winner_candidate_id: null } },
+      }),
+    )
+    await page.setViewportSize({ width, height: 1000 })
+    await page.goto('/elections/42/results')
+    const outcome = page.getByRole('region', { name: '10-way tie', exact: true })
+    await expect(outcome).toBeVisible()
+    await expect(
+      outcome.getByText('Each candidate received one vote. No winner has been declared.'),
+    ).toBeVisible()
+    await expect(page.getByRole('row')).toHaveCount(11)
+    await expect(page.getByRole('cell', { name: '1 10.0%' })).toHaveCount(10)
+    await expect(page.getByText('Tied for first', { exact: true })).toHaveCount(10)
+    await expect(page.getByRole('rowheader', { name: 'Candidate 10', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Three-way tie' })).toHaveCount(0)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    await page.screenshot({
+      path: testInfo.outputPath(`results-ten-tie-${width}.png`),
+      fullPage: true,
+    })
+  })
+}
+
+for (const width of [1440, 390]) {
   test(`list, detail and results share the same shell at ${width}px`, async ({
     page,
   }, testInfo) => {
@@ -139,14 +174,17 @@ for (const width of [1440, 390]) {
         json: { data: [], meta: { page: 1, page_size: 20, total: 0 } },
       }),
     )
-    const shellMetrics = () =>
-      page.evaluate(() => {
+    const shellMetrics = async () => {
+      // Compare the same loaded typefaces across separate document navigations.
+      await page.evaluate(() => document.fonts.ready)
+      return page.evaluate(() => {
         const box = (selector: string) => {
           const rect = document.querySelector(selector)!.getBoundingClientRect()
           return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
         }
         return { top: box('.top'), brand: box('.brand'), identity: box('.who') }
       })
+    }
     await page.goto('/')
     await expect(page.getByRole('heading', { name: 'Elections', exact: true })).toBeVisible()
     const listShell = await shellMetrics()
