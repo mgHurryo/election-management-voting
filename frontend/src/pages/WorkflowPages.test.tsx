@@ -317,6 +317,28 @@ describe('results and publication workflow', () => {
     }
   })
 
+  it('treats now equal to ends_at as still inside the voting window', async () => {
+    vi.useFakeTimers()
+    try {
+      // The backend accepts votes until now > ends_at; equality stays open.
+      vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-22T11:00:00Z'))
+      const { read } = setupResults({
+        ...election,
+        status: 'OPEN',
+        ends_at: '2026-10-22T11:00:00Z',
+      })
+      mount('results')
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0)
+      })
+      expect(screen.getByRole('heading', { name: 'Voting has not closed' })).toBeInTheDocument()
+      expect(screen.queryByRole('heading', { name: 'Voting has ended' })).not.toBeInTheDocument()
+      expect(read).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('keeps an unpublished count private from voters and does not request it', async () => {
     const { read } = setupResults()
     const publish = vi.spyOn(api, 'publishResults')

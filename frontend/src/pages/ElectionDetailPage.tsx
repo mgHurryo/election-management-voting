@@ -480,7 +480,7 @@ function DetailContent({ id }: { id: string }) {
                   key={election.status}
                   status={election.status}
                   windowElapsed={
-                    election.status === 'DRAFT' && new Date(election.ends_at).getTime() <= now
+                    election.status === 'DRAFT' && new Date(election.ends_at).getTime() < now
                   }
                   pending={status.pending}
                   error={status.error}

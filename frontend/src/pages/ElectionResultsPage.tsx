@@ -55,7 +55,7 @@ function ElectionResultsContent({ id, role }: { id: string; role: Role }) {
   // status is still OPEN; the empty state must not contradict it. A draft never
   // started, so its passed window is a scheduling problem, not an ended vote.
   const windowOver =
-    !!election && election.status === 'OPEN' && new Date(election.ends_at).getTime() <= now
+    !!election && election.status === 'OPEN' && new Date(election.ends_at).getTime() < now
   // A closed election redirects back here from its detail page for every role,
   // so the way out is the list. An over-window but still OPEN election keeps
   // pointing administrators at the detail page, where Close voting lives.

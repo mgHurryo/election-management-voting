@@ -183,6 +183,27 @@ describe('elections home', () => {
     }
   })
 
+  it('keeps the ballot reachable on the inclusive boundary where now equals ends_at', async () => {
+    vi.useFakeTimers()
+    try {
+      // The backend rejects votes only when now > ends_at, so equality is
+      // still inside the voting window.
+      vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-22T11:00:00Z'))
+      vi.spyOn(api, 'elections').mockResolvedValue(
+        response(1, 1, [{ ...election, status: 'OPEN', ends_at: '2026-10-22T11:00:00Z' }]),
+      )
+      mount('USER')
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0)
+      })
+      expect(screen.getByRole('link', { name: 'Vote' })).toBeInTheDocument()
+      expect(screen.getByText('Open', { selector: '.st' })).toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: 'Results' })).not.toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('redirects anonymous visitors to login without requesting elections', async () => {
     const list = vi.spyOn(api, 'elections')
     mount(null)

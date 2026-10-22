@@ -27,7 +27,7 @@ function Row({ election, voter, now }: { election: Election; voter: boolean; now
   // Status transitions land on the server within one scheduler tick; until then
   // a locally OPEN row can already be past its window, so judge by the clock.
   // A draft never started, so a passed window says nothing about it.
-  const over = election.status !== 'DRAFT' && new Date(election.ends_at).getTime() <= now
+  const over = election.status !== 'DRAFT' && new Date(election.ends_at).getTime() < now
   const ended = election.status === 'CLOSED' || over
   // A voter whose election is over belongs on the results page, never on a ballot.
   const toResults = voter && ended
