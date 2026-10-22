@@ -6,6 +6,7 @@ import type { ElectionFormErrors } from '../../shared/electionForm'
 import { buildElectionPatch, electionToFields } from '../../shared/electionPatch'
 import { errorMessage } from '../../shared/errors'
 import { ElectionFields } from './ElectionFields'
+import './ElectionCreateForm.css'
 
 interface Props {
   election: Election
@@ -74,12 +75,13 @@ export function ElectionEditForm({
         Back to election
       </Link>
       <div className="phead">
-        <h1>Edit election</h1>
+        <p className="election-create-kicker">Edit election</p>
+        <h1>{election.title}</h1>
+        <p className="election-create-lede">
+          Only the details and schedule of a draft can be changed here; candidates and the voter
+          roll are managed from the election page.
+        </p>
       </div>
-      <p className="election-create-sub">
-        Editing <b>{election.title}</b>. Only the details and schedule of a draft can be changed
-        here; candidates and the voter roll are managed from the election page.
-      </p>
       <form className="formbox" onSubmit={submit} noValidate>
         <fieldset className="election-create-grid" disabled={saving || blocked}>
           <legend className="visually-hidden">Election details</legend>

@@ -451,13 +451,6 @@ function DetailContent({ id }: { id: string }) {
             {isAdmin ? (
               <section className="election-admin-panel" aria-labelledby="election-admin-heading">
                 <h2 id="election-admin-heading">Administration</h2>
-                {election.status === 'DRAFT' &&
-                  new Date(election.ends_at).getTime() <= pageLoadedAt && (
-                    <p className="noticeline">
-                      This election's scheduled window has already passed, so it cannot be opened
-                      for voting. Set a new window in Edit election first.
-                    </p>
-                  )}
                 {election.status === 'DRAFT' && (
                   <nav className="election-admin-links" aria-label="Election administration links">
                     <Link className="lnk" to={`/elections/${encodeURIComponent(id)}/edit`}>
@@ -474,6 +467,10 @@ function DetailContent({ id }: { id: string }) {
                 <StatusActions
                   key={election.status}
                   status={election.status}
+                  windowElapsed={
+                    election.status === 'DRAFT' &&
+                    new Date(election.ends_at).getTime() <= pageLoadedAt
+                  }
                   pending={status.pending}
                   error={status.error}
                   message={status.message}
@@ -720,6 +717,7 @@ function PickMark({ selected }: { selected: boolean }) {
 
 function StatusActions({
   status,
+  windowElapsed = false,
   pending,
   error,
   message,
@@ -727,6 +725,7 @@ function StatusActions({
   onReload,
 }: {
   status: Election['status']
+  windowElapsed?: boolean
   pending: boolean
   error: unknown
   message: string
@@ -734,33 +733,38 @@ function StatusActions({
   onReload: () => void
 }) {
   const [confirm, setConfirm] = useState<'open' | 'close' | null>(null)
+
   let control: React.ReactNode
   if (status === 'DRAFT') {
-    control =
-      confirm === 'open' ? (
-        <span className="bconfirm">
-          <span className="warn">
-            Opening voting locks the election details, candidates and voter roll.
-          </span>
-          <button
-            className="bsub"
-            type="button"
-            disabled={pending}
-            onClick={() => {
-              void onRun('open').then(() => setConfirm(null))
-            }}
-          >
-            {pending ? 'Opening…' : 'Confirm open'}
-          </button>
-          <button className="ghost" type="button" onClick={() => setConfirm(null)}>
-            Cancel
-          </button>
+    control = windowElapsed ? (
+      <p className="noticeline">
+        This election's scheduled window has already passed, so it cannot be opened for voting. Set
+        a new window in Edit election first.
+      </p>
+    ) : confirm === 'open' ? (
+      <span className="bconfirm">
+        <span className="warn">
+          Opening voting locks the election details, candidates and voter roll.
         </span>
-      ) : (
-        <button type="button" className="btn ghost" onClick={() => setConfirm('open')}>
-          Open voting
+        <button
+          className="bsub"
+          type="button"
+          disabled={pending}
+          onClick={() => {
+            void onRun('open').then(() => setConfirm(null))
+          }}
+        >
+          {pending ? 'Opening…' : 'Confirm open'}
         </button>
-      )
+        <button className="ghost" type="button" onClick={() => setConfirm(null)}>
+          Cancel
+        </button>
+      </span>
+    ) : (
+      <button type="button" className="btn ghost" onClick={() => setConfirm('open')}>
+        Open voting
+      </button>
+    )
   } else if (status === 'OPEN') {
     control =
       confirm === 'close' ? (

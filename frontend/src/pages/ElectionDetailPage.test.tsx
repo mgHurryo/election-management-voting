@@ -194,14 +194,16 @@ describe('election detail', () => {
   })
 
   it('confirms opening once and refreshes the authoritative election state', async () => {
+    // A draft inside its window offers the open flow; an elapsed one does not.
+    const scheduled = { ...election, ends_at: new Date(Date.now() + 3_600_000).toISOString() }
     vi.spyOn(api, 'election')
-      .mockResolvedValueOnce({ data: election })
-      .mockResolvedValue({ data: { ...election, status: 'OPEN' } })
+      .mockResolvedValueOnce({ data: scheduled })
+      .mockResolvedValue({ data: { ...scheduled, status: 'OPEN' } })
     vi.spyOn(api, 'candidates').mockResolvedValue(profiles())
     vi.spyOn(api, 'ballot').mockRejectedValue(new ApiError('NOT_ELIGIBLE', 403))
     const open = vi
       .spyOn(api, 'openElection')
-      .mockResolvedValue({ data: { ...election, status: 'OPEN' } })
+      .mockResolvedValue({ data: { ...scheduled, status: 'OPEN' } })
     mount()
     fireEvent.click(await screen.findByRole('button', { name: 'Open voting' }))
     expect(open).not.toHaveBeenCalled()
@@ -214,12 +216,12 @@ describe('election detail', () => {
     expect(open).toHaveBeenCalledWith(election.id)
   })
 
-  it('warns administrators about a draft whose scheduled window already passed', async () => {
+  it('hides Open voting on a draft whose scheduled window already passed', async () => {
     vi.spyOn(api, 'election').mockResolvedValue({ data: election })
     vi.spyOn(api, 'candidates').mockResolvedValue(profiles())
     mount()
     expect(await screen.findByText(/scheduled window has already passed/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Open voting' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Open voting' })).not.toBeInTheDocument()
   })
 
   it('does not automatically repeat an uncertain close operation', async () => {
