@@ -55,6 +55,21 @@ main {
   outline: none;
 }
 
+/* Route transitions: each page fades up as it mounts, so navigation does not
+   hard-cut. Skipped entirely for users who prefer reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  main > * {
+    animation: page-enter 0.28s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  }
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
 a {
   color: inherit;
   text-decoration: none;
