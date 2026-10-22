@@ -6,6 +6,7 @@ import type { ElectionFormErrors } from '../../shared/electionForm'
 import { buildElectionPatch, electionToFields } from '../../shared/electionPatch'
 import { errorMessage } from '../../shared/errors'
 import { ElectionFields } from './ElectionFields'
+import './ElectionCreateForm.css'
 
 interface Props {
   election: Election
@@ -69,23 +70,44 @@ export function ElectionEditForm({
   }
 
   return (
-    <div className="wrap">
+    <div className="wrap election-create">
+      <Link className="quiet election-back-link" to={detailPath}>
+        Back to election
+      </Link>
       <div className="phead">
-        <h1>Edit election</h1>
+        <p className="election-create-kicker">Edit election</p>
+        <h1>{election.title}</h1>
+        <p className="election-create-lede">
+          Only the details and schedule of a draft can be changed here; candidates and the voter
+          roll are managed from the election page.
+        </p>
       </div>
-      <p className="lsub" style={{ textAlign: 'left', margin: '0 0 8px' }}>
-        Only the details and schedule of a draft can be changed here. Candidates and the voter roll
-        are managed from the election page.
-      </p>
       <form className="formbox" onSubmit={submit} noValidate>
-        <fieldset disabled={saving || blocked} style={{ border: 0, padding: 0, margin: 0 }}>
+        <fieldset className="election-create-grid" disabled={saving || blocked}>
           <legend className="visually-hidden">Election details</legend>
-          <ElectionFields
-            values={values}
-            errors={errors}
-            idPrefix="edit"
-            onChange={(field, value) => update(field, value)}
-          />
+          <section className="election-create-details" aria-labelledby="edit-details-heading">
+            <h2 id="edit-details-heading">Election details</h2>
+            <ElectionFields
+              values={values}
+              errors={errors}
+              idPrefix="edit"
+              section="details"
+              onChange={(field, value) => update(field, value)}
+            />
+          </section>
+          <section
+            className="election-create-eligibility"
+            aria-labelledby="edit-description-heading"
+          >
+            <h2 id="edit-description-heading">Description</h2>
+            <ElectionFields
+              values={values}
+              errors={errors}
+              idPrefix="edit"
+              section="description"
+              onChange={(field, value) => update(field, value)}
+            />
+          </section>
         </fieldset>
         {notice && (
           <p className="lsub" style={{ textAlign: 'left' }} role="status">

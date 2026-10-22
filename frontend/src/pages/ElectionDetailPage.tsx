@@ -1,13 +1,18 @@
 import { useRef, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import './ElectionDetailPage.css'
 import { api } from '../api'
 import { ApiError } from '../api/client'
 import type { Candidate, Election, Participation } from '../api/types'
 import { ErrorState, LoadingState } from '../components/AsyncState'
 import { useAuth } from '../hooks/useAuth'
+import { useNow } from '../hooks/useNow'
 import { useBallot, useElectionDetail, useElectionStatusAction } from '../hooks/useElectionDetail'
 import { errorMessage } from '../shared/errors'
+
+// Captured once at load so render stays pure; window labels reflect the page's
+// load-time view.
+const pageLoadedAt = Date.now()
 
 function two(n: number) {
   return (n < 10 ? '0' : '') + n
@@ -35,8 +40,12 @@ export default function ElectionDetailPage() {
 
 function DetailContent({ id }: { id: string }) {
   const { user } = useAuth()
+  const navigate = useNavigate()
+  const now = useNow(pageLoadedAt)
   const detail = useElectionDetail(id, user?.role)
-  const status = useElectionStatusAction(id, detail.reload)
+  const status = useElectionStatusAction(id, detail.reload, () =>
+    navigate(`/elections/${encodeURIComponent(id)}/results`),
+  )
   const [votedAt, setVotedAt] = useState<Date | null>(null)
   const ballot = useBallot(id, user?.role === 'USER' && detail.election?.status === 'OPEN')
   const [voteError, setVoteError] = useState<unknown>(null)
@@ -69,6 +78,15 @@ function DetailContent({ id }: { id: string }) {
     participation?.eligible === true &&
     participation.remaining_votes > 0
   const voterOnNonOpenElection = !!user && !isAdmin && !open
+  // A ballot whose outcome is unknown keeps the voter on this page until the
+  // participation check settles; otherwise a closed election belongs on results.
+  const voterStatusCheck = !isAdmin && (voteError !== null || blocked || reconciled !== null)
+  // The server owns the voting window: a locally OPEN election can already be
+  // past ends_at, so these ballot codes are terminal facts, not retryable faults.
+  const ballotFailure = ballot.error instanceof ApiError ? ballot.error : null
+  const windowShut =
+    ballotFailure !== null &&
+    ['VOTING_ENDED', 'ELECTION_NOT_OPEN', 'VOTING_NOT_STARTED'].includes(ballotFailure.code)
 
   if (votedAt && election) {
     return <Receipt election={election} at={votedAt} />
@@ -77,15 +95,36 @@ function DetailContent({ id }: { id: string }) {
   if (detail.error)
     return (
       <div className="wrap">
-        <ErrorState error={detail.error} retry={detail.reload} />
-        <p className="actions">
-          <Link className="quiet" to="/">
-            Back to elections
-          </Link>
-        </p>
+        <ErrorState error={detail.error} retry={detail.reload} backTo="/" />
       </div>
     )
   if (!election) return null
+  // A published result IS the page: voters and administrators land on it
+  // directly. Voters of an unpublished closed election also go straight there
+  // — unless an uncertain ballot is being reconciled on this page.
+  if (closed && election.results_published_at && (isAdmin || !voterStatusCheck)) {
+    return <Navigate to={`/elections/${encodeURIComponent(id)}/results`} replace />
+  }
+  if (!isAdmin && closed && !voterStatusCheck) {
+    return <Navigate to={`/elections/${encodeURIComponent(id)}/results`} replace />
+  }
+  // The vote view waits for the ballot verdict: an election the server calls
+  // ended must never render as a ballot stub.
+  if (voterBallotView && ballot.loading) {
+    return (
+      <div className="wrap">
+        <LoadingState />
+      </div>
+    )
+  }
+  if (
+    voterBallotView &&
+    windowShut &&
+    ballotFailure &&
+    ballotFailure.code !== 'VOTING_NOT_STARTED'
+  ) {
+    return <Navigate to={`/elections/${encodeURIComponent(id)}/results`} replace />
+  }
 
   async function submitBallot() {
     if (!selected || !canVote || !confirming || busy.current || blocked) return
@@ -149,8 +188,24 @@ function DetailContent({ id }: { id: string }) {
   function candidatesBlock() {
     if (!user) return null
     if (ballot.loading || (!ballot.data && detail.candidates.loading)) return <LoadingState />
-    if (!ballot.data && detail.candidates.error)
+    // The window notice is rendered once by the section; candidates add nothing.
+    if (windowShut) return null
+    if (!ballot.data && detail.candidates.error && !ballot.error)
       return <ErrorState error={detail.candidates.error} retry={detail.retryCandidates} />
+    if (closed) {
+      return (
+        <div className="election-ended">
+          <h2>Voting has ended.</h2>
+          <p>
+            {election.results_published_at
+              ? 'The final result has been published.'
+              : isAdmin
+                ? 'The final count is ready for review — publish it from the administration panel.'
+                : 'Results will be published after counting completes.'}
+          </p>
+        </div>
+      )
+    }
     if (voterOnNonOpenElection) {
       return (
         <p className="noticeline">
@@ -370,7 +425,13 @@ function DetailContent({ id }: { id: string }) {
               </div>
             </div>
           )}
-          {ballot.error ? <ErrorState error={ballot.error} retry={ballot.retry} /> : null}
+          {ballotFailure?.code === 'VOTING_NOT_STARTED' ? (
+            <div className="election-ended">
+              <h2>Voting has not started yet.</h2>
+            </div>
+          ) : ballot.error ? (
+            <ErrorState error={ballot.error} retry={ballot.retry} />
+          ) : null}
           {participation && !participation.eligible ? (
             <p className="noticeline" role="status">
               You are not on the voter roll for this election.
@@ -418,6 +479,9 @@ function DetailContent({ id }: { id: string }) {
                 <StatusActions
                   key={election.status}
                   status={election.status}
+                  windowElapsed={
+                    election.status === 'DRAFT' && new Date(election.ends_at).getTime() < now
+                  }
                   pending={status.pending}
                   error={status.error}
                   message={status.message}
@@ -427,47 +491,53 @@ function DetailContent({ id }: { id: string }) {
               </section>
             ) : null}
 
-            {closed && (
-              <section className="election-results-panel" aria-label="Election results">
-                {!isAdmin && (voteError !== null || blocked || reconciled !== null) && (
-                  <div className="election-voting-status">
-                    <h2 id="election-voting-status-heading">Voting status</h2>
-                    {reconcileError ? (
-                      <p className="ballot-error" role="alert">
-                        {errorMessage(reconcileError)}
-                      </p>
-                    ) : reconciled ? (
-                      <p className="noticeline" role="status">
-                        {reconciled.remaining_votes <= 0
-                          ? 'Your ballot was accepted before voting closed. The tally stays anonymous.'
-                          : `Voting has closed. You used ${reconciled.used_votes} of ${reconciled.vote_quota} allowed votes.`}
-                      </p>
-                    ) : (
-                      <p className="noticeline">
-                        Your latest ballot submission may not have been recorded.
-                      </p>
-                    )}
-                    {!reconciled || reconcileError ? (
-                      <button
-                        className="ghost"
-                        type="button"
-                        disabled={reconciling}
-                        onClick={() => void refreshStatus()}
-                      >
-                        {reconciling ? 'Checking…' : 'Refresh voting status'}
-                      </button>
-                    ) : null}
-                  </div>
-                )}
-                {election.results_published_at || isAdmin ? (
+            {closed &&
+              (election.results_published_at ||
+                isAdmin ||
+                (!isAdmin && (voteError !== null || blocked || reconciled !== null))) && (
+                <section className="election-results-panel" aria-label="Election results">
+                  {!isAdmin && (voteError !== null || blocked || reconciled !== null) && (
+                    <div className="election-voting-status">
+                      <h2 id="election-voting-status-heading">Voting status</h2>
+                      {reconcileError ? (
+                        <p className="ballot-error" role="alert">
+                          {errorMessage(reconcileError)}
+                        </p>
+                      ) : reconciled ? (
+                        <p className="noticeline" role="status">
+                          {reconciled.remaining_votes <= 0
+                            ? 'Your ballot was accepted before voting closed. The tally stays anonymous.'
+                            : `Voting has closed. You used ${reconciled.used_votes} of ${reconciled.vote_quota} allowed votes.`}
+                        </p>
+                      ) : (
+                        <p className="noticeline">
+                          Your latest ballot submission may not have been recorded.
+                        </p>
+                      )}
+                      {!reconciled || reconcileError ? (
+                        <button
+                          className="ghost"
+                          type="button"
+                          disabled={reconciling}
+                          onClick={() => void refreshStatus()}
+                        >
+                          {reconciling ? 'Checking…' : 'Refresh voting status'}
+                        </button>
+                      ) : null}
+                    </div>
+                  )}
+                  {isAdmin && !election.results_published_at && (
+                    <p className="noticeline">
+                      Voting has closed. Review the final count and publish the result.
+                    </p>
+                  )}
                   <Link className="lnk hot" to={`/elections/${encodeURIComponent(id)}/results`}>
-                    View results
+                    {isAdmin && !election.results_published_at
+                      ? 'Review and publish results'
+                      : 'View results'}
                   </Link>
-                ) : (
-                  <p className="noticeline">Results will be published after counting completes.</p>
-                )}
-              </section>
-            )}
+                </section>
+              )}
           </aside>
         )}
       </div>
@@ -658,6 +728,7 @@ function PickMark({ selected }: { selected: boolean }) {
 
 function StatusActions({
   status,
+  windowElapsed = false,
   pending,
   error,
   message,
@@ -665,6 +736,7 @@ function StatusActions({
   onReload,
 }: {
   status: Election['status']
+  windowElapsed?: boolean
   pending: boolean
   error: unknown
   message: string
@@ -672,33 +744,38 @@ function StatusActions({
   onReload: () => void
 }) {
   const [confirm, setConfirm] = useState<'open' | 'close' | null>(null)
+
   let control: React.ReactNode
   if (status === 'DRAFT') {
-    control =
-      confirm === 'open' ? (
-        <span className="bconfirm">
-          <span className="warn">
-            Opening voting locks the election details, candidates and voter roll.
-          </span>
-          <button
-            className="bsub"
-            type="button"
-            disabled={pending}
-            onClick={() => {
-              void onRun('open').then(() => setConfirm(null))
-            }}
-          >
-            {pending ? 'Opening…' : 'Confirm open'}
-          </button>
-          <button className="ghost" type="button" onClick={() => setConfirm(null)}>
-            Cancel
-          </button>
+    control = windowElapsed ? (
+      <p className="noticeline">
+        This election's scheduled window has already passed, so it cannot be opened for voting. Set
+        a new window in Edit election first.
+      </p>
+    ) : confirm === 'open' ? (
+      <span className="bconfirm">
+        <span className="warn">
+          Opening voting locks the election details, candidates and voter roll.
         </span>
-      ) : (
-        <button type="button" className="btn ghost" onClick={() => setConfirm('open')}>
-          Open voting
+        <button
+          className="bsub"
+          type="button"
+          disabled={pending}
+          onClick={() => {
+            void onRun('open').then(() => setConfirm(null))
+          }}
+        >
+          {pending ? 'Opening…' : 'Confirm open'}
         </button>
-      )
+        <button className="ghost" type="button" onClick={() => setConfirm(null)}>
+          Cancel
+        </button>
+      </span>
+    ) : (
+      <button type="button" className="btn ghost" onClick={() => setConfirm('open')}>
+        Open voting
+      </button>
+    )
   } else if (status === 'OPEN') {
     control =
       confirm === 'close' ? (

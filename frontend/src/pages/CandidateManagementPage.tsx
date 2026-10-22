@@ -174,7 +174,14 @@ function CandidateManagementContent({ id }: { id: string }) {
   const loading = snapshot.key !== requestKey
   if (loading) return <LoadingState />
   if (snapshot.error)
-    return <ErrorState error={snapshot.error} retry={() => setRevision((value) => value + 1)} />
+    return (
+      <ErrorState
+        error={snapshot.error}
+        retry={() => setRevision((value) => value + 1)}
+        backTo={`/elections/${encodeURIComponent(id)}`}
+        backLabel="Back to election"
+      />
+    )
   const election = snapshot.election
   const data = snapshot.data
   if (!election || !data) return null

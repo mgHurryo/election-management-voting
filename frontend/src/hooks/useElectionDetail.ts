@@ -59,7 +59,7 @@ export function useElectionDetail(id: string, role: Role | undefined) {
 
 export type StatusAction = 'open' | 'close'
 
-export function useElectionStatusAction(id: string, refresh: () => void) {
+export function useElectionStatusAction(id: string, refresh: () => void, onClosed?: () => void) {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<unknown>(null)
   const [message, setMessage] = useState('')
@@ -80,7 +80,12 @@ export function useElectionStatusAction(id: string, refresh: () => void) {
     setMessage('')
     try {
       if (action === 'open') await api.openElection(id)
-      else await api.closeElection(id)
+      else {
+        await api.closeElection(id)
+        // Closing hands over to counting: the committee's next step is always
+        // the results page, where publication lives.
+        onClosed?.()
+      }
       if (current === generation.current) {
         setMessage(action === 'open' ? 'Voting is open.' : 'Voting is closed.')
         refresh()

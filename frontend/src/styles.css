@@ -55,6 +55,21 @@ main {
   outline: none;
 }
 
+/* Route transitions: each page fades up as it mounts, so navigation does not
+   hard-cut. Skipped entirely for users who prefer reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  main > * {
+    animation: page-enter 0.28s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  }
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -235,11 +250,16 @@ select:focus-visible {
 
 .trow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px 150px;
+  grid-template-columns: minmax(0, 1fr) 260px 110px 90px;
   gap: 24px;
   align-items: center;
   padding: 22px 0;
   border-bottom: 1px solid var(--hair);
+}
+
+.trow .st,
+.trow .lnk {
+  justify-self: start;
 }
 
 .trow h3 {
@@ -387,6 +407,48 @@ a.quiet:hover {
   padding: 7px 16px;
   font-size: 13px;
   background: var(--paper);
+}
+
+/* Full-page async states: centered loading, self-contained error panel. */
+.state-loading {
+  display: flex;
+  justify-content: center;
+  padding: 110px 24px;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+}
+
+.state-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  max-width: 620px;
+  margin: 44px auto;
+  padding: 26px 30px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.state-error h1 {
+  font: 900 30px/1.2 var(--serif);
+  color: var(--ink);
+}
+
+.state-error .state-message {
+  color: var(--verm-deep);
+  font-weight: 500;
+}
+
+.state-error .state-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.state-error .state-actions button {
+  margin-top: 0;
 }
 
 .empty {
@@ -783,8 +845,12 @@ main:has(.login) {
     font-size: 30px;
   }
   .trow {
-    grid-template-columns: 1fr;
-    gap: 8px;
+    grid-template-columns: auto auto;
+    gap: 8px 20px;
+  }
+  .trow h3,
+  .trow .m {
+    grid-column: 1 / -1;
   }
   .login {
     grid-template-columns: minmax(0, 1fr);

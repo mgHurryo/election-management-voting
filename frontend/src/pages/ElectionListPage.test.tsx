@@ -16,7 +16,7 @@ const election: Election = {
   status: 'DRAFT',
   privacy_mode: 'FORCED_ANONYMOUS',
   starts_at: '2026-10-20T01:00:00Z',
-  ends_at: '2026-10-20T09:00:00Z',
+  ends_at: new Date(Date.now() + 3_600_000).toISOString(),
   results_published_at: null,
   created_at: '',
   updated_at: '',
@@ -122,19 +122,86 @@ describe('elections home', () => {
       },
     })
     const view = mount()
-    fireEvent.click(await screen.findByRole('link', { name: 'Details' }))
-    expect(await screen.findByRole('link', { name: 'View results' })).toHaveAttribute(
-      'href',
-      `/elections/${election.id}/results`,
-    )
+    fireEvent.click(await screen.findByRole('link', { name: 'Results' }))
+    // A closed election with a published result links straight to the results page.
+    expect(await screen.findByRole('heading', { name: 'Published result' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('link', { name: 'All elections' }))
     await screen.findByRole('heading', { name: election.title })
     view.unmount()
     mount()
     fireEvent.click(await screen.findByRole('button', { name: 'Closed' }))
-    fireEvent.click(await screen.findByRole('link', { name: 'Details' }))
-    fireEvent.click(await screen.findByRole('link', { name: 'View results' }))
+    fireEvent.click(await screen.findByRole('link', { name: 'Results' }))
     expect(await screen.findByRole('heading', { name: 'Published result' })).toBeInTheDocument()
+  })
+
+  it('offers Results instead of Vote for an open row whose window already passed', async () => {
+    vi.spyOn(api, 'elections').mockResolvedValue(
+      response(1, 1, [{ ...election, status: 'OPEN', ends_at: '2026-10-20T09:00:00Z' }]),
+    )
+    mount('USER')
+    const link = await screen.findByRole('link', { name: 'Results' })
+    expect(link).toHaveAttribute('href', `/elections/${election.id}/results`)
+    expect(screen.getByText('Ended')).toBeInTheDocument()
+    expect(screen.getByText('Closed', { selector: '.st' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Vote' })).not.toBeInTheDocument()
+  })
+
+  it('keeps a draft with a passed window on Details instead of offering results', async () => {
+    vi.spyOn(api, 'elections').mockResolvedValue(
+      response(1, 1, [{ ...election, status: 'DRAFT', ends_at: '2026-10-20T09:00:00Z' }]),
+    )
+    mount('USER')
+    expect(await screen.findByRole('link', { name: 'Details' })).toHaveAttribute(
+      'href',
+      `/elections/${election.id}`,
+    )
+    expect(screen.getByText('Draft', { selector: '.st' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Results' })).not.toBeInTheDocument()
+  })
+
+  it('flips an open row to Ended and Results once the clock crosses ends_at in the same session', async () => {
+    vi.useFakeTimers()
+    try {
+      const clock = vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-22T10:00:00Z'))
+      vi.spyOn(api, 'elections').mockResolvedValue(
+        response(1, 1, [{ ...election, status: 'OPEN', ends_at: '2026-10-22T11:00:00Z' }]),
+      )
+      mount('USER')
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0)
+      })
+      expect(screen.getByRole('link', { name: 'Vote' })).toBeInTheDocument()
+      clock.mockReturnValue(Date.parse('2026-10-22T11:00:01Z'))
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(30_000)
+      })
+      expect(screen.getByRole('link', { name: 'Results' })).toBeInTheDocument()
+      expect(screen.getByText('Closed', { selector: '.st' })).toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: 'Vote' })).not.toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps the ballot reachable on the inclusive boundary where now equals ends_at', async () => {
+    vi.useFakeTimers()
+    try {
+      // The backend rejects votes only when now > ends_at, so equality is
+      // still inside the voting window.
+      vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-22T11:00:00Z'))
+      vi.spyOn(api, 'elections').mockResolvedValue(
+        response(1, 1, [{ ...election, status: 'OPEN', ends_at: '2026-10-22T11:00:00Z' }]),
+      )
+      mount('USER')
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0)
+      })
+      expect(screen.getByRole('link', { name: 'Vote' })).toBeInTheDocument()
+      expect(screen.getByText('Open', { selector: '.st' })).toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: 'Results' })).not.toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('redirects anonymous visitors to login without requesting elections', async () => {

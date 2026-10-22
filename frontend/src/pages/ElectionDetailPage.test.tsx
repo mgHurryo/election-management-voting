@@ -194,14 +194,16 @@ describe('election detail', () => {
   })
 
   it('confirms opening once and refreshes the authoritative election state', async () => {
+    // A draft inside its window offers the open flow; an elapsed one does not.
+    const scheduled = { ...election, ends_at: new Date(Date.now() + 3_600_000).toISOString() }
     vi.spyOn(api, 'election')
-      .mockResolvedValueOnce({ data: election })
-      .mockResolvedValue({ data: { ...election, status: 'OPEN' } })
+      .mockResolvedValueOnce({ data: scheduled })
+      .mockResolvedValue({ data: { ...scheduled, status: 'OPEN' } })
     vi.spyOn(api, 'candidates').mockResolvedValue(profiles())
     vi.spyOn(api, 'ballot').mockRejectedValue(new ApiError('NOT_ELIGIBLE', 403))
     const open = vi
       .spyOn(api, 'openElection')
-      .mockResolvedValue({ data: { ...election, status: 'OPEN' } })
+      .mockResolvedValue({ data: { ...scheduled, status: 'OPEN' } })
     mount()
     fireEvent.click(await screen.findByRole('button', { name: 'Open voting' }))
     expect(open).not.toHaveBeenCalled()
@@ -212,6 +214,14 @@ describe('election detail', () => {
     expect(await screen.findByRole('button', { name: 'Close voting' })).toBeInTheDocument()
     expect(open).toHaveBeenCalledTimes(1)
     expect(open).toHaveBeenCalledWith(election.id)
+  })
+
+  it('hides Open voting on a draft whose scheduled window already passed', async () => {
+    vi.spyOn(api, 'election').mockResolvedValue({ data: election })
+    vi.spyOn(api, 'candidates').mockResolvedValue(profiles())
+    mount()
+    expect(await screen.findByText(/scheduled window has already passed/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Open voting' })).not.toBeInTheDocument()
   })
 
   it('does not automatically repeat an uncertain close operation', async () => {
@@ -227,18 +237,80 @@ describe('election detail', () => {
     expect(screen.getByRole('button', { name: 'Refresh election status' })).toBeInTheDocument()
   })
 
-  it('shows only published result navigation to closed USER elections', async () => {
+  it('hands the administrator over to the results page after a confirmed close', async () => {
+    vi.spyOn(api, 'election').mockResolvedValue({ data: { ...election, status: 'OPEN' } })
+    vi.spyOn(api, 'candidates').mockResolvedValue(profiles())
+    vi.spyOn(api, 'ballot').mockRejectedValue(new ApiError('NOT_ELIGIBLE', 403))
+    const close = vi.spyOn(api, 'closeElection').mockResolvedValue({
+      data: { ...election, status: 'CLOSED' },
+    })
+    mount()
+    fireEvent.click(await screen.findByRole('button', { name: 'Close voting' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm close' }))
+    expect(close).toHaveBeenCalledTimes(1)
+    expect(await screen.findByRole('heading', { name: 'Voting has ended' })).toBeInTheDocument()
+  })
+
+  it('sends USER elections with published results straight to the results page', async () => {
     vi.spyOn(api, 'election').mockResolvedValue({
       data: { ...election, status: 'CLOSED', results_published_at: '2026-10-20T10:00:00Z' },
     })
+    vi.spyOn(api, 'results').mockResolvedValue({
+      data: {
+        election_id: election.id,
+        position_title: election.position_title,
+        results_published_at: '2026-10-20T10:00:00Z',
+        total_votes: 2,
+        candidates: [{ candidate_id: '9007199254740995', name: 'Candidate A', vote_count: 2 }],
+        winner_candidate_id: '9007199254740995',
+      },
+    })
     const candidates = vi.spyOn(api, 'candidates')
     mount('USER')
-    expect(await screen.findByRole('link', { name: 'View results' })).toHaveAttribute(
+    expect(await screen.findByRole('heading', { name: 'Published result' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'All elections' })).toHaveAttribute(
       'href',
-      `/elections/${election.id}/results`,
+      '/elections',
     )
-    expect(screen.queryByRole('button', { name: 'Open voting' })).not.toBeInTheDocument()
     expect(candidates).not.toHaveBeenCalled()
+  })
+
+  it('sends USER elections that closed without published results to the results page', async () => {
+    vi.spyOn(api, 'election').mockResolvedValue({ data: { ...election, status: 'CLOSED' } })
+    const candidates = vi.spyOn(api, 'candidates')
+    mount('USER')
+    expect(
+      await screen.findByRole('heading', { name: 'Results are not published' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'The administrator has not published the final result yet. Check back later.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'All elections' })).toHaveAttribute(
+      'href',
+      '/elections',
+    )
+    expect(candidates).not.toHaveBeenCalled()
+  })
+
+  it('hands administrators of a published closed election to the results page too', async () => {
+    vi.spyOn(api, 'election').mockResolvedValue({
+      data: { ...election, status: 'CLOSED', results_published_at: '2026-10-20T10:00:00Z' },
+    })
+    vi.spyOn(api, 'results').mockResolvedValue({
+      data: {
+        election_id: election.id,
+        position_title: election.position_title,
+        results_published_at: '2026-10-20T10:00:00Z',
+        total_votes: 2,
+        candidates: [{ candidate_id: '9007199254740995', name: 'Candidate A', vote_count: 2 }],
+        winner_candidate_id: '9007199254740995',
+      },
+    })
+    mount('ADMIN')
+    expect(await screen.findByRole('heading', { name: 'Published result' })).toBeInTheDocument()
+    expect(screen.queryByText('Voting has ended.')).not.toBeInTheDocument()
   })
 
   it('falls back when a candidate photo fails and treats the profile as plain text', async () => {
@@ -350,6 +422,17 @@ describe('voting failure recovery', () => {
     expect(await screen.findByRole('heading', { name: 'Candidate A' })).toBeInTheDocument()
     expect(screen.queryByRole('radio')).not.toBeInTheDocument()
     expect(vote).not.toHaveBeenCalled()
+  })
+
+  it('sends voters of an election the server calls ended straight to the results page', async () => {
+    vi.spyOn(api, 'election').mockResolvedValue({ data: { ...election, status: 'OPEN' } })
+    vi.spyOn(api, 'candidates').mockRejectedValue(new ApiError('VOTING_ENDED', 409))
+    vi.spyOn(api, 'ballot').mockRejectedValue(new ApiError('VOTING_ENDED', 409))
+    mount('USER')
+    expect(await screen.findByRole('heading', { name: 'Voting has ended' })).toBeInTheDocument()
+    expect(screen.getByText(/not published yet/)).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Candidate List' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument()
   })
 
   it('does not offer another ballot after the authoritative quota is exhausted', async () => {

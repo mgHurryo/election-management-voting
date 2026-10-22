@@ -52,7 +52,7 @@ function mount(role: Role | null = 'ADMIN', route = `/elections/${election.id}/e
   )
 }
 async function changeTitle(title = 'Edited title') {
-  await screen.findByRole('heading', { name: 'Edit election' })
+  await screen.findByText('Edit election', { selector: '.election-create-kicker' })
   fireEvent.change(screen.getByLabelText('Election name *'), { target: { value: title } })
 }
 describe('edit draft election', () => {
@@ -119,7 +119,7 @@ describe('edit draft election', () => {
     vi.spyOn(api, 'election').mockResolvedValue({ data: election })
     const update = vi.spyOn(api, 'updateElection')
     mount()
-    await screen.findByRole('heading', { name: 'Edit election' })
+    await screen.findByText('Edit election', { selector: '.election-create-kicker' })
     fireEvent.change(screen.getByLabelText('Closes at *'), {
       target: { value: electionToFields(election).starts_at },
     })
