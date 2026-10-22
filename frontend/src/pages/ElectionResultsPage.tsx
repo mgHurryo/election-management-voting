@@ -55,10 +55,11 @@ function ElectionResultsContent({ id, role }: { id: string; role: Role }) {
   // started, so its passed window is a scheduling problem, not an ended vote.
   const windowOver =
     !!election && election.status === 'OPEN' && new Date(election.ends_at).getTime() <= pageLoadedAt
-  // An over-or-closed election has no useful detail page for a voter: return to
-  // the list instead of a redirect loop through the ballot stub.
+  // A closed election redirects back here from its detail page for every role,
+  // so the way out is the list. An over-window but still OPEN election keeps
+  // pointing administrators at the detail page, where Close voting lives.
   const backDestination =
-    role === 'USER' && (election?.status === 'CLOSED' || windowOver)
+    election?.status === 'CLOSED' || (windowOver && role === 'USER')
       ? '/elections'
       : `/elections/${encodeURIComponent(id)}`
   const backLabel = backDestination === '/elections' ? 'All elections' : 'Back to election'
