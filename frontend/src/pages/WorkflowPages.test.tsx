@@ -268,7 +268,11 @@ describe('results and publication workflow', () => {
   it.each(['DRAFT', 'OPEN'] as const)(
     'does not request counts for %s elections',
     async (status) => {
-      const { read } = setupResults({ ...election, status })
+      const { read } = setupResults({
+        ...election,
+        status,
+        ends_at: new Date(Date.now() + 3_600_000).toISOString(),
+      })
       mount('results')
       expect(
         await screen.findByRole('heading', { name: 'Voting has not closed' }),
@@ -276,6 +280,14 @@ describe('results and publication workflow', () => {
       expect(read).not.toHaveBeenCalled()
     },
   )
+
+  it('explains an election whose window passed without closing instead of contradicting the ballot', async () => {
+    const { read } = setupResults({ ...election, status: 'OPEN' })
+    mount('results')
+    expect(await screen.findByRole('heading', { name: 'Voting has ended' })).toBeInTheDocument()
+    expect(screen.getByText(/not published yet/)).toBeInTheDocument()
+    expect(read).not.toHaveBeenCalled()
+  })
 
   it('keeps an unpublished count private from voters and does not request it', async () => {
     const { read } = setupResults()

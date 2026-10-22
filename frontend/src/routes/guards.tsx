@@ -6,7 +6,10 @@ export function RequireAuth() {
   const { user, loading, error, restore } = useAuth()
   const location = useLocation()
   if (loading) return <LoadingState />
-  if (error) return <ErrorState error={error} retry={() => void restore()} />
+  if (error)
+    return (
+      <ErrorState error={error} retry={() => void restore()} backTo="/login" backLabel="Sign in" />
+    )
   return user ? (
     <Outlet />
   ) : (

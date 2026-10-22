@@ -67,6 +67,26 @@
   overflow-wrap: anywhere;
 }
 
+/* Terminal voting-window states (closed, or the server reports the window over). */
+.election-ended {
+  max-width: 560px;
+  padding: 26px 0 30px;
+  border-block: 1px solid var(--line);
+}
+
+.election-ended h2 {
+  font-family: var(--serif);
+  font-size: 27px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.election-ended p {
+  margin-top: 10px;
+  color: var(--soft);
+  line-height: 1.65;
+}
+
 .election-detail-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.8fr) minmax(280px, 0.78fr);

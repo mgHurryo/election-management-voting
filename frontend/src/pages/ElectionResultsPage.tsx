@@ -10,6 +10,10 @@ import './ElectionDetailPage.css'
 import './ElectionWorkflow.css'
 import './ElectionResultsPage.css'
 
+// Captured once at load: reading the clock during render is impure, and the
+// page only needs to know whether the window was already over when it loaded.
+const pageLoadedAt = Date.now()
+
 export default function ElectionResultsPage() {
   const { id = '' } = useParams()
   const { user } = useAuth()
@@ -46,12 +50,22 @@ function ElectionResultsContent({ id, role }: { id: string; role: Role }) {
   // Shares describe counted votes, never electorate size or turnout.
   const voteShare = (votes: number) =>
     result && result.total_votes > 0 ? (votes / result.total_votes) * 100 : 0
-  // Closed-election voters must be able to return to the list without a redirect loop.
+  // The ballot endpoint may already report the window over while the stored
+  // status is still OPEN; the empty state must not contradict it. A draft never
+  // started, so its passed window is a scheduling problem, not an ended vote.
+  const windowOver =
+    !!election && election.status === 'OPEN' && new Date(election.ends_at).getTime() <= pageLoadedAt
+  // An over-or-closed election has no useful detail page for a voter: return to
+  // the list instead of a redirect loop through the ballot stub.
   const backDestination =
-    role === 'USER' && election?.status === 'CLOSED'
+    role === 'USER' && (election?.status === 'CLOSED' || windowOver)
       ? '/elections'
       : `/elections/${encodeURIComponent(id)}`
   const backLabel = backDestination === '/elections' ? 'All elections' : 'Back to election'
+  // Display follows the window, not the stored row: the scheduler converges the
+  // server state within one tick, but voters must not see "Open" on an election
+  // whose voting time is over.
+  const displayClosed = election?.status === 'CLOSED' || windowOver
 
   if (results.loading)
     return (
@@ -71,9 +85,11 @@ function ElectionResultsContent({ id, role }: { id: string; role: Role }) {
         <div className="election-title-row">
           <h1>{election?.title ?? 'Election results'}</h1>
           {election && (
-            <span className={`st ${election.status.toLowerCase()}`}>
+            <span className={`st ${displayClosed ? 'closed' : election.status.toLowerCase()}`}>
               <i aria-hidden="true" />
-              {election.status.charAt(0) + election.status.slice(1).toLowerCase()}
+              {displayClosed
+                ? 'Closed'
+                : election.status.charAt(0) + election.status.slice(1).toLowerCase()}
             </span>
           )}
         </div>
@@ -82,7 +98,12 @@ function ElectionResultsContent({ id, role }: { id: string; role: Role }) {
         )}
       </header>
       {results.error ? (
-        <ErrorState error={results.error} retry={results.reload} />
+        <ErrorState
+          error={results.error}
+          retry={results.reload}
+          backTo={backDestination}
+          backLabel={backLabel}
+        />
       ) : election ? (
         <div className="results-layout">
           <div
@@ -91,15 +112,33 @@ function ElectionResultsContent({ id, role }: { id: string; role: Role }) {
             {!result ? (
               <section className="results-unavailable">
                 <h2>
-                  {election.status !== 'CLOSED'
-                    ? 'Voting has not closed'
-                    : 'Results are not published'}
+                  {windowOver
+                    ? 'Voting has ended'
+                    : election.status !== 'CLOSED'
+                      ? 'Voting has not closed'
+                      : 'Results are not published'}
                 </h2>
-                <p>
-                  {election.status !== 'CLOSED'
-                    ? 'Vote counts are available only after the election is closed.'
-                    : 'The administrator has not published the final result yet. Check back later.'}
-                </p>
+                {windowOver ? (
+                  <>
+                    <p className="results-unavailable-status">
+                      This election has ended. The result is not published yet.
+                    </p>
+                    <p className="results-unavailable-hint">
+                      Please wait for the administrator to finish counting and publish the outcome.
+                    </p>
+                  </>
+                ) : (
+                  <p>
+                    {election.status !== 'CLOSED'
+                      ? 'Vote counts are available only after the election is closed.'
+                      : 'The administrator has not published the final result yet. Check back later.'}
+                  </p>
+                )}
+                <div className="results-unavailable-actions">
+                  <Link className="btn ghost" to="/elections">
+                    Back to all elections
+                  </Link>
+                </div>
               </section>
             ) : (
               <>

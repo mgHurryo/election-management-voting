@@ -48,7 +48,12 @@ function VoterRollContent({ id }: { id: string }) {
       {roll.loading ? (
         <LoadingState />
       ) : roll.error ? (
-        <ErrorState error={roll.error} retry={roll.reload} />
+        <ErrorState
+          error={roll.error}
+          retry={roll.reload}
+          backTo={`/elections/${encodeURIComponent(id)}`}
+          backLabel="Back to election"
+        />
       ) : roll.election && roll.voters ? (
         <>
           <div className="workflow-meta">

@@ -410,3 +410,28 @@
     margin-top: 22px;
   }
 }
+
+/* Unavailable notice: vertically centered in the viewport, with a way back. */
+.results-unavailable {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 52vh;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.results-unavailable p {
+  margin: 14px auto 0;
+}
+
+.results-unavailable-hint {
+  font-size: 15px;
+}
+
+.results-unavailable-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 28px;
+}
