@@ -214,6 +214,14 @@ describe('election detail', () => {
     expect(open).toHaveBeenCalledWith(election.id)
   })
 
+  it('warns administrators about a draft whose scheduled window already passed', async () => {
+    vi.spyOn(api, 'election').mockResolvedValue({ data: election })
+    vi.spyOn(api, 'candidates').mockResolvedValue(profiles())
+    mount()
+    expect(await screen.findByText(/scheduled window has already passed/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Open voting' })).toBeInTheDocument()
+  })
+
   it('does not automatically repeat an uncertain close operation', async () => {
     vi.spyOn(api, 'election').mockResolvedValue({ data: { ...election, status: 'OPEN' } })
     vi.spyOn(api, 'candidates').mockResolvedValue(profiles())

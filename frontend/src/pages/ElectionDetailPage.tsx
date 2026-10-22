@@ -9,6 +9,10 @@ import { useAuth } from '../hooks/useAuth'
 import { useBallot, useElectionDetail, useElectionStatusAction } from '../hooks/useElectionDetail'
 import { errorMessage } from '../shared/errors'
 
+// Captured once at load so render stays pure; window labels reflect the page's
+// load-time view.
+const pageLoadedAt = Date.now()
+
 function two(n: number) {
   return (n < 10 ? '0' : '') + n
 }
@@ -447,6 +451,13 @@ function DetailContent({ id }: { id: string }) {
             {isAdmin ? (
               <section className="election-admin-panel" aria-labelledby="election-admin-heading">
                 <h2 id="election-admin-heading">Administration</h2>
+                {election.status === 'DRAFT' &&
+                  new Date(election.ends_at).getTime() <= pageLoadedAt && (
+                    <p className="noticeline">
+                      This election's scheduled window has already passed, so it cannot be opened
+                      for voting. Set a new window in Edit election first.
+                    </p>
+                  )}
                 {election.status === 'DRAFT' && (
                   <nav className="election-admin-links" aria-label="Election administration links">
                     <Link className="lnk" to={`/elections/${encodeURIComponent(id)}/edit`}>
