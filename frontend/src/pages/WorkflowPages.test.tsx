@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { Link, MemoryRouter } from 'react-router'
 import { api } from '../api'
@@ -295,9 +295,43 @@ describe('results and publication workflow', () => {
     mount('results', 'USER')
     await screen.findByRole('heading', { name: 'Published result' })
     expect(screen.getByText('Sam Lee')).toBeInTheDocument()
-    expect(screen.getByRole('cell', { name: '0' })).toBeInTheDocument()
+    expect(screen.getByRole('cell', { name: '0 0.0%' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Avery Chen' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Publish results' })).not.toBeInTheDocument()
+  })
+
+  it('shows the server winner count and share together using total counted votes', async () => {
+    setupResults(undefined, {
+      ...result,
+      total_votes: 3,
+      candidates: [
+        { ...result.candidates[0], vote_count: 2 },
+        { ...result.candidates[1], vote_count: 1 },
+      ],
+    })
+    mount('results')
+    const announcement = await screen.findByRole('region', { name: 'Avery Chen' })
+    expect(within(announcement).getByText('Representative')).toBeInTheDocument()
+    expect(within(announcement).getByText('2')).toBeInTheDocument()
+    expect(within(announcement).getByText('66.7%')).toBeInTheDocument()
+    expect(within(announcement).getByText('of all votes counted')).toBeInTheDocument()
+    expect(screen.getByRole('cell', { name: '1 33.3%' })).toBeInTheDocument()
+    expect(screen.getByText(/Administrator preview/)).toBeInTheDocument()
+    expect(screen.queryByText(/turnout/i)).not.toBeInTheDocument()
+  })
+
+  it('keeps empty candidate results distinct from a zero-vote candidate', async () => {
+    setupResults(undefined, {
+      ...result,
+      total_votes: 0,
+      candidates: [],
+      winner_candidate_id: null,
+    })
+    mount('results')
+    await screen.findByRole('heading', { name: 'No votes cast' })
+    expect(screen.getByText('No candidate results are available.')).toBeInTheDocument()
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+    expect(screen.queryByText(/NaN|Infinity/)).not.toBeInTheDocument()
   })
 
   it.each([0, 4])(
@@ -310,10 +344,65 @@ describe('results and publication workflow', () => {
         candidates: result.candidates.map((item) => ({ ...item, vote_count: total / 2 })),
       })
       mount('results')
-      expect(await screen.findByRole('heading', { name: 'No single winner' })).toBeInTheDocument()
+      expect(
+        await screen.findByRole('heading', { name: total ? 'Two-way tie' : 'No votes cast' }),
+      ).toBeInTheDocument()
       expect(screen.queryByText('Elected')).not.toBeInTheDocument()
+      if (total) {
+        expect(screen.getAllByRole('cell', { name: '2 50.0%' })).toHaveLength(2)
+        expect(screen.getAllByText('Tied for first')).toHaveLength(2)
+      } else {
+        expect(screen.getAllByRole('cell', { name: '0 0.0%' })).toHaveLength(2)
+      }
+      expect(screen.queryByText(/NaN|Infinity/)).not.toBeInTheDocument()
     },
   )
+
+  it('announces a three-way tie with equal candidate standing and no oversized total', async () => {
+    setupResults(undefined, {
+      ...result,
+      winner_candidate_id: null,
+      candidates: [
+        { ...result.candidates[0], vote_count: 1 },
+        { ...result.candidates[1], vote_count: 1 },
+        { candidate_id: '3', name: 'Jordan Morgan', vote_count: 1 },
+      ],
+    })
+    mount('results')
+    const outcome = await screen.findByRole('region', { name: 'Three-way tie' })
+    expect(
+      within(outcome).getByText(
+        'All three candidates received one vote. No winner has been declared.',
+      ),
+    ).toBeInTheDocument()
+    expect(within(outcome).queryByText('3')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('cell', { name: '1 33.3%' })).toHaveLength(3)
+    expect(screen.getAllByText('Tied for first')).toHaveLength(3)
+    expect(screen.queryByText(/server|tie-break/i)).not.toBeInTheDocument()
+  })
+
+  it('identifies only the tied leaders without declaring a winner or marking lower counts tied', async () => {
+    setupResults(undefined, {
+      ...result,
+      total_votes: 5,
+      winner_candidate_id: null,
+      candidates: [
+        { ...result.candidates[0], vote_count: 2 },
+        { ...result.candidates[1], vote_count: 2 },
+        { candidate_id: '3', name: 'Jordan Morgan', vote_count: 1 },
+      ],
+    })
+    mount('results')
+    await screen.findByRole('heading', { name: 'Two-way tie' })
+    expect(
+      screen.getByText(
+        'The 2 leading candidates each received 2 votes. No winner has been declared.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getAllByText('Tied for first')).toHaveLength(2)
+    expect(screen.getByRole('cell', { name: '1 20.0%' })).toBeInTheDocument()
+    expect(screen.queryByText('Elected')).not.toBeInTheDocument()
+  })
 
   it.each(['ROUTE_NOT_FOUND', 'RESULTS_NOT_PUBLISHED', 'ELECTION_NOT_CLOSED'])(
     'reports %s instead of showing an empty count',
@@ -394,7 +483,7 @@ describe('results and publication workflow', () => {
       data: { ...election, id: '2002', status: 'CLOSED', title: 'Second election' },
     })
     fireEvent.click(screen.getByRole('link', { name: 'Switch election' }))
-    await screen.findByRole('heading', { name: 'No single winner' })
+    await screen.findByRole('heading', { name: 'No winner declared' })
     await act(async () => old.resolve({ data: result }))
     expect(screen.getByText('Second election')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Avery Chen' })).not.toBeInTheDocument()

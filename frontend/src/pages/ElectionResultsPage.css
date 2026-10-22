@@ -1,0 +1,190 @@
+/* Reuse the election detail shell, type, section headings and publication aside. */
+.results-page {
+  font-size: 16px;
+}
+.results-main,
+.results-aside {
+  min-width: 0;
+}
+.results-page .results-outcome h2 {
+  font-size: 27px;
+}
+.results-page .results-outcome .results-winner-name {
+  font-size: 32px;
+}
+.results-outcome-note,
+.results-unavailable p {
+  margin-top: 18px;
+  max-width: 65ch;
+  font-size: 17px;
+  color: var(--soft);
+}
+.results-elected {
+  color: var(--verm-deep);
+  font-size: 16px;
+  font-weight: 700;
+}
+.results-winner-position {
+  margin-top: 14px;
+  color: var(--soft);
+}
+.results-victory-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  margin-top: 10px;
+}
+.results-victory-summary strong {
+  color: var(--verm-deep);
+  font-size: 20px;
+  font-weight: 700;
+}
+.results-page .workflow-feedback:empty {
+  display: none;
+}
+.results-page .workflow-feedback {
+  font-size: 16px;
+}
+.results-count {
+  margin-top: 34px;
+}
+.results-count-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin-bottom: 12px;
+}
+.results-page .results-count-heading h2 {
+  font-size: 21px;
+}
+.results-count-heading p {
+  color: var(--soft);
+  font-size: 15px;
+}
+.results-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  text-align: left;
+}
+.results-table caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.results-table th,
+.results-table td {
+  padding: 20px 20px 20px 0;
+  border-bottom: 1px solid var(--hair);
+  vertical-align: middle;
+}
+.results-table thead th {
+  padding-block: 12px;
+  color: var(--soft);
+  font-size: 15px;
+  font-weight: 500;
+}
+.results-table thead th:first-child {
+  width: 47%;
+}
+.results-table thead th:nth-child(2) {
+  width: 24%;
+}
+.results-table tbody th {
+  font: 700 22px / 1.35 var(--serif);
+}
+.results-vote-cell strong {
+  font-size: 20px;
+  font-weight: 600;
+}
+.results-vote-cell > span {
+  display: block;
+  margin-top: 2px;
+  color: var(--soft);
+  font-size: 16px;
+}
+.results-table th:last-child,
+.results-table td:last-child {
+  padding-right: 0;
+  text-align: right;
+}
+.results-row-outcome {
+  font-size: 15px;
+  color: var(--soft);
+}
+.results-table .is-elected .results-row-outcome {
+  color: var(--verm-deep);
+  font-weight: 700;
+}
+.results-count-note,
+.results-privacy {
+  margin-top: 18px;
+  color: var(--soft);
+  font-size: 15px;
+  line-height: 1.7;
+}
+.results-privacy {
+  margin-top: 28px;
+  max-width: 70ch;
+}
+.results-page .results-aside .election-facts dt {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.results-page .results-aside .election-facts dd {
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.results-preview {
+  font-size: 15px;
+  color: var(--soft);
+}
+.results-actions > button.quiet {
+  display: inline-block;
+  min-height: 44px;
+  font-size: 15px;
+}
+.results-actions > .btn {
+  margin-top: 20px;
+}
+@media (max-width: 760px) {
+  .results-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .results-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 110px;
+    gap: 12px 20px;
+    padding-block: 20px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .results-table tbody th {
+    grid-column: 1 / -1;
+    font-size: 23px;
+  }
+  .results-table tbody th,
+  .results-table tbody td {
+    padding: 0;
+    border: 0;
+  }
+  .results-table tbody .results-row-outcome {
+    align-self: center;
+  }
+  .results-vote-cell > span {
+    display: inline;
+    margin-left: 12px;
+  }
+  .results-aside {
+    margin-top: 8px;
+  }
+}

@@ -135,7 +135,7 @@ for (const width of [1280, 768, 390, 320]) {
     currentElection = { ...currentElection, status: 'CLOSED' }
     await page.goto(`/elections/${election.id}/results`)
     await expect(page.getByRole('heading', { name: 'Unpublished count' })).toBeVisible()
-    await expect(page.getByRole('row', { name: 'Jordan Morgan 0 —' })).toBeVisible()
+    await expect(page.getByRole('row', { name: 'Jordan Morgan 0 0.0% Not elected' })).toBeVisible()
     await noOverflow()
     await page.screenshot({ path: testInfo.outputPath(`results-${width}.png`), fullPage: true })
     await page.getByRole('button', { name: 'Publish results' }).click()
