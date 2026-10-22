@@ -107,6 +107,29 @@ class SqlAlchemyElectionsRepository:
         self._session.flush()
         return self._election(row)
 
+    def drafts_window_started(self, now: datetime) -> list[int]:
+        """DRAFT elections whose window is currently active (started, not ended)."""
+        return list(
+            self._session.scalars(
+                select(Election.id).where(
+                    Election.status == "DRAFT",
+                    Election.starts_at <= _database_time(now),
+                    Election.ends_at >= _database_time(now),
+                )
+            ).all()
+        )
+
+    def open_window_ended(self, now: datetime) -> list[int]:
+        """OPEN elections whose window has already passed."""
+        return list(
+            self._session.scalars(
+                select(Election.id).where(
+                    Election.status == "OPEN",
+                    Election.ends_at < _database_time(now),
+                )
+            ).all()
+        )
+
     def has_active_voter(self, election_id: int) -> bool:
         return bool(
             self._session.scalar(

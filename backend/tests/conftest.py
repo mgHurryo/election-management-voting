@@ -22,6 +22,8 @@ def settings():
         db_password="test-only-database-password",
         jwt_secret="test-only-jwt-secret-not-for-deployment-123456789",
         frontend_origin="http://localhost:5173",
+        # The wall-clock scheduler would mutate the fixed-window seeds mid-test.
+        window_scheduler=False,
     )
 
 
