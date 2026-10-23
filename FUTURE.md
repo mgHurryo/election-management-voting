@@ -4,7 +4,7 @@ English / [简体中文](docs/future/FUTURE_CN.md)
 
 ---
 > Related requirements: SRS v0.1 ([English](REQUIREMENTS.md) / [中文](docs/requirements/REQUIREMENTS_CN.md))
-> Last updated: 2026-09-26
+> Last updated: 2026-10-23
 
 This file collects everything that is **not in the v0.1 MVP baseline**, in **three categories** — do not confuse them:
 
@@ -21,13 +21,29 @@ The requirements document keeps only the decided v0.1 requirements; anything und
 
 ---
 
+## 0. The ability that recommend to be added in the next version
+
+| ID | Item | Notes |
+| --- | --- | --- |
+| FW-01-00 | Multi-votes | One person with multi-votes |
+| FW-03 | Complex vote weighting | May introduce the concept of weighting group |
+| FW-06 | Real-time turnout display | The administrator could config that this function could be use or not |
+| FW-08 | Operations and back-office capabilities | Vote receipts, audit log query, result export, email notification, back-office account management |
+
+## 0.1. The problem we met in this project
+
+1. When adding voters, administrator do not know that the users ID, they must searching the SQL to get it. (May be solve by FW-08)
+
 ## 1. Capabilities that may be adopted in a future version (not built now)
 
 These are not built in this version but **are candidate future work** and may be adopted later.
 
 | ID | Item | Notes |
 | --- | --- | --- |
-| FW-01 | Multi-choice / scoring systems / judge scoring | v0.1 is single choice only |
+| FW-01 | Multi-votes / scoring systems / judge scoring | v0.1 is single choice only |
+| FW-01-00 | Multi-votes  |  | 
+| FW-01-01 | Scoring systems |  |
+|FW_01-02 | Judge scoring |  |
 | FW-02 | Multi-position elections | Electing president, vice-president, secretary, etc. in one election; v0.1 fills one position per election |
 | FW-03 | Complex vote weighting | e.g. by shareholding ratio or group weighting |
 | FW-04 | Multi-round / large competition-style selection flows | Zones, groups, multiple stages |
