@@ -292,7 +292,13 @@ function ElectionResultsContent({ id, role }: { id: string; role: Role }) {
                 </p>
               )}
             </div>
-            {!published && (
+            {published ? (
+              <div className="results-actions" aria-label="Published result actions">
+                <button type="button" className="quiet" onClick={() => window.print()}>
+                  Print results
+                </button>
+              </div>
+            ) : (
               <div className="results-actions" aria-label="Publication controls">
                 <button
                   type="button"

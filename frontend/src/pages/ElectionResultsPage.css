@@ -435,3 +435,84 @@
   justify-content: center;
   margin-top: 28px;
 }
+
+@media print {
+  @page {
+    margin: 16mm;
+  }
+
+  body,
+  .shell {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .top,
+  .drule,
+  .skip-link,
+  .results-page nav,
+  .results-actions,
+  .workflow-confirmation {
+    display: none !important;
+  }
+
+  #main {
+    padding: 0;
+  }
+
+  .results-page {
+    width: 100%;
+    max-width: none;
+    padding: 0;
+    color: #000;
+  }
+
+  .results-layout {
+    border-color: #000;
+  }
+
+  .results-outcome,
+  .results-count,
+  .results-publication,
+  .results-table tr {
+    break-inside: avoid;
+  }
+
+  .results-page .results-outcome h2,
+  .results-winner-position,
+  .results-victory-summary,
+  .results-victory-summary strong,
+  .results-count-heading p,
+  .results-table th,
+  .results-table td,
+  .results-row-outcome,
+  .results-published-time,
+  .results-published-time time,
+  .results-notes {
+    color: #000 !important;
+  }
+
+  .results-table thead {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+
+  .results-table tbody tr {
+    display: table-row;
+    border-bottom: 1px solid #999;
+  }
+
+  .results-table tbody th,
+  .results-table tbody td {
+    display: table-cell;
+    padding: 10px 12px 10px 0;
+    text-align: left;
+  }
+
+  .results-vote-bar {
+    display: none !important;
+  }
+}
