@@ -277,6 +277,13 @@ function ElectionResultsContent({ id, role }: { id: string; role: Role }) {
               <h2 id="result-status-heading">
                 {result ? (published ? 'Published result' : 'Unpublished count') : 'Publication'}
               </h2>
+              {result && (
+                <span className="results-print-only results-print-status">
+                  {published
+                    ? 'OFFICIAL PUBLISHED RESULT'
+                    : 'UNPUBLISHED PREVIEW - NOT AN OFFICIAL RESULT'}
+                </span>
+              )}
               {published ? (
                 <p className="results-published-time">
                   <span>Published at</span>
@@ -292,7 +299,13 @@ function ElectionResultsContent({ id, role }: { id: string; role: Role }) {
                 </p>
               )}
             </div>
-            {!published && (
+            {published ? (
+              <div className="results-actions" aria-label="Published result actions">
+                <button type="button" className="quiet" onClick={() => window.print()}>
+                  Print results
+                </button>
+              </div>
+            ) : (
               <div className="results-actions" aria-label="Publication controls">
                 <button
                   type="button"

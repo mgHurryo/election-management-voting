@@ -435,3 +435,111 @@
   justify-content: center;
   margin-top: 28px;
 }
+
+.results-print-only {
+  display: none;
+}
+
+@media print {
+  @page results {
+    margin: 16mm;
+  }
+
+  .results-page {
+    page: results;
+  }
+
+  .shell-results {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .shell-results .top,
+  .shell-results .drule,
+  .shell-results .skip-link,
+  .shell-results .results-page nav,
+  .shell-results .results-actions,
+  .shell-results .workflow-confirmation {
+    display: none !important;
+  }
+
+  .shell-results #main {
+    padding: 0;
+  }
+
+  .shell-results .results-page {
+    width: 100%;
+    max-width: none;
+    padding: 0;
+    color: #000;
+  }
+
+  .shell-results .results-layout {
+    border-color: #000;
+  }
+
+  .shell-results .results-outcome,
+  .shell-results .results-count,
+  .shell-results .results-publication,
+  .shell-results .results-table tr {
+    break-inside: avoid;
+  }
+
+  .shell-results .results-page .results-outcome h2,
+  .shell-results .results-winner-position,
+  .shell-results .results-victory-summary,
+  .shell-results .results-victory-summary strong,
+  .shell-results .results-count-heading p,
+  .shell-results .results-table th,
+  .shell-results .results-table td,
+  .shell-results .results-row-outcome,
+  .shell-results .results-published-time,
+  .shell-results .results-published-time time,
+  .shell-results .results-notes {
+    color: #000 !important;
+  }
+
+  .shell-results .results-table thead,
+  .shell-results .results-count--tie .results-table thead {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+
+  .shell-results .results-table tbody tr,
+  .shell-results .results-count--tie .results-table tbody tr {
+    display: table-row;
+    border-bottom: 1px solid #999;
+  }
+
+  .shell-results .results-table tbody th,
+  .shell-results .results-table tbody td,
+  .shell-results .results-count--tie .results-table tbody th,
+  .shell-results .results-count--tie .results-table tbody td {
+    display: table-cell;
+    padding: 10px 12px 10px 0;
+    text-align: left !important;
+  }
+
+  .shell-results .results-count--tie .results-table .results-vote-cell,
+  .shell-results .results-count--tie .results-table .results-row-outcome {
+    grid-column: auto;
+    grid-row: auto;
+    text-align: left !important;
+  }
+
+  .shell-results .results-vote-bar {
+    display: none !important;
+  }
+
+  .shell-results .results-print-only {
+    display: block;
+    margin-top: 6px;
+    color: #000 !important;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+}

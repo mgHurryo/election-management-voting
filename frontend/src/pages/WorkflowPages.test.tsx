@@ -362,6 +362,28 @@ describe('results and publication workflow', () => {
     expect(screen.queryByRole('button', { name: 'Publish results' })).not.toBeInTheDocument()
   })
 
+  it('offers a printable copy only after results are published', async () => {
+    const print = vi.spyOn(window, 'print').mockImplementation(() => {})
+    setupResults(
+      { ...election, status: 'CLOSED', results_published_at: publishedAt },
+      { ...result, results_published_at: publishedAt },
+    )
+    mount('results', 'USER')
+    fireEvent.click(await screen.findByRole('button', { name: 'Print results' }))
+
+    expect(print).toHaveBeenCalledOnce()
+    print.mockRestore()
+  })
+
+  it('does not offer printing for an unpublished administrator preview', async () => {
+    setupResults()
+    mount('results')
+
+    await screen.findByRole('heading', { name: 'Unpublished count' })
+    expect(screen.queryByRole('button', { name: 'Print results' })).not.toBeInTheDocument()
+    expect(screen.getByText('UNPUBLISHED PREVIEW - NOT AN OFFICIAL RESULT')).toBeInTheDocument()
+  })
+
   it('shows the server winner count and share together using total counted votes', async () => {
     setupResults(undefined, {
       ...result,
