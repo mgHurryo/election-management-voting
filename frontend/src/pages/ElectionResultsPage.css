@@ -436,63 +436,71 @@
   margin-top: 28px;
 }
 
+.results-print-only {
+  display: none;
+}
+
 @media print {
-  @page {
+  @page results {
     margin: 16mm;
   }
 
-  body,
-  .shell {
+  .results-page {
+    page: results;
+  }
+
+  .shell-results {
     background: #fff !important;
     color: #000 !important;
   }
 
-  .top,
-  .drule,
-  .skip-link,
-  .results-page nav,
-  .results-actions,
-  .workflow-confirmation {
+  .shell-results .top,
+  .shell-results .drule,
+  .shell-results .skip-link,
+  .shell-results .results-page nav,
+  .shell-results .results-actions,
+  .shell-results .workflow-confirmation {
     display: none !important;
   }
 
-  #main {
+  .shell-results #main {
     padding: 0;
   }
 
-  .results-page {
+  .shell-results .results-page {
     width: 100%;
     max-width: none;
     padding: 0;
     color: #000;
   }
 
-  .results-layout {
+  .shell-results .results-layout {
     border-color: #000;
   }
 
-  .results-outcome,
-  .results-count,
-  .results-publication,
-  .results-table tr {
+  .shell-results .results-outcome,
+  .shell-results .results-count,
+  .shell-results .results-publication,
+  .shell-results .results-table tr {
     break-inside: avoid;
   }
 
-  .results-page .results-outcome h2,
-  .results-winner-position,
-  .results-victory-summary,
-  .results-victory-summary strong,
-  .results-count-heading p,
-  .results-table th,
-  .results-table td,
-  .results-row-outcome,
-  .results-published-time,
-  .results-published-time time,
-  .results-notes {
+  .shell-results .results-page .results-outcome h2,
+  .shell-results .results-winner-position,
+  .shell-results .results-victory-summary,
+  .shell-results .results-victory-summary strong,
+  .shell-results .results-count-heading p,
+  .shell-results .results-table th,
+  .shell-results .results-table td,
+  .shell-results .results-row-outcome,
+  .shell-results .results-published-time,
+  .shell-results .results-published-time time,
+  .shell-results .results-notes {
     color: #000 !important;
   }
 
-  .results-table thead {
+  .shell-results .results-table thead,
+  .shell-results .results-count--tie .results-table thead {
     position: static;
     width: auto;
     height: auto;
@@ -500,19 +508,38 @@
     clip-path: none;
   }
 
-  .results-table tbody tr {
+  .shell-results .results-table tbody tr,
+  .shell-results .results-count--tie .results-table tbody tr {
     display: table-row;
     border-bottom: 1px solid #999;
   }
 
-  .results-table tbody th,
-  .results-table tbody td {
+  .shell-results .results-table tbody th,
+  .shell-results .results-table tbody td,
+  .shell-results .results-count--tie .results-table tbody th,
+  .shell-results .results-count--tie .results-table tbody td {
     display: table-cell;
     padding: 10px 12px 10px 0;
-    text-align: left;
+    text-align: left !important;
   }
 
-  .results-vote-bar {
+  .shell-results .results-count--tie .results-table .results-vote-cell,
+  .shell-results .results-count--tie .results-table .results-row-outcome {
+    grid-column: auto;
+    grid-row: auto;
+    text-align: left !important;
+  }
+
+  .shell-results .results-vote-bar {
     display: none !important;
+  }
+
+  .shell-results .results-print-only {
+    display: block;
+    margin-top: 6px;
+    color: #000 !important;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
   }
 }

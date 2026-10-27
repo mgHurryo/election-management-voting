@@ -277,6 +277,13 @@ function ElectionResultsContent({ id, role }: { id: string; role: Role }) {
               <h2 id="result-status-heading">
                 {result ? (published ? 'Published result' : 'Unpublished count') : 'Publication'}
               </h2>
+              {result && (
+                <span className="results-print-only results-print-status">
+                  {published
+                    ? 'OFFICIAL PUBLISHED RESULT'
+                    : 'UNPUBLISHED PREVIEW - NOT AN OFFICIAL RESULT'}
+                </span>
+              )}
               {published ? (
                 <p className="results-published-time">
                   <span>Published at</span>

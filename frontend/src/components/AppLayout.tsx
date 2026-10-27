@@ -3,10 +3,12 @@ import { useAuth } from '../hooks/useAuth'
 
 export function AppLayout() {
   const { user, signOut } = useAuth()
-  const isAnonymousLogin = useLocation().pathname === '/login' && !user
+  const location = useLocation()
+  const isAnonymousLogin = location.pathname === '/login' && !user
+  const isResultsPage = /^\/elections\/[^/]+\/results$/.test(location.pathname)
 
   return (
-    <div className="shell">
+    <div className={`shell${isResultsPage ? ' shell-results' : ''}`}>
       <a className="skip-link" href="#main">
         Skip to content
       </a>

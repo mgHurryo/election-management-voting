@@ -125,6 +125,39 @@ test('long names and a long candidate list stay readable on mobile', async ({ pa
   await expect(page.getByText('Only aggregate counts are shown.', { exact: false })).toBeVisible()
 })
 
+test('print media keeps a tie result as a readable table', async ({ page }) => {
+  const candidates = Array.from({ length: 10 }, (_, index) => ({
+    candidate_id: String(index + 1),
+    name: `Candidate ${index + 1}`,
+    vote_count: 1,
+  }))
+  await page.route('**/api/v1/elections/42/results', (route) =>
+    route.fulfill({
+      json: { data: { ...result, total_votes: 10, candidates, winner_candidate_id: null } },
+    }),
+  )
+  await page.goto('/elections/42/results')
+  await expect(page.getByRole('heading', { name: '10-way tie', exact: true })).toBeVisible()
+  await page.emulateMedia({ media: 'print' })
+
+  await expect(page.locator('.results-count--tie thead')).toHaveCSS('position', 'static')
+  await expect(page.locator('.results-count--tie tbody tr').first()).toHaveCSS(
+    'display',
+    'table-row',
+  )
+  await expect(page.getByText('OFFICIAL PUBLISHED RESULT')).toBeVisible()
+})
+
+test('result print styles do not affect another route', async ({ page }) => {
+  await page.goto('/elections/42/results')
+  await expect(page.getByRole('heading', { name: 'Published result', exact: true })).toBeVisible()
+  await page.goto('/forbidden')
+  await page.emulateMedia({ media: 'print' })
+
+  await expect(page.locator('.top')).not.toHaveCSS('display', 'none')
+  await page.emulateMedia({ media: 'screen' })
+})
+
 for (const width of [1440, 390]) {
   test(`ten tied candidates use the actual tie size and vote shares at ${width}px`, async ({
     page,
@@ -160,7 +193,7 @@ for (const width of [1440, 390]) {
 }
 
 for (const width of [1440, 390]) {
-  test(`list, detail and results share the same shell at ${width}px`, async ({
+  test(`list, detail redirect and results share the same shell at ${width}px`, async ({
     page,
   }, testInfo) => {
     await page.setViewportSize({ width, height: 1000 })
@@ -208,19 +241,24 @@ for (const width of [1440, 390]) {
     )
     await page.goto('/elections/42')
     await expect(page.getByRole('heading', { name: election.title, exact: true })).toBeVisible()
-    const detailShell = await shellMetrics()
-    const detailLeft = (await page.locator('.election-detail-header').boundingBox())!.x
+    const redirectedResultsShell = await shellMetrics()
+    const redirectedResultsLeft = (await page
+      .locator('.results-page .election-detail-header')
+      .boundingBox())!.x
     await page.screenshot({
-      path: testInfo.outputPath(`reference-detail-${width}.png`),
+      path: testInfo.outputPath(`reference-redirected-results-${width}.png`),
       fullPage: true,
     })
-    await page.getByRole('link', { name: 'View results', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Published result', exact: true })).toBeVisible()
-    expect(await shellMetrics()).toEqual(detailShell)
+    expect(redirectedResultsShell.top).toMatchObject({
+      x: listShell.top.x,
+      width: listShell.top.width,
+    })
+    expect(redirectedResultsShell.brand).toEqual(listShell.brand)
     expect((await page.locator('.results-page .election-detail-header').boundingBox())!.x).toBe(
-      detailLeft,
+      redirectedResultsLeft,
     )
-    await page.getByRole('link', { name: 'Back to election', exact: true }).click()
-    await expect(page.getByRole('heading', { name: election.title, exact: true })).toBeVisible()
+    await page.getByRole('link', { name: 'All elections', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Elections', exact: true })).toBeVisible()
   })
 }

@@ -381,6 +381,7 @@ describe('results and publication workflow', () => {
 
     await screen.findByRole('heading', { name: 'Unpublished count' })
     expect(screen.queryByRole('button', { name: 'Print results' })).not.toBeInTheDocument()
+    expect(screen.getByText('UNPUBLISHED PREVIEW - NOT AN OFFICIAL RESULT')).toBeInTheDocument()
   })
 
   it('shows the server winner count and share together using total counted votes', async () => {
