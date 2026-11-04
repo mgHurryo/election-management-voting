@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router'
 import { api } from '../api'
 import { ApiError } from '../api/client'
-import type { Election, Role } from '../api/types'
+import type { Election, Role, VoterOption } from '../api/types'
 import { AuthContext } from '../store/auth-context'
 import { AppRoutes } from '../routes/AppRoutes'
 import { validateElectionForm } from '../shared/electionForm'
@@ -70,6 +70,36 @@ async function fill() {
 }
 
 describe('create election', () => {
+  it('keeps selections across voter pages and submits distinct IDs', async () => {
+    const create = vi.spyOn(api, 'createElection').mockResolvedValue({ data: election })
+    vi.spyOn(api, 'election').mockResolvedValue({ data: election })
+    vi.spyOn(api, 'eligibleVoters').mockImplementation(async (page = 1) => ({
+      data: [
+        {
+          user_id: page === 1 ? '21' : '24',
+          display_name: page === 1 ? 'Voter' : 'Second Voter',
+        } satisfies VoterOption,
+      ],
+      meta: { page, page_size: 100, total: 101 },
+    }))
+    mount()
+    await screen.findByRole('heading', { name: 'Create election' })
+    fireEvent.change(screen.getByLabelText('Election name *'), { target: { value: values.title } })
+    fireEvent.change(screen.getByLabelText('Position *'), {
+      target: { value: values.position_title },
+    })
+    fireEvent.change(screen.getByLabelText('Opens at *'), { target: { value: values.starts_at } })
+    fireEvent.change(screen.getByLabelText('Closes at *'), { target: { value: values.ends_at } })
+    fireEvent.click(screen.getByRole('button', { name: 'Load voter list' }))
+    fireEvent.click((await screen.findByText('Voter')).closest('label')!)
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+    fireEvent.click((await screen.findByText('Second Voter')).closest('label')!)
+    fireEvent.click(screen.getByRole('button', { name: 'Create draft' }))
+
+    await screen.findByRole('heading', { name: election.title })
+    expect(create.mock.calls[0]![0].voter_ids).toEqual(['21', '24'])
+  })
+
   it('submits documented fields, preserves BIGINT strings, converts local time, and opens the new detail', async () => {
     const create = vi.spyOn(api, 'createElection').mockResolvedValue({ data: election })
     vi.spyOn(api, 'election').mockResolvedValue({ data: election })
@@ -144,7 +174,9 @@ describe('create election', () => {
     mount()
     await fill()
     fireEvent.click(screen.getByRole('button', { name: 'Create draft' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('Only valid voter accounts')
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The account is inactive or is not a voter account.',
+    )
     expect(screen.getByLabelText('Election name *')).toHaveValue(values.title)
     expect(screen.getByLabelText('Voter IDs *')).toHaveValue(values.voters)
     expect(screen.getByRole('button', { name: 'Create draft' })).toBeEnabled()

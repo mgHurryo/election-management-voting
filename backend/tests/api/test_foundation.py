@@ -89,6 +89,7 @@ def test_openapi_documents_only_implemented_operations(client):
     assert set(schema["paths"]) == {
         "/api/v1/auth/login",
         "/api/v1/auth/me",
+        "/api/v1/users/eligible-voters",
         "/api/v1/elections",
         "/api/v1/elections/{election_id}",
         "/api/v1/elections/{election_id}/open",

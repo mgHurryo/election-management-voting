@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router'
-import { api } from '../../api'
-import type { ElectionInput, VoterOption } from '../../api/types'
+import type { ElectionInput } from '../../api/types'
+import { useEligibleVoters } from '../../hooks/useEligibleVoters'
 import type { ElectionFormErrors, ElectionFormValues } from '../../shared/electionForm'
 import { validateElectionForm } from '../../shared/electionForm'
 import { errorMessage } from '../../shared/errors'
@@ -37,12 +37,7 @@ export function ElectionCreateForm({
   const [errors, setErrors] = useState<ElectionFormErrors>({})
   const [individualIds, setIndividualIds] = useState([''])
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [eligibleVoters, setEligibleVoters] = useState<VoterOption[]>([])
-  const [voterPage, setVoterPage] = useState(1)
-  const [voterTotal, setVoterTotal] = useState(0)
-  const [loadingVoters, setLoadingVoters] = useState(false)
-  const [votersLoaded, setVotersLoaded] = useState(false)
-  const [voterLoadError, setVoterLoadError] = useState('')
+  const voterRoster = useEligibleVoters()
 
   function update(field: keyof ElectionFormValues, value: string) {
     setValues((current) => ({ ...current, [field]: value }))
@@ -59,22 +54,6 @@ export function ElectionCreateForm({
     })
     setErrors(result.errors)
     if (result.input) void onSubmit(result.input)
-  }
-
-  async function loadVoters(page = voterPage) {
-    setLoadingVoters(true)
-    setVoterLoadError('')
-    try {
-      const result = await api.eligibleVoters(page)
-      setEligibleVoters(result.data)
-      setVoterTotal(result.meta.total)
-      setVoterPage(page)
-      setVotersLoaded(true)
-    } catch {
-      setVoterLoadError('Unable to load active voter accounts. You can still enter IDs manually.')
-    } finally {
-      setLoadingVoters(false)
-    }
   }
 
   async function importFile(file: File) {
@@ -164,23 +143,23 @@ export function ElectionCreateForm({
                     Only voter ID and display name are shown. This does not reveal voting activity.
                   </p>
                 </div>
-                {!votersLoaded ? (
+                {!voterRoster.loaded ? (
                   <button
                     type="button"
                     className="quiet"
-                    disabled={loadingVoters}
-                    onClick={() => void loadVoters(1)}
+                    disabled={voterRoster.loading}
+                    onClick={() => void voterRoster.load(1)}
                   >
-                    {loadingVoters ? 'Loading voters…' : 'Load voter list'}
+                    {voterRoster.loading ? 'Loading voters…' : 'Load voter list'}
                   </button>
                 ) : (
                   <>
-                    {eligibleVoters.length ? (
+                    {voterRoster.voters.length ? (
                       <div
                         className="election-create-voter-options"
                         aria-label="Active voter accounts"
                       >
-                        {eligibleVoters.map((voter) => (
+                        {voterRoster.voters.map((voter) => (
                           <label key={voter.user_id}>
                             <input
                               type="checkbox"
@@ -203,23 +182,26 @@ export function ElectionCreateForm({
                     )}
                     <div className="election-create-voter-pages">
                       <span className="num">
-                        {selectedIds.length} selected · {voterTotal} active accounts
+                        {selectedIds.length} selected · {voterRoster.total} active accounts
                       </span>
-                      {voterTotal > 100 && (
+                      {voterRoster.total > voterRoster.pageSize && (
                         <>
                           <button
                             type="button"
                             className="quiet"
-                            disabled={loadingVoters || voterPage <= 1}
-                            onClick={() => void loadVoters(voterPage - 1)}
+                            disabled={voterRoster.loading || voterRoster.page <= 1}
+                            onClick={() => void voterRoster.load(voterRoster.page - 1)}
                           >
                             Previous
                           </button>
                           <button
                             type="button"
                             className="quiet"
-                            disabled={loadingVoters || voterPage * 100 >= voterTotal}
-                            onClick={() => void loadVoters(voterPage + 1)}
+                            disabled={
+                              voterRoster.loading ||
+                              voterRoster.page * voterRoster.pageSize >= voterRoster.total
+                            }
+                            onClick={() => void voterRoster.load(voterRoster.page + 1)}
                           >
                             Next
                           </button>
@@ -228,9 +210,9 @@ export function ElectionCreateForm({
                     </div>
                   </>
                 )}
-                {voterLoadError && (
+                {voterRoster.error && (
                   <p className="form-error" role="alert">
-                    {voterLoadError}
+                    {voterRoster.error}
                   </p>
                 )}
               </div>
@@ -275,7 +257,7 @@ export function ElectionCreateForm({
                 </button>
               </div>
               <label className="lfield">
-                <span>Paste voter IDs in bulk</span>
+                <span>Voter IDs *</span>
                 <textarea
                   name="voters"
                   rows={6}

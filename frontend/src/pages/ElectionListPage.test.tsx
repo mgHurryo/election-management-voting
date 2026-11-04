@@ -74,7 +74,7 @@ describe('elections home', () => {
     expect(
       await screen.findByRole('heading', { name: 'OPEN election 9007199254740993' }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Vote' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Vote Now' })).toHaveAttribute(
       'href',
       '/elections/9007199254740993',
     )
@@ -122,7 +122,7 @@ describe('elections home', () => {
       },
     })
     const view = mount()
-    fireEvent.click(await screen.findByRole('link', { name: 'Results' }))
+    fireEvent.click(await screen.findByRole('link', { name: 'View results' }))
     // A closed election with a published result links straight to the results page.
     expect(await screen.findByRole('heading', { name: 'Published result' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('link', { name: 'All elections' }))
@@ -130,7 +130,7 @@ describe('elections home', () => {
     view.unmount()
     mount()
     fireEvent.click(await screen.findByRole('button', { name: 'Closed' }))
-    fireEvent.click(await screen.findByRole('link', { name: 'Results' }))
+    fireEvent.click(await screen.findByRole('link', { name: 'View results' }))
     expect(await screen.findByRole('heading', { name: 'Published result' })).toBeInTheDocument()
   })
 
@@ -139,11 +139,11 @@ describe('elections home', () => {
       response(1, 1, [{ ...election, status: 'OPEN', ends_at: '2026-10-20T09:00:00Z' }]),
     )
     mount('USER')
-    const link = await screen.findByRole('link', { name: 'Results' })
+    const link = await screen.findByRole('link', { name: 'View results' })
     expect(link).toHaveAttribute('href', `/elections/${election.id}/results`)
     expect(screen.getByText('Ended')).toBeInTheDocument()
     expect(screen.getByText('Closed', { selector: '.st' })).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'Vote' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Vote Now' })).not.toBeInTheDocument()
   })
 
   it('keeps a draft with a passed window on Details instead of offering results', async () => {
@@ -156,7 +156,7 @@ describe('elections home', () => {
       `/elections/${election.id}`,
     )
     expect(screen.getByText('Draft', { selector: '.st' })).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'Results' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'View results' })).not.toBeInTheDocument()
   })
 
   it('flips an open row to Ended and Results once the clock crosses ends_at in the same session', async () => {
@@ -170,14 +170,14 @@ describe('elections home', () => {
       await act(async () => {
         await vi.advanceTimersByTimeAsync(0)
       })
-      expect(screen.getByRole('link', { name: 'Vote' })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Vote Now' })).toBeInTheDocument()
       clock.mockReturnValue(Date.parse('2026-10-22T11:00:01Z'))
       await act(async () => {
         await vi.advanceTimersByTimeAsync(30_000)
       })
-      expect(screen.getByRole('link', { name: 'Results' })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'View results' })).toBeInTheDocument()
       expect(screen.getByText('Closed', { selector: '.st' })).toBeInTheDocument()
-      expect(screen.queryByRole('link', { name: 'Vote' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: 'Vote Now' })).not.toBeInTheDocument()
     } finally {
       vi.useRealTimers()
     }
@@ -196,9 +196,9 @@ describe('elections home', () => {
       await act(async () => {
         await vi.advanceTimersByTimeAsync(0)
       })
-      expect(screen.getByRole('link', { name: 'Vote' })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Vote Now' })).toBeInTheDocument()
       expect(screen.getByText('Open', { selector: '.st' })).toBeInTheDocument()
-      expect(screen.queryByRole('link', { name: 'Results' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: 'View results' })).not.toBeInTheDocument()
     } finally {
       vi.useRealTimers()
     }
