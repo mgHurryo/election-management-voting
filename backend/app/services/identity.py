@@ -2,7 +2,7 @@ from collections.abc import Callable
 
 from app.core.errors import AppError, authentication_required
 from app.core.security import TokenManager, hash_password, verify_password
-from app.models.identity import LoginResult, UserIdentity
+from app.models.identity import LoginResult, UserIdentity, VoterOption
 from app.services.ports import UnitOfWork
 
 
@@ -36,6 +36,10 @@ class IdentityService:
         if account is None or account.identity.status != "ACTIVE":
             raise authentication_required()
         return account.identity
+
+    def list_active_voters(self, page: int, page_size: int) -> tuple[list[VoterOption], int]:
+        with self._uow_factory() as uow:
+            return uow.users.active_voters((page - 1) * page_size, page_size)
 
     @staticmethod
     def require_role(user: UserIdentity, role: str) -> UserIdentity:

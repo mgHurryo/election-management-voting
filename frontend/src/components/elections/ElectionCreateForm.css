@@ -94,6 +94,52 @@
   line-height: 1.55;
 }
 
+.election-create-voter-picker,
+.election-create-individual-voters {
+  margin: 18px 0 24px;
+  padding: 16px;
+  border: 1px solid var(--hair);
+  background: var(--panel);
+}
+.election-create-voter-picker h3,
+.election-create-individual-voters h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+.election-create-voter-picker p {
+  margin: 0 0 12px;
+  color: var(--soft);
+  font-size: 13px;
+}
+.election-create-voter-options {
+  display: grid;
+  gap: 8px;
+  max-height: 240px;
+  overflow: auto;
+  margin: 12px 0;
+}
+.election-create-voter-options label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.election-create-voter-options input {
+  width: 16px;
+  height: 16px;
+}
+.election-create-voter-pages,
+.election-create-individual-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.election-create-individual-row .lfield {
+  flex: 1 1 220px;
+}
+
 .election-create-time-note {
   margin: 0 0 22px;
   text-align: left;

@@ -20,6 +20,12 @@ class UserAccount:
 
 
 @dataclass(frozen=True)
+class VoterOption:
+    id: int
+    display_name: str
+
+
+@dataclass(frozen=True)
 class LoginResult:
     access_token: str = field(repr=False)
     expires_in: int

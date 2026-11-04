@@ -8,9 +8,10 @@ const messages: Record<string, string> = {
   ELECTION_NOT_FOUND: 'This election does not exist or is not visible to you.',
   CANDIDATE_NOT_FOUND: 'Candidate not found.',
   CANDIDATE_NOT_EDITABLE: 'Candidates can only be edited while an election is a draft.',
-  USER_NOT_FOUND: 'This user does not exist. Use a pre-seeded voter ID.',
+  USER_NOT_FOUND:
+    'This ID does not match an existing account. Choose an ID from the active voter list or check the ID.',
   VOTER_NOT_FOUND: 'This user is not on the voter roll.',
-  INVALID_VOTER: 'Only valid voter accounts can be added.',
+  INVALID_VOTER: 'The account is inactive or is not a voter account.',
   VOTER_ALREADY_EXISTS: 'This user is already on the voter roll.',
   ELECTION_NOT_EDITABLE: 'Only draft elections can be edited.',
   INVALID_STATE_TRANSITION: 'The election status has changed. Refresh and try again.',

@@ -3,7 +3,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, StrictStr, field_validator
 
-from app.models.identity import UserIdentity
+from app.models.identity import UserIdentity, VoterOption
 from app.schemas.common import ID, RequestModel, Timestamp
 
 
@@ -38,3 +38,12 @@ class TokenResponse(BaseModel):
     token_type: Literal["bearer"] = "bearer"
     expires_in: int = Field(gt=0)
     user: UserResponse
+
+
+class VoterOptionResponse(BaseModel):
+    user_id: ID
+    display_name: str
+
+    @classmethod
+    def from_identity(cls, user: VoterOption) -> "VoterOptionResponse":
+        return cls(user_id=str(user.id), display_name=user.display_name)

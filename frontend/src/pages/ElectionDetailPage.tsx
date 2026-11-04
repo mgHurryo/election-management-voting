@@ -463,6 +463,12 @@ function DetailContent({ id }: { id: string }) {
             {isAdmin ? (
               <section className="election-admin-panel" aria-labelledby="election-admin-heading">
                 <h2 id="election-admin-heading">Administration</h2>
+                {closed && (
+                  <p className="noticeline">
+                    Closed elections cannot be edited, deleted or reopened. Submitted ballots and
+                    published results are preserved.
+                  </p>
+                )}
                 {election.status === 'DRAFT' && (
                   <nav className="election-admin-links" aria-label="Election administration links">
                     <Link className="lnk" to={`/elections/${encodeURIComponent(id)}/edit`}>

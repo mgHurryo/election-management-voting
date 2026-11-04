@@ -146,6 +146,11 @@ app/
 | Voting | Ballot/participation, locks, time/quota checks, anonymous atomic writes |
 | Results | CLOSED tally, publication visibility, tie/zero-vote policy |
 
+Election creation may use `GET /api/v1/users/eligible-voters` (ADMIN only) to select from
+existing ACTIVE USER accounts. The response contains only each account's ID and display name,
+is paginated, and does not expose participation or ballot data. The create request still
+revalidates every selected ID and atomically creates the election and its voter roll.
+
 Add remaining modules' schemas, service and repository before registering routes in
 `app/api/router.py`. Tests guard against API database access and service HTTP imports.
 Keep transactions inside services, especially participation + ballot + choice.

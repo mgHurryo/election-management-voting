@@ -1,9 +1,12 @@
+import { useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { useElections } from '../hooks/useElections'
 import { useAuth } from '../hooks/useAuth'
 import { useNow } from '../hooks/useNow'
 import type { Election } from '../api/types'
 import { errorMessage } from '../shared/errors'
+import { useElectionStatusAction } from '../hooks/useElectionDetail'
+import { WorkflowConfirmation } from '../components/elections/WorkflowConfirmation'
 
 // The initial clock reading; useNow keeps it current for long-lived sessions.
 const pageLoadedAt = Date.now()
@@ -21,7 +24,22 @@ function when(value: string) {
   return Number.isNaN(d.getTime()) ? '—' : fmt(d)
 }
 
-function Row({ election, voter, now }: { election: Election; voter: boolean; now: number }) {
+function Row({
+  election,
+  voter,
+  admin,
+  now,
+  refresh,
+}: {
+  election: Election
+  voter: boolean
+  admin: boolean
+  now: number
+  refresh: () => void
+}) {
+  const [confirm, setConfirm] = useState<'open' | 'close' | null>(null)
+  const trigger = useRef<HTMLButtonElement | null>(null)
+  const action = useElectionStatusAction(election.id, refresh)
   const open = election.status === 'OPEN'
   const draft = election.status === 'DRAFT'
   // Status transitions land on the server within one scheduler tick; until then
@@ -31,28 +49,97 @@ function Row({ election, voter, now }: { election: Election; voter: boolean; now
   const ended = election.status === 'CLOSED' || over
   // A voter whose election is over belongs on the results page, never on a ballot.
   const toResults = voter && ended
+  const detailPath = `/elections/${encodeURIComponent(election.id)}`
+  const destination = toResults ? `${detailPath}/results` : detailPath
+  const canOpen =
+    draft &&
+    new Date(election.starts_at).getTime() <= now &&
+    now <= new Date(election.ends_at).getTime()
   return (
-    <div className="trow">
-      <h3>{election.title}</h3>
+    <article className="trow">
+      <h3>
+        <Link className="trow-title" to={destination}>
+          {election.title}
+        </Link>
+      </h3>
       <p className="m num">
         <span className="mlab">{ended ? 'Ended' : open ? 'Closes' : 'Opens'}</span>
-        {when(ended ? election.ends_at : election.starts_at)}
+        {when(ended || open ? election.ends_at : election.starts_at)}
       </p>
       <span className={`st ${draft ? 'draft' : ended ? 'closed' : 'open'}`}>
         <i />
         {draft ? 'Draft' : ended ? 'Closed' : 'Open'}
       </span>
-      <Link
-        className={'lnk' + (open && !toResults ? ' hot' : '')}
-        to={
-          toResults
-            ? `/elections/${encodeURIComponent(election.id)}/results`
-            : `/elections/${encodeURIComponent(election.id)}`
-        }
-      >
-        {toResults ? 'Results' : open ? 'Vote' : 'Details'}
-      </Link>
-    </div>
+      <div className="trow-actions">
+        <Link className={'lnk' + (open && !toResults ? ' hot' : '')} to={destination}>
+          {toResults
+            ? voter
+              ? 'View results'
+              : 'Results'
+            : open && voter
+              ? 'Vote Now'
+              : 'Details'}
+        </Link>
+        {admin && draft && (
+          <Link className="lnk" to={`${detailPath}/candidates`}>
+            Candidate management
+          </Link>
+        )}
+        {admin && draft && !canOpen && (
+          <p className="trow-policy">
+            {new Date(election.starts_at).getTime() > now
+              ? `Opening is available from ${when(election.starts_at)}.`
+              : 'The scheduled window has passed. Edit this draft to set a new window.'}
+          </p>
+        )}
+        {admin && (canOpen || open) && (
+          <div className="trow-admin-action">
+            <button
+              type="button"
+              className="quiet"
+              disabled={action.pending}
+              onClick={(event) => {
+                trigger.current = event.currentTarget
+                setConfirm(open ? 'close' : 'open')
+              }}
+            >
+              {canOpen ? 'Open voting' : 'Close voting'}
+            </button>
+            {confirm && (
+              <WorkflowConfirmation
+                title={confirm === 'open' ? 'Open voting?' : 'Close voting?'}
+                description={
+                  confirm === 'open'
+                    ? 'Opening voting locks election details, candidates and the voter roll.'
+                    : 'Closing stops new ballots. Submitted ballots and published results are preserved; this election cannot be reopened.'
+                }
+                action={confirm === 'open' ? 'Confirm open' : 'Confirm close'}
+                pending={action.pending}
+                returnFocus={trigger}
+                onCancel={() => setConfirm(null)}
+                onConfirm={() => void action.run(confirm).then(() => setConfirm(null))}
+              />
+            )}
+            {Boolean(action.error) && (
+              <p className="form-error" role="alert">
+                {errorMessage(action.error)}
+              </p>
+            )}
+            {action.message && (
+              <p className="noticeline" role="status">
+                {action.message}
+              </p>
+            )}
+          </div>
+        )}
+        {admin && election.status === 'CLOSED' && (
+          <p className="trow-policy">
+            Closed elections cannot be edited, deleted or reopened. Ballots and published results
+            remain preserved.
+          </p>
+        )}
+      </div>
+    </article>
   )
 }
 
@@ -111,7 +198,14 @@ export default function ElectionListPage() {
             </p>
           ) : (
             pool.map((election) => (
-              <Row key={election.id} election={election} voter={voter} now={now} />
+              <Row
+                key={election.id}
+                election={election}
+                voter={voter}
+                admin={user?.role === 'ADMIN'}
+                now={now}
+                refresh={retry}
+              />
             ))
           )}
           <div className="pager">

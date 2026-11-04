@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router'
-import type { ElectionInput } from '../../api/types'
+import { api } from '../../api'
+import type { ElectionInput, VoterOption } from '../../api/types'
 import type { ElectionFormErrors, ElectionFormValues } from '../../shared/electionForm'
 import { validateElectionForm } from '../../shared/electionForm'
 import { errorMessage } from '../../shared/errors'
@@ -34,6 +35,14 @@ export function ElectionCreateForm({
     voters: '',
   })
   const [errors, setErrors] = useState<ElectionFormErrors>({})
+  const [individualIds, setIndividualIds] = useState([''])
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [eligibleVoters, setEligibleVoters] = useState<VoterOption[]>([])
+  const [voterPage, setVoterPage] = useState(1)
+  const [voterTotal, setVoterTotal] = useState(0)
+  const [loadingVoters, setLoadingVoters] = useState(false)
+  const [votersLoaded, setVotersLoaded] = useState(false)
+  const [voterLoadError, setVoterLoadError] = useState('')
 
   function update(field: keyof ElectionFormValues, value: string) {
     setValues((current) => ({ ...current, [field]: value }))
@@ -43,9 +52,63 @@ export function ElectionCreateForm({
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (pending || uncertain) return
-    const result = validateElectionForm(values)
+    const combined = [...selectedIds, ...individualIds.map((id) => id.trim()).filter(Boolean)]
+    const result = validateElectionForm({
+      ...values,
+      voters: [values.voters, ...combined].filter(Boolean).join('\n'),
+    })
     setErrors(result.errors)
     if (result.input) void onSubmit(result.input)
+  }
+
+  async function loadVoters(page = voterPage) {
+    setLoadingVoters(true)
+    setVoterLoadError('')
+    try {
+      const result = await api.eligibleVoters(page)
+      setEligibleVoters(result.data)
+      setVoterTotal(result.meta.total)
+      setVoterPage(page)
+      setVotersLoaded(true)
+    } catch {
+      setVoterLoadError('Unable to load active voter accounts. You can still enter IDs manually.')
+    } finally {
+      setLoadingVoters(false)
+    }
+  }
+
+  async function importFile(file: File) {
+    if (file.size > 1_000_000) {
+      setErrors((current) => ({
+        ...current,
+        voters: 'The voter ID file must be no larger than 1 MB.',
+      }))
+      return
+    }
+    try {
+      const content = (await file.text()).replace(/^\uFEFF/, '')
+      const lines = content
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+      const csv = file.name.toLowerCase().endsWith('.csv')
+      const firstCell = (line: string) =>
+        csv ? line.split(',')[0].trim().replace(/^"|"$/g, '') : line
+      const dataLines =
+        lines[0] && /^(user_?id|id)$/i.test(firstCell(lines[0])) ? lines.slice(1) : lines
+      const ids = dataLines.map(firstCell)
+      if (!ids.length || ids.some((id) => !/^[1-9][0-9]*$/.test(id))) {
+        setErrors((current) => ({
+          ...current,
+          voters:
+            'Import a .txt ID list or .csv with one voter ID in the first column and an optional user_id header.',
+        }))
+        return
+      }
+      update('voters', ids.join('\n'))
+    } catch {
+      setErrors((current) => ({ ...current, voters: 'Unable to read this voter ID file.' }))
+    }
   }
 
   function fieldError(field: keyof ElectionFormValues) {
@@ -94,8 +157,125 @@ export function ElectionCreateForm({
               section="description"
             />
             <div className="election-create-voters">
+              <div className="election-create-voter-picker">
+                <div>
+                  <h3>Choose existing active voters</h3>
+                  <p>
+                    Only voter ID and display name are shown. This does not reveal voting activity.
+                  </p>
+                </div>
+                {!votersLoaded ? (
+                  <button
+                    type="button"
+                    className="quiet"
+                    disabled={loadingVoters}
+                    onClick={() => void loadVoters(1)}
+                  >
+                    {loadingVoters ? 'Loading voters…' : 'Load voter list'}
+                  </button>
+                ) : (
+                  <>
+                    {eligibleVoters.length ? (
+                      <div
+                        className="election-create-voter-options"
+                        aria-label="Active voter accounts"
+                      >
+                        {eligibleVoters.map((voter) => (
+                          <label key={voter.user_id}>
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.includes(voter.user_id)}
+                              onChange={(event) =>
+                                setSelectedIds((current) =>
+                                  event.target.checked
+                                    ? [...current, voter.user_id]
+                                    : current.filter((id) => id !== voter.user_id),
+                                )
+                              }
+                            />
+                            <span>{voter.display_name}</span>
+                            <span className="num">ID {voter.user_id}</span>
+                          </label>
+                        ))}
+                      </div>
+                    ) : (
+                      <p role="status">No active voter accounts are available to select.</p>
+                    )}
+                    <div className="election-create-voter-pages">
+                      <span className="num">
+                        {selectedIds.length} selected · {voterTotal} active accounts
+                      </span>
+                      {voterTotal > 100 && (
+                        <>
+                          <button
+                            type="button"
+                            className="quiet"
+                            disabled={loadingVoters || voterPage <= 1}
+                            onClick={() => void loadVoters(voterPage - 1)}
+                          >
+                            Previous
+                          </button>
+                          <button
+                            type="button"
+                            className="quiet"
+                            disabled={loadingVoters || voterPage * 100 >= voterTotal}
+                            onClick={() => void loadVoters(voterPage + 1)}
+                          >
+                            Next
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
+                {voterLoadError && (
+                  <p className="form-error" role="alert">
+                    {voterLoadError}
+                  </p>
+                )}
+              </div>
+              <div className="election-create-individual-voters">
+                <h3>Add voter IDs individually</h3>
+                {individualIds.map((id, index) => (
+                  <div className="election-create-individual-row" key={index}>
+                    <label className="lfield">
+                      <span>Voter ID {index + 1}</span>
+                      <input
+                        inputMode="numeric"
+                        autoComplete="off"
+                        value={id}
+                        aria-invalid={Boolean(errors.voters)}
+                        aria-describedby={errors.voters ? 'create-voters-error' : undefined}
+                        onChange={(event) =>
+                          setIndividualIds((current) =>
+                            current.map((value, i) => (i === index ? event.target.value : value)),
+                          )
+                        }
+                      />
+                    </label>
+                    {individualIds.length > 1 && (
+                      <button
+                        type="button"
+                        className="quiet"
+                        onClick={() =>
+                          setIndividualIds((current) => current.filter((_, i) => i !== index))
+                        }
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className="quiet"
+                  onClick={() => setIndividualIds((current) => [...current, ''])}
+                >
+                  Add another voter
+                </button>
+              </div>
               <label className="lfield">
-                <span>Voter IDs *</span>
+                <span>Paste voter IDs in bulk</span>
                 <textarea
                   name="voters"
                   rows={6}
@@ -104,11 +284,24 @@ export function ElectionCreateForm({
                   {...attributes('voters')}
                 />
               </label>
+              <label className="lfield">
+                <span>Import .txt or .csv</span>
+                <input
+                  type="file"
+                  accept=".txt,.csv,text/plain,text/csv"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0]
+                    if (file) void importFile(file)
+                    event.currentTarget.value = ''
+                  }}
+                />
+              </label>
               {fieldError('voters')}
             </div>
             <p className="lsub election-create-voter-help">
-              Separate IDs with commas, spaces or new lines. Only existing active voter IDs; no
-              duplicates. IDs are provided by the backend; accounts are not created here.
+              IDs must match existing active USER accounts. Paste lists may use commas, spaces or
+              new lines. TXT files contain IDs; CSV files use one ID per row in the first column,
+              optionally headed user_id. Duplicate or unknown IDs are rejected by the server.
             </p>
           </section>
         </fieldset>
