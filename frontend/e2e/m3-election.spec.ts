@@ -67,7 +67,8 @@ test('login errors do not resize the form on desktop or mobile', async ({ page }
     await page.getByLabel('Password').fill('incorrect')
     await page.getByRole('button', { name: 'Sign in' }).click()
     await expect(page.getByRole('alert')).toContainText('Incorrect username or password')
-    expect((await form.boundingBox())!.height).toBe(initialHeight)
+    // Layout measurements can differ by floating-point rounding without resizing.
+    expect((await form.boundingBox())!.height).toBeCloseTo(initialHeight, 3)
   }
 })
 
