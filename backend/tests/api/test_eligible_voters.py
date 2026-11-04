@@ -64,12 +64,8 @@ def test_eligible_voters_returns_active_users_with_pagination_and_minimal_fields
     admin_token = token(client, "admin")
     headers = {"Authorization": f"Bearer {admin_token}"}
 
-    first = client.get(
-        "/api/v1/users/eligible-voters?page=1&page_size=1", headers=headers
-    )
-    second = client.get(
-        "/api/v1/users/eligible-voters?page=2&page_size=1", headers=headers
-    )
+    first = client.get("/api/v1/users/eligible-voters?page=1&page_size=1", headers=headers)
+    second = client.get("/api/v1/users/eligible-voters?page=2&page_size=1", headers=headers)
 
     assert first.status_code == second.status_code == 200
     assert first.json() == {

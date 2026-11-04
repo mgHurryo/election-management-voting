@@ -13,9 +13,12 @@ export function useEligibleVoters() {
   const [error, setError] = useState('')
   const requestId = useRef(0)
 
-  useEffect(() => () => {
-    requestId.current += 1
-  }, [])
+  useEffect(
+    () => () => {
+      requestId.current += 1
+    },
+    [],
+  )
 
   const load = useCallback(async (nextPage: number) => {
     const currentRequest = ++requestId.current
