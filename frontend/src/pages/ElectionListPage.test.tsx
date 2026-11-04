@@ -60,6 +60,60 @@ function mount(role: Role | null = 'USER', path = '/elections') {
 }
 
 describe('elections home', () => {
+  it.each([
+    ['DRAFT', 'Draft', 'Open voting', 'openElection', 'Confirm open', 'OPEN'],
+    ['OPEN', 'Open', 'Close voting', 'closeElection', 'Confirm close', 'CLOSED'],
+  ] as const)(
+    'resets the filtered page after a %s status action removes its last row',
+    async (status, filter, label, method, confirmation, nextStatus) => {
+      let changed = false
+      const current = { ...election, status }
+      const list = vi
+        .spyOn(api, 'elections')
+        .mockImplementation(async (query) => response(query?.page, changed ? 20 : 21, [current]))
+      const mutate = vi.spyOn(api, method).mockImplementation(async () => {
+        changed = true
+        return { data: { ...current, status: nextStatus } }
+      })
+      mount('ADMIN')
+      await screen.findByRole('heading', { name: election.title })
+      fireEvent.click(screen.getByRole('button', { name: filter }))
+      await waitFor(() => expect(list).toHaveBeenLastCalledWith({ page: 1, page_size: 20, status }))
+      fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+      await waitFor(() => expect(screen.getByText('Page 2 of 2')).toBeInTheDocument())
+      fireEvent.click(screen.getByRole('button', { name: label }))
+      fireEvent.click(screen.getByRole('button', { name: confirmation }))
+      await waitFor(() => expect(mutate).toHaveBeenCalledTimes(1))
+      await screen.findByText('Page 1 of 1')
+      expect(list).toHaveBeenLastCalledWith({ page: 1, page_size: 20, status })
+      expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled()
+      expect(screen.getByRole('button', { name: new RegExp(`^${filter}`) })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
+    },
+  )
+
+  it('keeps simultaneous open and close confirmations labelled by their own headings', async () => {
+    vi.spyOn(api, 'elections').mockResolvedValue(
+      response(1, 2, [row('DRAFT', '21'), row('OPEN', '22')]),
+    )
+    mount('ADMIN')
+    const openButton = await screen.findByRole('button', { name: 'Open voting' })
+    const closeButton = screen.getByRole('button', { name: 'Close voting' })
+    fireEvent.click(openButton)
+    fireEvent.click(closeButton)
+    const openHeading = screen.getByRole('heading', { name: 'Open voting?' })
+    const closeHeading = screen.getByRole('heading', { name: 'Close voting?' })
+    expect(openHeading.id).not.toBe(closeHeading.id)
+    expect(openHeading.closest('section')).toHaveAccessibleName('Open voting?')
+    expect(closeHeading.closest('section')).toHaveAccessibleName('Close voting?')
+    expect(closeHeading).toHaveFocus()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Cancel' })[1]!)
+    expect(closeButton).toHaveFocus()
+    expect(screen.getByRole('region', { name: 'Open voting?' })).toBeInTheDocument()
+  })
+
   it('lists every server-visible state without losing BIGINT IDs or server ordering', async () => {
     const list = vi
       .spyOn(api, 'elections')

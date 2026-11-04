@@ -56,7 +56,7 @@ function Row({
     new Date(election.starts_at).getTime() <= now &&
     now <= new Date(election.ends_at).getTime()
   return (
-    <article className="trow">
+    <article className={`trow${admin ? ' trow-admin' : ''}`}>
       <h3>
         <Link className="trow-title" to={destination}>
           {election.title}
@@ -144,7 +144,7 @@ function Row({
 }
 
 export default function ElectionListPage() {
-  const { page, status, data, loading, error, retry, setStatus, setPage } = useElections()
+  const { page, status, data, loading, error, retry, refresh, setStatus, setPage } = useElections()
   const { user } = useAuth()
   const voter = user?.role === 'USER'
   const now = useNow(pageLoadedAt)
@@ -204,7 +204,7 @@ export default function ElectionListPage() {
                 voter={voter}
                 admin={user?.role === 'ADMIN'}
                 now={now}
-                refresh={retry}
+                refresh={refresh}
               />
             ))
           )}

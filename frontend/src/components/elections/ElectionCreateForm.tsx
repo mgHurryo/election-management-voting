@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router'
 import type { ElectionInput } from '../../api/types'
@@ -37,7 +37,16 @@ export function ElectionCreateForm({
   const [errors, setErrors] = useState<ElectionFormErrors>({})
   const [individualIds, setIndividualIds] = useState([''])
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [importing, setImporting] = useState(false)
+  const importRequest = useRef(0)
   const voterRoster = useEligibleVoters()
+
+  useEffect(
+    () => () => {
+      importRequest.current += 1
+    },
+    [],
+  )
 
   function update(field: keyof ElectionFormValues, value: string) {
     setValues((current) => ({ ...current, [field]: value }))
@@ -46,7 +55,7 @@ export function ElectionCreateForm({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (pending || uncertain) return
+    if (pending || uncertain || importing) return
     const combined = [...selectedIds, ...individualIds.map((id) => id.trim()).filter(Boolean)]
     const result = validateElectionForm({
       ...values,
@@ -57,15 +66,20 @@ export function ElectionCreateForm({
   }
 
   async function importFile(file: File) {
+    // A newer selection invalidates every outcome of an older read, including errors.
+    const currentRequest = ++importRequest.current
     if (file.size > 1_000_000) {
+      setImporting(false)
       setErrors((current) => ({
         ...current,
         voters: 'The voter ID file must be no larger than 1 MB.',
       }))
       return
     }
+    setImporting(true)
     try {
       const content = (await file.text()).replace(/^\uFEFF/, '')
+      if (currentRequest !== importRequest.current) return
       const lines = content
         .split(/\r?\n/)
         .map((line) => line.trim())
@@ -86,7 +100,11 @@ export function ElectionCreateForm({
       }
       update('voters', ids.join('\n'))
     } catch {
-      setErrors((current) => ({ ...current, voters: 'Unable to read this voter ID file.' }))
+      if (currentRequest === importRequest.current) {
+        setErrors((current) => ({ ...current, voters: 'Unable to read this voter ID file.' }))
+      }
+    } finally {
+      if (currentRequest === importRequest.current) setImporting(false)
     }
   }
 
@@ -261,6 +279,7 @@ export function ElectionCreateForm({
                 <textarea
                   name="voters"
                   rows={6}
+                  disabled={importing}
                   value={values.voters}
                   onChange={(event) => update('voters', event.target.value)}
                   {...attributes('voters')}
@@ -278,6 +297,7 @@ export function ElectionCreateForm({
                   }}
                 />
               </label>
+              {importing && <p role="status">Reading voter ID file…</p>}
               {fieldError('voters')}
             </div>
             <p className="lsub election-create-voter-help">
@@ -312,7 +332,7 @@ export function ElectionCreateForm({
           <Link className="quiet" to={cancelPath}>
             Cancel
           </Link>
-          <button className="btn main" type="submit" disabled={pending || uncertain}>
+          <button className="btn main" type="submit" disabled={pending || uncertain || importing}>
             {pending ? 'Creating…' : 'Create draft'}
           </button>
         </div>

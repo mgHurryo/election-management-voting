@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useRef } from 'react'
 import type { RefObject } from 'react'
 
 /** Inline confirmation keeps the underlying record visible and restores keyboard focus. */
@@ -20,6 +20,7 @@ export function WorkflowConfirmation({
   onCancel: () => void
 }) {
   const heading = useRef<HTMLHeadingElement>(null)
+  const titleId = useId()
   useEffect(() => {
     const trigger = returnFocus.current
     heading.current?.focus()
@@ -28,8 +29,8 @@ export function WorkflowConfirmation({
     }
   }, [returnFocus])
   return (
-    <section className="workflow-confirmation" aria-labelledby="workflow-confirm-title">
-      <h2 id="workflow-confirm-title" tabIndex={-1} ref={heading}>
+    <section className="workflow-confirmation" aria-labelledby={titleId}>
+      <h2 id={titleId} tabIndex={-1} ref={heading}>
         {title}
       </h2>
       <p>{description}</p>

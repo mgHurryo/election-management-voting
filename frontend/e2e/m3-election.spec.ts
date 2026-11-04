@@ -229,13 +229,26 @@ test('closed elections remain discoverable after closure, publication, navigatio
     current = { ...current, status: 'CLOSED' }
     return route.fulfill({ json: { data: current } })
   })
+  await page.route('**/api/v1/elections/41/results', (route) =>
+    route.fulfill({
+      json: {
+        data: {
+          election_id: current.id,
+          position_title: current.position_title,
+          results_published_at: current.results_published_at,
+          total_votes: 0,
+          candidates: [],
+          winner_candidate_id: null,
+        },
+      },
+    }),
+  )
   await page.goto('/elections')
-  await page.getByRole('link', { name: 'Vote', exact: true }).click()
   await page.getByRole('button', { name: 'Close voting', exact: true }).click()
   await page.getByRole('button', { name: 'Confirm close', exact: true }).click()
-  await expect(page.getByText('Voting is closed.', { exact: true })).toBeVisible()
+  await expect(page.locator('.trow .st')).toHaveText('Closed')
   expect(closeRequests).toBe(1)
-  // Publication UI is still a placeholder; model a subsequent server-side publication.
+  // Model a subsequent server-side publication, then check the voter navigation.
   current = { ...current, results_published_at: '2026-10-20T18:00:00Z' }
   const voter: User = { ...admin, id: '2', username: 'voter', role: 'USER' }
   await page.route('**/api/v1/auth/me', (route) => route.fulfill({ json: { data: voter } }))
@@ -251,8 +264,8 @@ test('closed elections remain discoverable after closure, publication, navigatio
       'aria-pressed',
       'true',
     )
-    await page.getByRole('link', { name: 'Details', exact: true }).click()
-    await expect(page.getByRole('link', { name: 'View results' })).toBeVisible()
+    await page.getByRole('link', { name: 'View results', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Published result' })).toBeVisible()
     await page.getByRole('link', { name: 'All elections' }).click()
     await page.reload()
     await expect(page.getByRole('heading', { name: election.title })).toBeVisible()
