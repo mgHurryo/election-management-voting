@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router'
 import { api } from '../api'
@@ -60,6 +60,37 @@ function mount(role: Role | null = 'USER', path = '/elections') {
 }
 
 describe('elections home', () => {
+  it('refreshes after every concurrent status action even when another action remounts its row', async () => {
+    let rows = [row('OPEN', '21'), row('OPEN', '22')]
+    vi.spyOn(api, 'elections').mockImplementation(async () => response(1, 2, rows))
+    const close = (id: string) => {
+      rows = rows.map((election) =>
+        election.id === id ? { ...election, status: 'CLOSED' } : election,
+      )
+      return { data: rows.find((election) => election.id === id)! }
+    }
+    let finishFirst!: () => void
+    const first = new Promise<{ data: Election }>((resolve) => {
+      finishFirst = () => resolve(close('21'))
+    })
+    vi.spyOn(api, 'closeElection').mockImplementation(async (id) =>
+      id === '21' ? first : close(id),
+    )
+    mount('ADMIN')
+    const firstRow = (await screen.findByRole('heading', { name: 'OPEN election 21' })).closest(
+      'article',
+    )!
+    const secondRow = screen.getByRole('heading', { name: 'OPEN election 22' }).closest('article')!
+    fireEvent.click(within(firstRow).getByRole('button', { name: 'Close voting' }))
+    fireEvent.click(within(firstRow).getByRole('button', { name: 'Confirm close' }))
+    fireEvent.click(within(secondRow).getByRole('button', { name: 'Close voting' }))
+    fireEvent.click(within(secondRow).getByRole('button', { name: 'Confirm close' }))
+    await waitFor(() => expect(screen.getAllByText('Closed', { selector: '.st' })).toHaveLength(1))
+    await act(async () => finishFirst())
+    await waitFor(() => expect(screen.getAllByText('Closed', { selector: '.st' })).toHaveLength(2))
+    expect(screen.queryByRole('button', { name: 'Close voting' })).not.toBeInTheDocument()
+  })
+
   it.each([
     ['DRAFT', 'Draft', 'Open voting', 'openElection', 'Confirm open', 'OPEN'],
     ['OPEN', 'Open', 'Close voting', 'closeElection', 'Confirm close', 'CLOSED'],
