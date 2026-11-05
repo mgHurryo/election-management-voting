@@ -213,7 +213,13 @@ for (const width of [1440, 390]) {
       return page.evaluate(() => {
         const box = (selector: string) => {
           const rect = document.querySelector(selector)!.getBoundingClientRect()
-          return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+          // Font rasterizers can vary below a CSS pixel across document loads.
+          return {
+            x: Math.round(rect.x),
+            y: Math.round(rect.y),
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+          }
         }
         return { top: box('.top'), brand: box('.brand'), identity: box('.who') }
       })

@@ -39,6 +39,10 @@ export interface Voter extends Timestamps {
   display_name: string
   vote_quota: 1
 }
+export interface VoterOption {
+  user_id: ID
+  display_name: string
+}
 export interface Participation {
   election_id: ID
   eligible: boolean

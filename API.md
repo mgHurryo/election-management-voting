@@ -110,6 +110,7 @@ Click the operation name. Full paths include /api/v1; role/state checks are repe
 | Ballot and voting | [Cast anonymous vote](#endpoint-18) | `POST` | `/api/v1/elections/{election_id}/votes` | Eligible USER | 201 |
 | Results | [Count and read results](#endpoint-19) | `GET` | `/api/v1/elections/{election_id}/results` | ADMIN / USER after publication | 200 |
 | Results | [Publish results](#endpoint-20) | `POST` | `/api/v1/elections/{election_id}/results/publish` | ADMIN | 200 |
+| Users | [Eligible voter options](#endpoint-21) | `GET` | `/api/v1/users/eligible-voters` | ADMIN | 200 |
 
 ## 4. Endpoint reference
 
@@ -493,7 +494,7 @@ Clients must branch on error.code, not message wording. Never return SQL, stack 
 
 - Query: page, page_size, optional status (DRAFT / OPEN / CLOSED); no body.
 - ADMIN sees all; USER sees own roster elections and all published elections. Sort by numeric id descending; filter visibility before pagination.
-- Success: 200 Election[] + meta; empty collection is data=[] and total=0. No live counts, other voters or unpublished results.
+- Success: 200 Election[] + meta; empty collection is data=[] and total=0. No live counts, other voters, per-voter participation, or unpublished results. A USER can read only their own participation endpoint.
 
 Read-only: retry/poll only with finite limits and timeouts. Reads do not reserve quota or publish results.
 
@@ -2765,6 +2766,43 @@ Error responses also use Cache-Control: no-store.
 - Other errors: `ELECTION_NOT_FOUND`, `ELECTION_NOT_CLOSED`.
 
 - Repeated open/close returns 409; GET the election to reconcile. Repeated publication returns the original timestamp without overwriting it.
+
+[Back to operation index](#api-index)
+
+<a id="endpoint-21"></a>
+
+### 4.21 Eligible voter options
+
+List active USER accounts for administrator voter selection. The response intentionally excludes usernames, participation, and ballot data.
+
+#### Basic information
+
+| Item | Value |
+| --- | --- |
+| Method | `GET` |
+| Full path | `/api/v1/users/eligible-voters` |
+| Authentication | Required: `Authorization: Bearer <access-token>`; account must remain ACTIVE. |
+| Permission | ADMIN |
+| Election state | Not election-specific. |
+| Success status | 200 |
+| Request format | HTTPS; no request body. |
+
+#### Query parameters
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `page` | integer | No | 1 | Page number, minimum 1. |
+| `page_size` | integer | No | 100 | Page size from 1 to 100. |
+
+Success returns a paginated `data` array containing only `user_id` (decimal string) and `display_name`. The create-election endpoint remains authoritative and revalidates account role and active status before committing the election and voter roll.
+
+#### Errors
+
+| HTTP | error.code | When it occurs |
+| --- | --- | --- |
+| 401 | `AUTHENTICATION_REQUIRED` | Missing, invalid, expired, or inactive account. |
+| 403 | `PERMISSION_DENIED` | Caller is not ADMIN. |
+| 422 | `VALIDATION_ERROR` | Invalid pagination parameters. |
 
 [Back to operation index](#api-index)
 

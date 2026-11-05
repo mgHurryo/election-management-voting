@@ -51,5 +51,10 @@ export function useElections() {
     setStatus: (status: StatusFilter) => setQuery({ page: 1, status }),
     setPage: (page: number) => setQuery((current) => ({ ...current, page })),
     retry: () => setAttempt((current) => current + 1),
+    refresh: () => {
+      // A state change can remove the last item on the current filtered page.
+      setQuery((current) => ({ ...current, page: 1 }))
+      setAttempt((current) => current + 1)
+    },
   }
 }

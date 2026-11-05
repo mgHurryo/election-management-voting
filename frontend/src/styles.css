@@ -269,6 +269,52 @@ select:focus-visible {
   overflow-wrap: anywhere;
 }
 
+.trow-title {
+  color: inherit;
+  text-decoration: none;
+  text-decoration-color: var(--verm);
+  text-underline-offset: 4px;
+}
+.trow-title:hover,
+.trow-title:focus-visible {
+  text-decoration: underline;
+}
+.trow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+}
+.trow-admin {
+  grid-template-columns: minmax(0, 1fr) 260px 110px;
+}
+.trow-admin .trow-actions {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+.trow-admin-action {
+  display: grid;
+  flex-basis: 100%;
+  justify-items: start;
+  gap: 8px;
+}
+.trow-admin-action .workflow-confirmation {
+  display: grid;
+  gap: 12px;
+  max-width: 65ch;
+}
+.trow-admin-action .workflow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.trow-policy {
+  flex-basis: 100%;
+  color: var(--soft);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .trow .m {
   font-size: 13px;
   color: var(--soft);

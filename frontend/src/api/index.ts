@@ -15,6 +15,7 @@ import type {
   Result,
   User,
   Voter,
+  VoterOption,
 } from './types'
 function query(input: ListQuery = {}) {
   const params = new URLSearchParams()
@@ -59,6 +60,8 @@ export const api = {
     }),
   voters: (id: ID, page = 1) =>
     request<Paginated<Voter>>(`${electionPath(id)}/voters${query({ page, page_size: 20 })}`),
+  eligibleVoters: (page = 1) =>
+    request<Paginated<VoterOption>>(`/users/eligible-voters${query({ page, page_size: 100 })}`),
   addVoter: (id: ID, user_id: ID) =>
     request<Envelope<Voter>>(`${electionPath(id)}/voters`, { method: 'POST', body: { user_id } }),
   removeVoter: (id: ID, userId: ID) =>

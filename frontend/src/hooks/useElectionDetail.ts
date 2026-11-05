@@ -88,8 +88,9 @@ export function useElectionStatusAction(id: string, refresh: () => void, onClose
       }
       if (current === generation.current) {
         setMessage(action === 'open' ? 'Voting is open.' : 'Voting is closed.')
-        refresh()
       }
+      // A successful write still invalidates the parent list if another action replaced this row.
+      refresh()
     } catch (reason) {
       if (current === generation.current) setError(reason)
     } finally {

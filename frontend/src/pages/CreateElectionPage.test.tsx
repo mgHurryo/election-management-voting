@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router'
 import { api } from '../api'
 import { ApiError } from '../api/client'
-import type { Election, Role } from '../api/types'
+import type { Election, Role, VoterOption } from '../api/types'
 import { AuthContext } from '../store/auth-context'
 import { AppRoutes } from '../routes/AppRoutes'
 import { validateElectionForm } from '../shared/electionForm'
@@ -69,7 +69,165 @@ async function fill() {
   fireEvent.change(screen.getByLabelText('Voter IDs *'), { target: { value: values.voters } })
 }
 
+function upload(name: string, read: () => Promise<string>, size = 0) {
+  const file = new File([], name)
+  Object.defineProperty(file, 'text', { value: read })
+  Object.defineProperty(file, 'size', { value: size })
+  fireEvent.change(screen.getByLabelText('Import .txt or .csv'), { target: { files: [file] } })
+}
+
 describe('create election', () => {
+  it('blocks submission until the file is read and then submits the imported roster', async () => {
+    const create = vi.spyOn(api, 'createElection').mockResolvedValue({ data: election })
+    vi.spyOn(api, 'election').mockResolvedValue({ data: election })
+    vi.spyOn(api, 'candidates').mockResolvedValue({
+      data: [],
+      meta: { page: 1, page_size: 20, total: 0 },
+    })
+    let finish!: (text: string) => void
+    const reading = new Promise<string>((resolve) => {
+      finish = resolve
+    })
+    mount()
+    await fill()
+    upload('voters.txt', () => reading)
+    const submit = screen.getByRole('button', { name: 'Create draft' })
+    expect(submit).toBeDisabled()
+    expect(screen.getByLabelText('Voter IDs *')).toBeDisabled()
+    expect(screen.getByRole('status')).toHaveTextContent('Reading voter ID file')
+    fireEvent.submit(submit.closest('form')!)
+    expect(create).not.toHaveBeenCalled()
+
+    await act(async () => finish('24'))
+    expect(submit).toBeEnabled()
+    fireEvent.click(submit)
+    await waitFor(() => expect(create).toHaveBeenCalledTimes(1))
+    expect(create.mock.calls[0]![0].voter_ids).toEqual(['24'])
+    await screen.findByRole('heading', { name: election.title })
+  })
+
+  it.each(['resolve', 'reject'] as const)(
+    'ignores an older file read that %ss after the latest',
+    async (outcome) => {
+      let finish!: (text: string) => void
+      let fail!: (error: Error) => void
+      const older = new Promise<string>((resolve, reject) => {
+        finish = resolve
+        fail = reject
+      })
+      mount()
+      await fill()
+      upload('older.txt', () => older)
+      upload('latest.txt', async () => '24')
+      await waitFor(() => expect(screen.getByLabelText('Voter IDs *')).toHaveValue('24'))
+      await act(async () => {
+        if (outcome === 'resolve') finish('21')
+        else fail(new Error('Older read failed'))
+      })
+      expect(screen.getByLabelText('Voter IDs *')).toHaveValue('24')
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Create draft' })).toBeEnabled()
+    },
+  )
+
+  it('keeps submission blocked when an older file finishes before the current file', async () => {
+    let finishOlder!: (text: string) => void
+    let finishLatest!: (text: string) => void
+    const older = new Promise<string>((resolve) => {
+      finishOlder = resolve
+    })
+    const latest = new Promise<string>((resolve) => {
+      finishLatest = resolve
+    })
+    mount()
+    await fill()
+    upload('older.txt', () => older)
+    upload('latest.txt', () => latest)
+    await act(async () => finishOlder('21'))
+    expect(screen.getByRole('button', { name: 'Create draft' })).toBeDisabled()
+    expect(screen.getByLabelText('Voter IDs *')).toHaveValue(values.voters)
+    await act(async () => finishLatest('24'))
+    expect(screen.getByLabelText('Voter IDs *')).toHaveValue('24')
+    expect(screen.getByRole('button', { name: 'Create draft' })).toBeEnabled()
+  })
+
+  it('invalidates an older read even when the newest file exceeds the size limit', async () => {
+    let finish!: (text: string) => void
+    const older = new Promise<string>((resolve) => {
+      finish = resolve
+    })
+    const readOversized = vi.fn(async () => '24')
+    mount()
+    await fill()
+    upload('older.txt', () => older)
+    upload('oversized.txt', readOversized, 1_000_001)
+    await act(async () => finish('21'))
+    expect(readOversized).not.toHaveBeenCalled()
+    expect(screen.getByLabelText('Voter IDs *')).toHaveValue(values.voters)
+    expect(screen.getByRole('alert')).toHaveTextContent('no larger than 1 MB')
+    expect(screen.getByRole('button', { name: 'Create draft' })).toBeEnabled()
+  })
+
+  it.each([
+    ['voters.txt', '\uFEFF21\r\n9007199254740995\r\n'],
+    [
+      'voters.csv',
+      '\uFEFFuser_id,display_name\r\n"21",Voter\r\n9007199254740995,Another voter\r\n',
+    ],
+  ])('imports %s without losing BIGINT precision', async (name, content) => {
+    mount()
+    await fill()
+    upload(name, async () => content)
+    await waitFor(() =>
+      expect(screen.getByLabelText('Voter IDs *')).toHaveValue('21\n9007199254740995'),
+    )
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it.each(['invalid', 'unreadable'])('retains existing IDs after an %s import', async (kind) => {
+    mount()
+    await fill()
+    upload('voters.txt', async () => {
+      if (kind === 'unreadable') throw new Error('Read failed')
+      return 'not-an-id'
+    })
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      kind === 'unreadable' ? 'Unable to read' : 'Import a .txt ID list',
+    )
+    expect(screen.getByLabelText('Voter IDs *')).toHaveValue(values.voters)
+    expect(screen.getByRole('button', { name: 'Create draft' })).toBeEnabled()
+  })
+
+  it('keeps selections across voter pages and submits distinct IDs', async () => {
+    const create = vi.spyOn(api, 'createElection').mockResolvedValue({ data: election })
+    vi.spyOn(api, 'election').mockResolvedValue({ data: election })
+    vi.spyOn(api, 'eligibleVoters').mockImplementation(async (page = 1) => ({
+      data: [
+        {
+          user_id: page === 1 ? '21' : '24',
+          display_name: page === 1 ? 'Voter' : 'Second Voter',
+        } satisfies VoterOption,
+      ],
+      meta: { page, page_size: 100, total: 101 },
+    }))
+    mount()
+    await screen.findByRole('heading', { name: 'Create election' })
+    fireEvent.change(screen.getByLabelText('Election name *'), { target: { value: values.title } })
+    fireEvent.change(screen.getByLabelText('Position *'), {
+      target: { value: values.position_title },
+    })
+    fireEvent.change(screen.getByLabelText('Opens at *'), { target: { value: values.starts_at } })
+    fireEvent.change(screen.getByLabelText('Closes at *'), { target: { value: values.ends_at } })
+    fireEvent.click(screen.getByRole('button', { name: 'Load voter list' }))
+    fireEvent.click((await screen.findByText('Voter')).closest('label')!)
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+    fireEvent.click((await screen.findByText('Second Voter')).closest('label')!)
+    fireEvent.click(screen.getByRole('button', { name: 'Create draft' }))
+
+    await screen.findByRole('heading', { name: election.title })
+    expect(create.mock.calls[0]![0].voter_ids).toEqual(['21', '24'])
+  })
+
   it('submits documented fields, preserves BIGINT strings, converts local time, and opens the new detail', async () => {
     const create = vi.spyOn(api, 'createElection').mockResolvedValue({ data: election })
     vi.spyOn(api, 'election').mockResolvedValue({ data: election })
@@ -144,7 +302,9 @@ describe('create election', () => {
     mount()
     await fill()
     fireEvent.click(screen.getByRole('button', { name: 'Create draft' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('Only valid voter accounts')
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The account is inactive or is not a voter account.',
+    )
     expect(screen.getByLabelText('Election name *')).toHaveValue(values.title)
     expect(screen.getByLabelText('Voter IDs *')).toHaveValue(values.voters)
     expect(screen.getByRole('button', { name: 'Create draft' })).toBeEnabled()

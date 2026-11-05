@@ -110,6 +110,7 @@ v1 仅支持：**一场一个职位、单选、一人一票、强制匿名、得
 | 选票与投票 | [提交匿名选票](#endpoint-18) | `POST` | `/api/v1/elections/{election_id}/votes` | 合资格 USER | 201 |
 | 计票与结果 | [计票与查询结果](#endpoint-19) | `GET` | `/api/v1/elections/{election_id}/results` | ADMIN / 发布后 USER | 200 |
 | 计票与结果 | [发布结果](#endpoint-20) | `POST` | `/api/v1/elections/{election_id}/results/publish` | ADMIN | 200 |
+| 用户 | [可选选民列表](#endpoint-21) | `GET` | `/api/v1/users/eligible-voters` | ADMIN | 200 |
 
 ## 4. 逐接口说明
 
@@ -493,7 +494,7 @@ Authorization: Bearer <access-token>
 
 - Query：page、page_size，以及可选 status（DRAFT / OPEN / CLOSED）；无 body。
 - ADMIN 可见全部；USER 可见本人名册内选举及所有已发布选举。按数值 id 降序，先过滤权限后分页。
-- 成功：200 Election[] + meta；空集合为 data=[]、total=0。不含实时票数、他人名册或未发布结果。
+- 成功：200 Election[] + meta；空集合为 data=[]、total=0。不含实时票数、他人名册、他人参与状态或未发布结果。USER 只能查询本人的 participation。
 
 只读操作：重试 / 轮询必须有次数及超时上限；读取不预留额度、不发布结果。
 
@@ -2765,6 +2766,43 @@ Authorization: Bearer <access-token>
 - 其他错误：`ELECTION_NOT_FOUND`、`ELECTION_NOT_CLOSED`。
 
 - 重复 open / close 返回 409，先 GET 选举确认状态。重复发布返回原时间，不覆盖。
+
+[返回接口导航](#api-index)
+
+<a id="endpoint-21"></a>
+
+### 4.21 可选选民列表
+
+为管理员提供现有 ACTIVE USER 账户，供创建选举时选择。本响应仅包含账户 ID 与显示名称，不披露用户名、参与状态或选票信息。
+
+#### 基本信息
+
+| 项目 | 内容 |
+| --- | --- |
+| 方法 | `GET` |
+| 完整路径 | `/api/v1/users/eligible-voters` |
+| 认证 | 必需：`Authorization: Bearer <access-token>`；账户须持续为 ACTIVE。 |
+| 权限 | ADMIN |
+| 选举状态 | 与选举状态无关。 |
+| 成功状态 | 200 |
+| 请求格式 | HTTPS；无请求体。 |
+
+#### 查询参数
+
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+| --- | --- | --- | --- | --- |
+| `page` | integer | 否 | 1 | 页码，最小为 1。 |
+| `page_size` | integer | 否 | 100 | 每页 1–100 条。 |
+
+成功响应为分页 `data` 数组，每项仅含 `user_id`（十进制字符串）与 `display_name`。创建选举接口仍会在事务提交前重新校验账户角色和 ACTIVE 状态，并原子创建选举与选民名册。
+
+#### 错误
+
+| HTTP | error.code | 触发条件 |
+| --- | --- | --- |
+| 401 | `AUTHENTICATION_REQUIRED` | 身份缺失、无效、过期或账户非 ACTIVE。 |
+| 403 | `PERMISSION_DENIED` | 调用者不是 ADMIN。 |
+| 422 | `VALIDATION_ERROR` | 分页参数无效。 |
 
 [返回接口导航](#api-index)
 

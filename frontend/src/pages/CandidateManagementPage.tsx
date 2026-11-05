@@ -335,9 +335,11 @@ function CandidateManagementContent({ id }: { id: string }) {
               </tr>
             </thead>
             <tbody>
-              {data.data.map((candidate) => (
+              {data.data.map((candidate, index) => (
                 <tr key={candidate.id}>
-                  <td data-label="Order">{candidate.display_order}</td>
+                  <td data-label="Order">
+                    {(data.meta.page - 1) * data.meta.page_size + index + 1}
+                  </td>
                   <th scope="row" data-label="Candidate">
                     {candidate.name}
                   </th>

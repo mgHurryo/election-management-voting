@@ -3,13 +3,14 @@ from types import TracebackType
 from typing import Protocol, Self
 
 from app.models.elections import CandidateDetails, ElectionDetails
-from app.models.identity import UserAccount, UserIdentity
+from app.models.identity import UserAccount, UserIdentity, VoterOption
 from app.models.roster import ElectionSnapshot, VoterMembership
 
 
 class IdentityRepository(Protocol):
     def by_username(self, username: str) -> UserAccount | None: ...
     def by_id(self, user_id: int) -> UserAccount | None: ...
+    def active_voters(self, offset: int, limit: int) -> tuple[list[VoterOption], int]: ...
 
 
 class HealthRepository(Protocol):

@@ -1,10 +1,10 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models import User
-from app.models.identity import UserAccount, UserIdentity
+from app.models.identity import UserAccount, UserIdentity, VoterOption
 
 
 def utc(value: datetime) -> datetime:
@@ -38,3 +38,17 @@ class SqlAlchemyIdentityRepository:
 
     def by_id(self, user_id: int) -> UserAccount | None:
         return account_from_row(self._session.get(User, user_id))
+
+    def active_voters(self, offset: int, limit: int) -> tuple[list[VoterOption], int]:
+        filters = (User.role == "USER", User.status == "ACTIVE")
+        rows = self._session.execute(
+            select(User.id, User.display_name)
+            .where(*filters)
+            .order_by(User.id)
+            .offset(offset)
+            .limit(limit)
+        ).all()
+        total = self._session.scalar(select(func.count()).select_from(User).where(*filters))
+        return [VoterOption(id=row.id, display_name=row.display_name) for row in rows], int(
+            total or 0
+        )

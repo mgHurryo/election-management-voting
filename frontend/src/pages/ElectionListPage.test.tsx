@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router'
 import { api } from '../api'
@@ -60,6 +60,91 @@ function mount(role: Role | null = 'USER', path = '/elections') {
 }
 
 describe('elections home', () => {
+  it('refreshes after every concurrent status action even when another action remounts its row', async () => {
+    let rows = [row('OPEN', '21'), row('OPEN', '22')]
+    vi.spyOn(api, 'elections').mockImplementation(async () => response(1, 2, rows))
+    const close = (id: string) => {
+      rows = rows.map((election) =>
+        election.id === id ? { ...election, status: 'CLOSED' } : election,
+      )
+      return { data: rows.find((election) => election.id === id)! }
+    }
+    let finishFirst!: () => void
+    const first = new Promise<{ data: Election }>((resolve) => {
+      finishFirst = () => resolve(close('21'))
+    })
+    vi.spyOn(api, 'closeElection').mockImplementation(async (id) =>
+      id === '21' ? first : close(id),
+    )
+    mount('ADMIN')
+    const firstRow = (await screen.findByRole('heading', { name: 'OPEN election 21' })).closest(
+      'article',
+    )!
+    const secondRow = screen.getByRole('heading', { name: 'OPEN election 22' }).closest('article')!
+    fireEvent.click(within(firstRow).getByRole('button', { name: 'Close voting' }))
+    fireEvent.click(within(firstRow).getByRole('button', { name: 'Confirm close' }))
+    fireEvent.click(within(secondRow).getByRole('button', { name: 'Close voting' }))
+    fireEvent.click(within(secondRow).getByRole('button', { name: 'Confirm close' }))
+    await waitFor(() => expect(screen.getAllByText('Closed', { selector: '.st' })).toHaveLength(1))
+    await act(async () => finishFirst())
+    await waitFor(() => expect(screen.getAllByText('Closed', { selector: '.st' })).toHaveLength(2))
+    expect(screen.queryByRole('button', { name: 'Close voting' })).not.toBeInTheDocument()
+  })
+
+  it.each([
+    ['DRAFT', 'Draft', 'Open voting', 'openElection', 'Confirm open', 'OPEN'],
+    ['OPEN', 'Open', 'Close voting', 'closeElection', 'Confirm close', 'CLOSED'],
+  ] as const)(
+    'resets the filtered page after a %s status action removes its last row',
+    async (status, filter, label, method, confirmation, nextStatus) => {
+      let changed = false
+      const current = { ...election, status }
+      const list = vi
+        .spyOn(api, 'elections')
+        .mockImplementation(async (query) => response(query?.page, changed ? 20 : 21, [current]))
+      const mutate = vi.spyOn(api, method).mockImplementation(async () => {
+        changed = true
+        return { data: { ...current, status: nextStatus } }
+      })
+      mount('ADMIN')
+      await screen.findByRole('heading', { name: election.title })
+      fireEvent.click(screen.getByRole('button', { name: filter }))
+      await waitFor(() => expect(list).toHaveBeenLastCalledWith({ page: 1, page_size: 20, status }))
+      fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+      await waitFor(() => expect(screen.getByText('Page 2 of 2')).toBeInTheDocument())
+      fireEvent.click(screen.getByRole('button', { name: label }))
+      fireEvent.click(screen.getByRole('button', { name: confirmation }))
+      await waitFor(() => expect(mutate).toHaveBeenCalledTimes(1))
+      await screen.findByText('Page 1 of 1')
+      expect(list).toHaveBeenLastCalledWith({ page: 1, page_size: 20, status })
+      expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled()
+      expect(screen.getByRole('button', { name: new RegExp(`^${filter}`) })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
+    },
+  )
+
+  it('keeps simultaneous open and close confirmations labelled by their own headings', async () => {
+    vi.spyOn(api, 'elections').mockResolvedValue(
+      response(1, 2, [row('DRAFT', '21'), row('OPEN', '22')]),
+    )
+    mount('ADMIN')
+    const openButton = await screen.findByRole('button', { name: 'Open voting' })
+    const closeButton = screen.getByRole('button', { name: 'Close voting' })
+    fireEvent.click(openButton)
+    fireEvent.click(closeButton)
+    const openHeading = screen.getByRole('heading', { name: 'Open voting?' })
+    const closeHeading = screen.getByRole('heading', { name: 'Close voting?' })
+    expect(openHeading.id).not.toBe(closeHeading.id)
+    expect(openHeading.closest('section')).toHaveAccessibleName('Open voting?')
+    expect(closeHeading.closest('section')).toHaveAccessibleName('Close voting?')
+    expect(closeHeading).toHaveFocus()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Cancel' })[1]!)
+    expect(closeButton).toHaveFocus()
+    expect(screen.getByRole('region', { name: 'Open voting?' })).toBeInTheDocument()
+  })
+
   it('lists every server-visible state without losing BIGINT IDs or server ordering', async () => {
     const list = vi
       .spyOn(api, 'elections')
@@ -74,7 +159,7 @@ describe('elections home', () => {
     expect(
       await screen.findByRole('heading', { name: 'OPEN election 9007199254740993' }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Vote' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Vote Now' })).toHaveAttribute(
       'href',
       '/elections/9007199254740993',
     )
@@ -122,7 +207,7 @@ describe('elections home', () => {
       },
     })
     const view = mount()
-    fireEvent.click(await screen.findByRole('link', { name: 'Results' }))
+    fireEvent.click(await screen.findByRole('link', { name: 'View results' }))
     // A closed election with a published result links straight to the results page.
     expect(await screen.findByRole('heading', { name: 'Published result' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('link', { name: 'All elections' }))
@@ -130,7 +215,7 @@ describe('elections home', () => {
     view.unmount()
     mount()
     fireEvent.click(await screen.findByRole('button', { name: 'Closed' }))
-    fireEvent.click(await screen.findByRole('link', { name: 'Results' }))
+    fireEvent.click(await screen.findByRole('link', { name: 'View results' }))
     expect(await screen.findByRole('heading', { name: 'Published result' })).toBeInTheDocument()
   })
 
@@ -139,11 +224,11 @@ describe('elections home', () => {
       response(1, 1, [{ ...election, status: 'OPEN', ends_at: '2026-10-20T09:00:00Z' }]),
     )
     mount('USER')
-    const link = await screen.findByRole('link', { name: 'Results' })
+    const link = await screen.findByRole('link', { name: 'View results' })
     expect(link).toHaveAttribute('href', `/elections/${election.id}/results`)
     expect(screen.getByText('Ended')).toBeInTheDocument()
     expect(screen.getByText('Closed', { selector: '.st' })).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'Vote' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Vote Now' })).not.toBeInTheDocument()
   })
 
   it('keeps a draft with a passed window on Details instead of offering results', async () => {
@@ -156,7 +241,7 @@ describe('elections home', () => {
       `/elections/${election.id}`,
     )
     expect(screen.getByText('Draft', { selector: '.st' })).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'Results' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'View results' })).not.toBeInTheDocument()
   })
 
   it('flips an open row to Ended and Results once the clock crosses ends_at in the same session', async () => {
@@ -170,14 +255,14 @@ describe('elections home', () => {
       await act(async () => {
         await vi.advanceTimersByTimeAsync(0)
       })
-      expect(screen.getByRole('link', { name: 'Vote' })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Vote Now' })).toBeInTheDocument()
       clock.mockReturnValue(Date.parse('2026-10-22T11:00:01Z'))
       await act(async () => {
         await vi.advanceTimersByTimeAsync(30_000)
       })
-      expect(screen.getByRole('link', { name: 'Results' })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'View results' })).toBeInTheDocument()
       expect(screen.getByText('Closed', { selector: '.st' })).toBeInTheDocument()
-      expect(screen.queryByRole('link', { name: 'Vote' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: 'Vote Now' })).not.toBeInTheDocument()
     } finally {
       vi.useRealTimers()
     }
@@ -196,9 +281,9 @@ describe('elections home', () => {
       await act(async () => {
         await vi.advanceTimersByTimeAsync(0)
       })
-      expect(screen.getByRole('link', { name: 'Vote' })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Vote Now' })).toBeInTheDocument()
       expect(screen.getByText('Open', { selector: '.st' })).toBeInTheDocument()
-      expect(screen.queryByRole('link', { name: 'Results' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: 'View results' })).not.toBeInTheDocument()
     } finally {
       vi.useRealTimers()
     }
